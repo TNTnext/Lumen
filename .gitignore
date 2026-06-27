@@ -12,7 +12,9 @@ __pycache__/
 *.egg-info/
 /.env
 .env
-.cozeproj/reduction
+# Coze platform files
+.cozeproj/
+.coze
 
 # JS/TS bundlers & build outputs
 .next
