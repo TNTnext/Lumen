@@ -1,6 +1,6 @@
-# AI Chat Platform
+# Lumen
 
-> *Enterprise-grade AI conversation management, distilled into a single deployable artifact.*
+> *Illuminate your AI infrastructure. One command, infinite models.*
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
@@ -13,11 +13,11 @@
 
 ## Overview
 
-A self-hosted AI conversation platform with a polished admin dashboard. Connect to **9 LLM providers** (DeepSeek, OpenAI, Anthropic, Kimi, GLM, and more), manage multi-user access with granular permissions, and control every API endpoint with toggle switches — all from a clean, Apple-inspired interface.
+Lumen is a self-hosted AI gateway and conversation platform. Connect to **9 built-in providers** (DeepSeek, OpenAI, Anthropic, Kimi, GLM, and more) or bring your own OpenAI-compatible endpoint. Multi-user access, granular permissions, endpoint toggles, and an Apple-inspired admin dashboard — all from a single `python app.py`.
 
-### Why This Exists
+### Why Lumen
 
-Most AI chat frontends are either too simple (single-user, no permissions) or too complex (Kubernetes, microservices). This is the middle ground: **one `python app.py`**, everything you need.
+Most AI chat frontends are either too simple (single-user, no permissions) or too complex (Kubernetes, microservices). Lumen is the middle ground: **self-contained, zero-config, production-ready**.
 
 ---
 
@@ -25,10 +25,10 @@ Most AI chat frontends are either too simple (single-user, no permissions) or to
 
 | Category | Capabilities |
 |----------|-------------|
-| **Multi-Provider** | DeepSeek · OpenAI · Anthropic · Kimi · 火山引擎 · 阿里云 · xAI · GLM · Minimax |
+| **Multi-Provider** | 9 built-in vendors + custom OpenAI-compatible endpoints |
 | **Model Capabilities** | Streaming · Thinking/Reasoning · Vision · Tool Calling · File Upload · Web Search |
 | **User System** | Registration (toggleable) · JWT Auth · Role-based (admin/user) · Force password change |
-| **Permissions** | Two-tier: global defaults + per-user overrides. Daily limits, model allowlists, rate limits, export control |
+| **Permissions** | Two-tier: global defaults + per-user overrides. Daily limits, model allowlists, token caps, rate limits, export control |
 | **Admin Dashboard** | Real-time statistics · User CRUD · Conversation browser · Permission editor · API key config · Endpoint toggles |
 | **Onboarding Wizard** | First-login guided setup: password, provider, API key, permissions, registration policy |
 | **Security** | bcrypt passwords · AES-encrypted API keys · SQL injection prevention · CORS · CSRF protection |
@@ -40,7 +40,7 @@ Most AI chat frontends are either too simple (single-user, no permissions) or to
 
 ```bash
 # 1. Clone
-git clone <repo-url> && cd ai-chat-platform
+git clone <repo-url> && cd lumen
 
 # 2. Install
 pip install -r requirements.txt
@@ -105,6 +105,8 @@ Full API documentation available at `/docx/`.
 | **xAI** | grok-2 | ✓ | ✓ | — | ✓ | ✓ | — | — |
 | **GLM** | glm-4-flash / glm-4-plus | ✓ | ✓ | — | ✓ | ✓ | — | ✓ |
 | **Minimax** | abab6.5s-chat | ✓ | ✓ | — | — | ✓ | — | — |
+
+> **Custom Endpoints**: Add any OpenAI-compatible provider via the admin panel. Lumen auto-detects capabilities where possible.
 
 </details>
 

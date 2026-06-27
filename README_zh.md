@@ -1,6 +1,6 @@
-# AI 对话管理平台
+# Lumen
 
-> *企业级 AI 对话管理，凝练为一次部署。*
+> *点亮你的 AI 基础设施。一条命令，无限模型。*
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
@@ -13,11 +13,11 @@
 
 ## 概述
 
-一款自托管的 AI 对话管理平台，配备精致的管理后台。接入 **9 家大语言模型厂商**（DeepSeek、OpenAI、Anthropic、Kimi、GLM 等），支持多用户体系与细粒度权限控制，可对每个 API 接口独立开关——一切尽在 Apple 风格设计的简洁界面中。
+Lumen 是一款自托管的 AI 网关与对话管理平台。内置接入 **9 家大模型厂商**（DeepSeek、OpenAI、Anthropic、Kimi、GLM 等），也支持添加任意 OpenAI 兼容的自定义端点。多用户体系、细粒度权限、接口独立开关、Apple 风格管理后台——一行 `python app.py` 全部搞定。
 
-### 为什么做这个
+### 为什么叫 Lumen
 
-市面上大多数 AI 对话前端要么过于简陋（单用户、无权限），要么过于复杂（Kubernetes、微服务）。这是中间地带：**一行 `python app.py`**，应有尽有。
+市面上大多数 AI 对话前端要么过于简陋（单用户、无权限），要么过于复杂（Kubernetes、微服务）。Lumen 取「光」之意——**轻量、通透、开箱即用**，像一束光照亮你的 AI 基础设施。
 
 ---
 
@@ -25,7 +25,7 @@
 
 | 分类 | 能力 |
 |------|------|
-| **多厂商接入** | DeepSeek · OpenAI · Anthropic · Kimi · 火山引擎 · 阿里云 · xAI · GLM · Minimax |
+| **多厂商接入** | 9 家内置厂商 + 自定义 OpenAI 兼容端点 |
 | **模型能力** | 流式输出 · 深度推理 · 图片识别 · 函数调用 · 文件上传 · 联网搜索 |
 | **用户系统** | 注册（可开关）· JWT 认证 · 角色分级（管理员/用户）· 强制改密 |
 | **权限控制** | 两级权限：全局默认 + 用户单独覆盖。每日限额、模型白名单、Token 上限、频率限制、导出控制 |
@@ -40,7 +40,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone <repo-url> && cd ai-chat-platform
+git clone <repo-url> && cd lumen
 
 # 2. 安装依赖
 pip install -r requirements.txt
@@ -105,6 +105,8 @@ python app.py
 | **xAI** | grok-2 | ✓ | ✓ | — | ✓ | ✓ | — | — |
 | **GLM** | glm-4-flash / glm-4-plus | ✓ | ✓ | — | ✓ | ✓ | — | ✓ |
 | **Minimax** | abab6.5s-chat | ✓ | ✓ | — | — | ✓ | — | — |
+
+> **自定义端点**：通过管理后台添加任意 OpenAI 兼容的 API 端点，Lumen 会尽可能自动检测模型能力。
 
 </details>
 

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## 项目概览
-AI 对话管理平台 — 基于 Python Flask 的后端 API 服务 + 简约风格管理后台前端。支持 DeepSeek API 接入、多用户系统、细粒度权限控制。
+Lumen — 自托管 AI 网关与对话管理平台，基于 Python Flask 的后端 API 服务 + Apple 风格管理后台前端。支持 9 家内置厂商 + 自定义 OpenAI 兼容端点、多用户系统、细粒度权限控制。
 
 ## 技术栈
 - **后端**: Python 3.11+, Flask, SQLAlchemy, Flask-JWT-Extended, Flask-CORS

@@ -99,7 +99,7 @@ async function renderOnboarding() {
   container.innerHTML = `
     <div class="max-w-2xl mx-auto">
       <div class="text-center mb-10">
-        <h1 class="text-2xl font-semibold tracking-tight mb-2">欢迎使用 AI 对话管理平台</h1>
+        <h1 class="text-2xl font-semibold tracking-tight mb-2">欢迎使用 Lumen</h1>
         <p class="text-text-secondary text-sm">首次使用，请完成以下初始配置</p>
       </div>
       <div class="space-y-8">

@@ -111,7 +111,7 @@ def create_app():
     # Health check
     @app.route('/api/health')
     def health():
-        return jsonify({'status': 'ok', 'service': 'AI Chat Platform'})
+        return jsonify({'status': 'ok', 'service': 'Lumen'})
 
     return app
 
