@@ -1,5 +1,6 @@
 """Chat API blueprint."""
 import json
+import time
 from datetime import datetime, timezone, date
 from flask import Blueprint, request, jsonify, Response, g, stream_with_context
 from models import db, User, Conversation, Message
@@ -15,15 +16,25 @@ deepseek_service = DeepSeekService(
     base_url=Config.DEEPSEEK_BASE_URL,
 )
 
+# Config cache to avoid DB query on every request
+_config_cache = {'ts': 0, 'api_key': '', 'base_url': ''}
+_CONFIG_CACHE_TTL = 30  # seconds
+
 
 def _load_deepseek_config():
-    """Load DeepSeek config from system settings."""
+    """Load DeepSeek config from system settings (with cache)."""
+    global _config_cache
+    now = time.time()
+    if now - _config_cache['ts'] < _CONFIG_CACHE_TTL:
+        return
     from models import SystemConfig
     api_key_cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
     base_url_cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
     api_key = api_key_cfg.value if api_key_cfg else Config.DEEPSEEK_API_KEY
     base_url = base_url_cfg.value if base_url_cfg else Config.DEEPSEEK_BASE_URL
-    deepseek_service.update_config(api_key, base_url)
+    if api_key != _config_cache['api_key'] or base_url != _config_cache['base_url']:
+        deepseek_service.update_config(api_key, base_url)
+    _config_cache = {'ts': now, 'api_key': api_key, 'base_url': base_url}
 
 
 @chat_bp.route('/api/chat/send', methods=['POST'])

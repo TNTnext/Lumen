@@ -31,7 +31,8 @@ function showToast(msg, type = 'info') {
   setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
-function doLogout() {
+async function doLogout() {
+  try { await fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${getToken()}` } }); } catch (_) {}
   localStorage.clear();
   window.location.href = '/login.html';
 }

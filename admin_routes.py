@@ -102,9 +102,9 @@ def dashboard():
         func.count(Message.id).desc()
     ).limit(10).all()
 
-    # Hourly distribution (today)
+    # Hourly distribution (today) — SQLite compatible
     hourly_dist = db.session.query(
-        func.extract('hour', Message.created_at).label('hour'),
+        func.strftime('%H', Message.created_at).label('hour'),
         func.count(Message.id)
     ).filter(
         Message.created_at >= today_start,
@@ -120,9 +120,8 @@ def dashboard():
     subq = db.session.query(
         func.count(Message.id).label('cnt')
     ).group_by(Message.conversation_id).subquery()
-    avg_msgs = db.session.query(
-        func.round(func.avg(subq.c.cnt))
-    ).scalar()
+    raw_avg = db.session.query(func.avg(subq.c.cnt)).scalar()
+    avg_msgs = round(raw_avg) if raw_avg is not None else 0
 
     # Disabled users count
     disabled_users = User.query.filter_by(is_active=False).count()
@@ -534,28 +533,25 @@ def test_deepseek_connection():
     service = DeepSeekService(api_key=api_key, base_url=base_url)
     result = service.test_connection()
 
-    # Record test call in stats (create a system conversation for counting)
+    # Record test call in stats counter (no conversation pollution)
     if result.get('success'):
         try:
-            system_user = User.query.filter_by(username='admin').first()
-            if system_user:
-                test_conv = Conversation(
-                    user_id=system_user.id,
-                    title='[连接测试]',
-                    model=result.get('model', 'unknown'),
-                    message_count=1,
-                    total_tokens=result.get('tokens', {}).get('total', 0) if isinstance(result.get('tokens'), dict) else 0,
-                )
-                db.session.add(test_conv)
-                db.session.flush()
-                test_msg = Message(
-                    conversation_id=test_conv.id,
-                    role='assistant',
-                    content='[连接测试] ' + (result.get('message', 'success')),
-                    tokens=result.get('tokens', {}).get('total', 0) if isinstance(result.get('tokens'), dict) else 0,
-                )
-                db.session.add(test_msg)
-                db.session.commit()
+            today = date.today()
+            cfg = SystemConfig.query.filter_by(key='test_call_count_today').first()
+            cfg_date = SystemConfig.query.filter_by(key='test_call_date').first()
+            if cfg_date and cfg_date.value == today.isoformat():
+                cfg.value = str(int(cfg.value or 0) + 1) if cfg else '1'
+            else:
+                if not cfg:
+                    cfg = SystemConfig(key='test_call_count_today', value='1')
+                    db.session.add(cfg)
+                else:
+                    cfg.value = '1'
+                if cfg_date:
+                    cfg_date.value = today.isoformat()
+                else:
+                    db.session.add(SystemConfig(key='test_call_date', value=today.isoformat()))
+            db.session.commit()
         except Exception:
             db.session.rollback()
 

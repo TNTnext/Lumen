@@ -133,6 +133,13 @@ def get_me():
     })
 
 
+@auth_bp.route('/api/auth/logout', methods=['POST'])
+@require_auth
+def logout():
+    """User logout (JWT stateless — client discards token)."""
+    return jsonify({'success': True, 'message': '已登出'})
+
+
 @auth_bp.route('/api/auth/change-password', methods=['POST'])
 @require_auth
 def change_password():
