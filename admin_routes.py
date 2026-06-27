@@ -3,7 +3,7 @@ from datetime import datetime, timezone, date, timedelta
 from flask import Blueprint, request, jsonify, g
 from sqlalchemy import func
 from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig
-from auth_utils import require_admin, get_effective_permission
+from auth_utils import require_admin, get_effective_permission, _invalidate_perm_cache
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from ai_service import AIService
@@ -18,119 +18,105 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/api/admin/dashboard', methods=['GET'])
 @require_admin
 def dashboard():
-    """Get advanced multi-dimensional dashboard statistics."""
+    """Dashboard — simple queries, Python aggregation, no complex SQL."""
     today = date.today()
     today_start = datetime.combine(today, datetime.min.time())
+    seven_days_ago = today - timedelta(days=6)
+    seven_days_start = datetime.combine(seven_days_ago, datetime.min.time())
     this_week_start = today - timedelta(days=today.weekday())
     this_month_start = today.replace(day=1)
+    week_start_dt = datetime.combine(this_week_start, datetime.min.time())
+    month_start_dt = datetime.combine(this_month_start, datetime.min.time())
 
-    # Basic counts
+    # ── Q1: User stats ──
     total_users = User.query.count()
+    active_users = User.query.filter_by(is_active=True).count()
+    admin_count = User.query.filter_by(role='admin').count()
+    new_users_week = User.query.filter(User.created_at >= week_start_dt).count()
+    disabled_users = total_users - active_users
+
+    # ── Q2: Active today ──
     active_today = User.query.filter(
-        User.daily_chat_date == today,
-        User.daily_chat_count > 0,
+        User.daily_chat_date == today, User.daily_chat_count > 0
     ).count()
+
+    # ── Q3: Conversation + message counts ──
     total_conversations = Conversation.query.count()
     total_messages = Message.query.count()
 
-    # Today's API calls
-    today_api_calls = Message.query.filter(
-        Message.created_at >= today_start,
-        Message.role == 'assistant',
-    ).count()
+    # ── Q4: Today's AI messages (for API calls + tokens) ──
+    today_ai = Message.query.filter(
+        Message.role == 'assistant', Message.created_at >= today_start
+    ).all()
+    today_api_calls = len(today_ai)
+    today_tokens = sum(m.tokens or 0 for m in today_ai)
 
-    # Token usage
-    today_tokens = db.session.query(func.coalesce(func.sum(Message.tokens), 0)).filter(
-        Message.created_at >= today_start,
-        Message.role == 'assistant',
-    ).scalar()
-    week_tokens = db.session.query(func.coalesce(func.sum(Message.tokens), 0)).filter(
-        Message.created_at >= datetime.combine(this_week_start, datetime.min.time()),
-        Message.role == 'assistant',
-    ).scalar()
-    month_tokens = db.session.query(func.coalesce(func.sum(Message.tokens), 0)).filter(
-        Message.created_at >= datetime.combine(this_month_start, datetime.min.time()),
-        Message.role == 'assistant',
-    ).scalar()
+    # ── Q5: Week/Month tokens ──
+    week_ai = Message.query.filter(
+        Message.role == 'assistant', Message.created_at >= week_start_dt
+    ).all()
+    week_tokens = sum(m.tokens or 0 for m in week_ai)
 
-    # Last 7 days chat trend (messages by day)
-    seven_days_ago = today - timedelta(days=6)
+    month_ai = Message.query.filter(
+        Message.role == 'assistant', Message.created_at >= month_start_dt
+    ).all()
+    month_tokens = sum(m.tokens or 0 for m in month_ai)
+
+    # ── Q6: 7-day trend ──
+    all_recent = Message.query.filter(Message.created_at >= seven_days_start).all()
+    daily_map = {}
+    for m in all_recent:
+        ds = m.created_at.strftime('%Y-%m-%d')
+        if ds not in daily_map:
+            daily_map[ds] = [0, 0]
+        if m.role == 'user':
+            daily_map[ds][0] += 1
+        elif m.role == 'assistant':
+            daily_map[ds][1] += 1
     daily_stats = []
     for i in range(7):
         d = seven_days_ago + timedelta(days=i)
-        day_start = datetime.combine(d, datetime.min.time())
-        day_end = datetime.combine(d + timedelta(days=1), datetime.min.time())
-        user_msgs = Message.query.filter(
-            Message.created_at >= day_start,
-            Message.created_at < day_end,
-            Message.role == 'user',
-        ).count()
-        ai_msgs = Message.query.filter(
-            Message.created_at >= day_start,
-            Message.created_at < day_end,
-            Message.role == 'assistant',
-        ).count()
-        daily_stats.append({
-            'date': d.isoformat(),
-            'user_messages': user_msgs,
-            'ai_messages': ai_msgs,
-            'count': user_msgs + ai_msgs,
-        })
+        ds = d.isoformat()
+        uc, ac = daily_map.get(ds, (0, 0))
+        daily_stats.append({'date': ds, 'user_messages': uc, 'ai_messages': ac, 'count': uc + ac})
 
-    # Last 7 days active users trend
+    # ── Q7: Active users trend ──
+    active_convs = Conversation.query.filter(Conversation.created_at >= seven_days_start).all()
+    active_map = {}
+    for c in active_convs:
+        ds = c.created_at.strftime('%Y-%m-%d')
+        active_map[ds] = active_map.get(ds, set())
+        active_map[ds].add(c.user_id)
     active_users_trend = []
     for i in range(7):
         d = seven_days_ago + timedelta(days=i)
-        day_start = datetime.combine(d, datetime.min.time())
-        day_end = datetime.combine(d + timedelta(days=1), datetime.min.time())
-        count = db.session.query(func.count(func.distinct(Conversation.user_id))).filter(
-            Conversation.created_at >= day_start,
-            Conversation.created_at < day_end,
-        ).scalar()
-        active_users_trend.append({'date': d.isoformat(), 'count': count or 0})
+        ds = d.isoformat()
+        active_users_trend.append({'date': ds, 'count': len(active_map.get(ds, set()))})
 
-    # Model usage distribution
+    # ── Q8: Model distribution ──
     model_stats = db.session.query(
         Conversation.model, func.count(Conversation.id)
     ).group_by(Conversation.model).all()
 
-    # User ranking (top 10 by message count)
+    # ── Q9: User ranking ──
     user_ranking = db.session.query(
-        User.username, func.count(Message.id).label('msg_count')
+        User.username, func.count(Message.id)
     ).join(Conversation, Message.conversation_id == Conversation.id).join(
         User, Conversation.user_id == User.id
-    ).filter(
-        Message.role == 'user'
-    ).group_by(User.username).order_by(
+    ).filter(Message.role == 'user').group_by(User.username).order_by(
         func.count(Message.id).desc()
     ).limit(10).all()
 
-    # Hourly distribution (today) — SQLite compatible
+    # ── Q10: Hourly distribution ──
     hourly_dist = db.session.query(
         func.strftime('%H', Message.created_at).label('hour'),
         func.count(Message.id)
-    ).filter(
-        Message.created_at >= today_start,
-        Message.role == 'user',
-    ).group_by('hour').order_by('hour').all()
+    ).filter(Message.created_at >= today_start, Message.role == 'user').group_by('hour').order_by('hour').all()
 
-    # New users this week
-    new_users_week = User.query.filter(
-        User.created_at >= datetime.combine(this_week_start, datetime.min.time())
-    ).count()
-
-    # Average messages per conversation
-    subq = db.session.query(
-        func.count(Message.id).label('cnt')
-    ).group_by(Message.conversation_id).subquery()
+    # ── Q11: Avg messages per conversation ──
+    subq = db.session.query(func.count(Message.id).label('cnt')).group_by(Message.conversation_id).subquery()
     raw_avg = db.session.query(func.avg(subq.c.cnt)).scalar()
-    avg_msgs = round(raw_avg) if raw_avg is not None else 0
-
-    # Disabled users count
-    disabled_users = User.query.filter_by(is_active=False).count()
-
-    # Admin count
-    admin_count = User.query.filter_by(role='admin').count()
+    avg_msgs = round(raw_avg) if raw_avg else 0
 
     return jsonify({
         'success': True,
@@ -140,24 +126,18 @@ def dashboard():
             'total_conversations': total_conversations,
             'total_messages': total_messages,
             'today_api_calls': today_api_calls,
-            'today_tokens': today_tokens or 0,
-            'week_tokens': week_tokens or 0,
-            'month_tokens': month_tokens or 0,
+            'today_tokens': today_tokens,
+            'week_tokens': week_tokens,
+            'month_tokens': month_tokens,
             'new_users_week': new_users_week,
             'disabled_users': disabled_users,
             'admin_count': admin_count,
             'avg_messages_per_conv': float(avg_msgs) if avg_msgs else 0,
             'daily_trend': daily_stats,
             'active_users_trend': active_users_trend,
-            'model_distribution': [
-                {'model': m, 'count': c} for m, c in model_stats
-            ],
-            'user_ranking': [
-                {'username': u, 'message_count': c} for u, c in user_ranking
-            ],
-            'hourly_distribution': [
-                {'hour': int(h), 'count': c} for h, c in hourly_dist
-            ],
+            'model_distribution': [{'model': m, 'count': c} for m, c in model_stats],
+            'user_ranking': [{'username': u, 'message_count': c} for u, c in user_ranking],
+            'hourly_distribution': [{'hour': int(h), 'count': c} for h, c in hourly_dist],
         },
     })
 
@@ -258,9 +238,26 @@ def list_users():
         page=page, per_page=per_page, error_out=False
     )
 
+    # Batch load conversation counts to avoid N+1
+    user_ids = [u.id for u in pagination.items]
+    conv_counts = {}
+    if user_ids:
+        rows = db.session.query(
+            Conversation.user_id, db.func.count(Conversation.id)
+        ).filter(Conversation.user_id.in_(user_ids)).group_by(Conversation.user_id).all()
+        conv_counts = {uid: cnt for uid, cnt in rows}
+
+    users_out = []
+    for u in pagination.items:
+        d = u.to_dict()
+        d['daily_chat_count'] = u.daily_chat_count
+        d['conversation_count'] = conv_counts.get(u.id, 0)
+        d['updated_at'] = u.updated_at.isoformat() if u.updated_at else None
+        users_out.append(d)
+
     return jsonify({
         'success': True,
-        'users': [u.to_admin_dict() for u in pagination.items],
+        'users': users_out,
         'total': pagination.total,
         'pages': pagination.pages,
         'page': page,
@@ -290,6 +287,7 @@ def update_user(user_id: int):
         user.daily_limit = int(val) if val is not None and val != '' else None
 
     db.session.commit()
+    _invalidate_perm_cache()
     return jsonify({'success': True, 'user': user.to_admin_dict()})
 
 
@@ -345,6 +343,7 @@ def get_global_permissions():
         perm = GlobalPermission()
         db.session.add(perm)
         db.session.commit()
+    _invalidate_perm_cache()
     return jsonify({'success': True, 'permissions': perm.to_dict()})
 
 
@@ -432,6 +431,7 @@ def update_user_permissions(user_id: int):
         user_perm.rate_limit_per_minute = int(data['rate_limit_per_minute']) if data['rate_limit_per_minute'] is not None else None
 
     db.session.commit()
+    _invalidate_perm_cache()
     return jsonify({'success': True, 'permissions': user_perm.to_dict()})
 
 

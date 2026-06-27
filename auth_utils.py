@@ -1,10 +1,24 @@
 """Authentication utilities and decorators."""
 import re
+import time
 from datetime import datetime, timezone, date
 from functools import wraps
 from flask import request, jsonify, g
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from models import db, User, GlobalPermission, UserPermission
+
+# ── Permission cache (TTL 30s) ──────────────────────────────────────────
+_perm_cache: dict[int, tuple[float, dict]] = {}
+_PERM_CACHE_TTL = 30  # seconds
+
+
+def _invalidate_perm_cache(user_id: int = None):
+    """Clear permission cache for a user or all users."""
+    global _perm_cache
+    if user_id is not None:
+        _perm_cache.pop(user_id, None)
+    else:
+        _perm_cache.clear()
 
 
 def get_current_user() -> User | None:
@@ -45,7 +59,13 @@ def require_admin(f):
 
 
 def get_effective_permission(user: User) -> dict:
-    """Get effective permission for a user (custom override or global default)."""
+    """Get effective permission for a user (custom override or global default).
+    Results are cached per-user with a 30s TTL."""
+    now = time.time()
+    cached = _perm_cache.get(user.id)
+    if cached and now - cached[0] < _PERM_CACHE_TTL:
+        return cached[1]
+
     global_perm = GlobalPermission.query.first()
     if global_perm is None:
         global_perm = GlobalPermission()
@@ -69,6 +89,7 @@ def get_effective_permission(user: User) -> dict:
         if user_perm.rate_limit_per_minute is not None:
             base['rate_limit_per_minute'] = user_perm.rate_limit_per_minute
 
+    _perm_cache[user.id] = (now, base)
     return base
 
 
