@@ -34,6 +34,14 @@ def create_app():
     def index():
         return send_from_directory('static', 'login.html')
 
+    @app.route('/docx/')
+    def serve_docx_index():
+        return send_from_directory('docx', 'index.html')
+
+    @app.route('/docx/<path:filename>')
+    def serve_docx_file(filename):
+        return send_from_directory('docx', filename)
+
     @app.route('/<path:path>')
     def serve_static(path):
         # Don't intercept API routes

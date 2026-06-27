@@ -18,6 +18,7 @@ class User(db.Model):
     must_change_password = db.Column(db.Boolean, default=False)
     daily_chat_count = db.Column(db.Integer, default=0)
     daily_chat_date = db.Column(db.Date, nullable=True)
+    daily_limit = db.Column(db.Integer, nullable=True)  # Per-user daily chat limit (None = use global)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
@@ -41,6 +42,7 @@ class User(db.Model):
             'role': self.role,
             'is_active': self.is_active,
             'must_change_password': self.must_change_password,
+            'daily_limit': self.daily_limit,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 

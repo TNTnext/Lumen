@@ -89,8 +89,11 @@ def check_chat_permission(user: User, model: str) -> tuple[bool, str]:
         user.daily_chat_date = today
         db.session.commit()
 
-    if user.daily_chat_count >= perm['max_daily_chats']:
-        return False, f'已达到每日对话上限（{perm["max_daily_chats"]}次）'
+    # User-level daily_limit overrides global permission max_daily_chats
+    effective_daily_limit = user.daily_limit if user.daily_limit is not None else perm['max_daily_chats']
+
+    if user.daily_chat_count >= effective_daily_limit:
+        return False, f'已达到每日对话上限（{effective_daily_limit}次）'
 
     return True, ''
 

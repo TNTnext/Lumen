@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API 文档 - AI 对话管理平台</title>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-primary: #2F6BFF;
+      --color-primary-container: #D6E4FF;
+      --color-on-primary: #ffffff;
+      --color-background: #F6F8FB;
+      --color-surface-container-lowest: #F0F2F7;
+      --color-surface: #FFFFFF;
+      --color-surface-container: #EAEDF3;
+      --color-surface-container-high: #E4E8EF;
+      --color-surface-container-highest: #DEE3EB;
+      --color-on-surface: #152033;
+      --color-on-surface-variant: #637089;
+      --color-success: #16A37B;
+      --color-error: #ef4444;
+      --color-warning: #f59e0b;
+      --color-outline: #D0D5DD;
+      --color-outline-variant: #E6EAF2;
+      --radius-xs: 4px;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-2xl: 24px;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-float: 0 4px 12px rgba(0,0,0,0.08);
+      --font-sans: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-sans antialiased">
+
+<!-- Header -->
+<header class="bg-surface border-b border-outline-variant sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <i data-lucide="bot" class="w-6 h-6 text-primary"></i>
+      <span class="font-semibold text-lg text-on-surface">AI 对话管理平台</span>
+      <span class="text-xs text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-sm">API 文档</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/" class="text-sm text-on-surface-variant hover:text-primary transition-colors">管理后台</a>
+      <a href="/docx/" class="text-sm text-primary font-medium">API 文档</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-8">
+  <!-- Overview -->
+  <div class="bg-surface rounded-xl shadow-card p-6 mb-6">
+    <h1 class="text-2xl font-bold text-on-surface mb-2">API 接口文档</h1>
+    <p class="text-on-surface-variant">AI 对话管理平台提供完整的 RESTful API，支持用户认证、AI 对话、管理后台等功能。所有接口（除登录/注册外）均需携带 JWT Token 进行身份认证。</p>
+  </div>
+
+  <!-- Auth -->
+  <div class="bg-surface rounded-xl shadow-card p-6 mb-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-4 flex items-center gap-2">
+      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      认证接口
+    </h2>
+
+    <div class="space-y-6">
+      <!-- Register -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/auth/register</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-3">用户注册（需开放注册开关开启）</p>
+        <div class="bg-surface-container rounded-lg p-3 mb-2">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">请求体</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "username": "string (必填)",
+  "password": "string (必填, 最少6位)",
+  "email": "string (可选)",
+  "daily_limit": "number (可选, 每日对话限额)"
+}</pre>
+        </div>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">响应</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "success": true,
+  "message": "注册成功",
+  "token": "jwt_token_string",
+  "user": { "id": 1, "username": "...", ... }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Login -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/auth/login</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-3">用户登录，返回 JWT Token</p>
+        <div class="bg-surface-container rounded-lg p-3 mb-2">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">请求体</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "username": "string (必填)",
+  "password": "string (必填)"
+}</pre>
+        </div>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">响应</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "success": true,
+  "token": "jwt_token_string",
+  "user": { ... },
+  "must_change_password": true
+}</pre>
+        </div>
+      </div>
+
+      <!-- Me -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/auth/me</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取当前用户信息（需认证）</p>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">Headers</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">Authorization: Bearer &lt;token&gt;</pre>
+        </div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/auth/change-password</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-3">修改当前用户密码（需认证）</p>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">请求体</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "old_password": "string",
+  "new_password": "string"
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="bg-surface rounded-xl shadow-card p-6 mb-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-4 flex items-center gap-2">
+      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      对话接口
+    </h2>
+
+    <div class="space-y-6">
+      <!-- Send -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/chat/send</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-3">发送消息并获取 AI 回复（需认证，受每日限额限制）</p>
+        <div class="bg-surface-container rounded-lg p-3 mb-2">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">请求体</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "message": "string (必填)",
+  "conversation_id": "number (可选, 继续已有对话)",
+  "model": "string (可选, 默认 deepseek-chat)"
+}</pre>
+        </div>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">响应</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "success": true,
+  "conversation_id": 1,
+  "message": { "role": "assistant", "content": "..." },
+  "tokens": { "prompt": 100, "completion": 50, "total": 150 }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Conversations -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/chat/conversations</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取当前用户的对话列表（分页，需认证）</p>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">Query 参数</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">page=1&per_page=20</pre>
+        </div>
+      </div>
+
+      <!-- Conversation Detail -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/chat/conversations/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取对话详情及消息记录（需认证，仅限自己的对话）</p>
+      </div>
+
+      <!-- Delete -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-error/10 text-error">DELETE</span>
+          <code class="text-sm font-mono text-primary">/api/chat/conversations/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">删除对话（需认证，仅限自己的对话）</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="bg-surface rounded-xl shadow-card p-6 mb-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-4 flex items-center gap-2">
+      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      管理后台接口（需管理员权限）
+    </h2>
+
+    <div class="space-y-6">
+      <!-- Dashboard -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/dashboard</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">数据看板统计（总用户数、今日活跃、对话趋势等）</p>
+      </div>
+
+      <!-- Users -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/users</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">用户列表（支持搜索、状态筛选、分页）</p>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">Query 参数</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">page=1&per_page=20&search=关键词&status=active|disabled</pre>
+        </div>
+      </div>
+
+      <!-- User CRUD -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-warning/10 text-warning">PUT</span>
+          <code class="text-sm font-mono text-primary">/api/admin/users/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-3">更新用户信息（角色、状态、每日限额）</p>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">请求体</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "role": "admin|user",
+  "is_active": true|false,
+  "daily_limit": 100  // null 表示使用全局默认
+}</pre>
+        </div>
+      </div>
+
+      <!-- Reset Password -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/admin/users/:id/reset-password</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">重置用户密码</p>
+      </div>
+
+      <!-- Permissions -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/permissions/global</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取全局默认权限配置</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-warning/10 text-warning">PUT</span>
+          <code class="text-sm font-mono text-primary">/api/admin/permissions/global</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">更新全局默认权限</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/permissions/user/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取用户单独权限配置（含有效权限合并结果）</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-warning/10 text-warning">PUT</span>
+          <code class="text-sm font-mono text-primary">/api/admin/permissions/user/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">更新用户单独权限</p>
+      </div>
+
+      <!-- Config -->
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/config</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取系统配置（API Key 为掩码）</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/config/api-key</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取真实 API Key（管理员专用，含使用统计）</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-warning/10 text-warning">PUT</span>
+          <code class="text-sm font-mono text-primary">/api/admin/config</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">更新系统配置</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/admin/config/test-connection</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">测试 DeepSeek API 连接</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/admin/config/open-registration</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">获取注册开关状态</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-warning/10 text-warning">PUT</span>
+          <code class="text-sm font-mono text-primary">/api/admin/config/open-registration</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">切换注册开关</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Management -->
+  <div class="bg-surface rounded-xl shadow-card p-6 mb-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-4 flex items-center gap-2">
+      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      用户管理接口（需管理员权限）
+    </h2>
+
+    <div class="space-y-6">
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">GET</span>
+          <code class="text-sm font-mono text-primary">/api/auth/users</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">用户列表（支持搜索、状态筛选、分页）</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-warning/10 text-warning">PUT</span>
+          <code class="text-sm font-mono text-primary">/api/auth/users/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-3">更新用户（角色、状态、邮箱、每日限额）</p>
+        <div class="bg-surface-container rounded-lg p-3">
+          <div class="text-xs font-semibold text-on-surface-variant mb-1">请求体</div>
+          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+  "role": "admin|user",
+  "is_active": true|false,
+  "email": "string",
+  "daily_limit": 100  // null 表示使用全局默认
+}</pre>
+        </div>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-success/10 text-success">POST</span>
+          <code class="text-sm font-mono text-primary">/api/auth/users/:id/reset-password</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">重置用户密码</p>
+      </div>
+
+      <div class="border border-outline-variant rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-error/10 text-error">DELETE</span>
+          <code class="text-sm font-mono text-primary">/api/auth/users/:id</code>
+        </div>
+        <p class="text-sm text-on-surface-variant mb-2">删除用户（不能删除唯一管理员）</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permission System -->
+  <div class="bg-surface rounded-xl shadow-card p-6 mb-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-4 flex items-center gap-2">
+      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      权限系统说明
+    </h2>
+    <div class="space-y-4 text-sm text-on-surface-variant">
+      <div class="bg-surface-container rounded-lg p-4">
+        <h3 class="font-semibold text-on-surface mb-2">两级权限架构</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          <li><strong>全局默认权限</strong>：定义所有新用户的初始能力，包括每日对话次数、可用模型、Token 限制等</li>
+          <li><strong>用户单独权限</strong>：管理员可为特定用户设置自定义权限，覆盖全局默认值</li>
+        </ul>
+      </div>
+      <div class="bg-surface-container rounded-lg p-4">
+        <h3 class="font-semibold text-on-surface mb-2">权限项说明</h3>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-outline-variant">
+              <th class="py-2 pr-4 font-semibold text-on-surface">权限项</th>
+              <th class="py-2 pr-4 font-semibold text-on-surface">说明</th>
+              <th class="py-2 font-semibold text-on-surface">默认值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-4"><code class="text-xs bg-surface-container-high px-1 rounded">max_daily_chats</code></td>
+              <td class="py-2 pr-4">每日对话次数上限</td>
+              <td class="py-2">100</td>
+            </tr>
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-4"><code class="text-xs bg-surface-container-high px-1 rounded">allowed_models</code></td>
+              <td class="py-2 pr-4">允许使用的模型列表</td>
+              <td class="py-2">deepseek-chat, deepseek-reasoner</td>
+            </tr>
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-4"><code class="text-xs bg-surface-container-high px-1 rounded">max_tokens_per_request</code></td>
+              <td class="py-2 pr-4">单次请求最大 Token 数</td>
+              <td class="py-2">4096</td>
+            </tr>
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-4"><code class="text-xs bg-surface-container-high px-1 rounded">rate_limit_per_minute</code></td>
+              <td class="py-2 pr-4">每分钟请求频率限制</td>
+              <td class="py-2">10</td>
+            </tr>
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-4"><code class="text-xs bg-surface-container-high px-1 rounded">allow_export</code></td>
+              <td class="py-2 pr-4">是否允许导出对话</td>
+              <td class="py-2">false</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4"><code class="text-xs bg-surface-container-high px-1 rounded">allow_file_upload</code></td>
+              <td class="py-2 pr-4">是否允许上传文件</td>
+              <td class="py-2">false</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="bg-surface-container rounded-lg p-4">
+        <h3 class="font-semibold text-on-surface mb-2">用户每日限额</h3>
+        <p>每个用户可设置独立的 <code class="text-xs bg-surface-container-high px-1 rounded">daily_limit</code> 字段，控制该用户每日可发送的对话次数。设置为 <code class="text-xs bg-surface-container-high px-1 rounded">null</code> 表示使用全局默认权限中的 <code class="text-xs bg-surface-container-high px-1 rounded">max_daily_chats</code> 值。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Default Account -->
+  <div class="bg-surface rounded-xl shadow-card p-6">
+    <h2 class="text-xl font-semibold text-on-surface mb-4 flex items-center gap-2">
+      <span class="w-2 h-6 bg-primary rounded-full"></span>
+      默认管理员账号
+    </h2>
+    <div class="bg-surface-container rounded-lg p-4">
+      <table class="w-full text-sm">
+        <tr class="border-b border-outline-variant/50">
+          <td class="py-2 pr-4 font-semibold text-on-surface">用户名</td>
+          <td class="py-2 text-on-surface-variant"><code class="text-xs bg-surface-container-high px-1 rounded">admin</code></td>
+        </tr>
+        <tr>
+          <td class="py-2 pr-4 font-semibold text-on-surface">密码</td>
+          <td class="py-2 text-on-surface-variant"><code class="text-xs bg-surface-container-high px-1 rounded">admin123</code></td>
+        </tr>
+      </table>
+      <p class="text-xs text-warning mt-3">首次登录后系统会提示修改密码，建议立即修改为强密码。</p>
+    </div>
+  </div>
+</main>
+
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

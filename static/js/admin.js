@@ -231,6 +231,7 @@ async function renderUsers(main) {
       <td class="px-4 py-3 text-sm text-on-surface-variant">${fmtDate(u.created_at)}</td>
       <td class="px-4 py-3 text-sm text-on-surface">${u.conversation_count || 0}</td>
       <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${u.is_active ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}">${u.is_active ? '启用' : '禁用'}</span></td>
+	      <td class="px-4 py-3 text-sm text-on-surface">${u.daily_limit != null ? u.daily_limit : chr(39) + "默认" + chr(39)}</td>
       <td class="px-4 py-3">
         <div class="flex items-center gap-2">
           <button onclick="editUser(${u.id},'${escHtml(u.username)}','${escHtml(u.email||'')}','${u.role}',${u.is_active})" class="text-primary text-sm hover:underline">编辑</button>
@@ -263,7 +264,7 @@ async function renderUsers(main) {
             <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">状态</th>
             <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">操作</th>
           </tr></thead>
-          <tbody>${rows || '<tr><td colspan="6" class="px-4 py-8 text-center text-sm text-on-surface-variant">暂无用户</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td colspan="7" class="px-4 py-8 text-center text-sm text-on-surface-variant">暂无用户</td></tr>'}</tbody>
         </table>
       </div>
       ${data.pages > 1 ? `<div class="flex items-center justify-between px-4 py-3 border-t border-outline/10"><span class="text-sm text-on-surface-variant">共 ${data.total} 条</span><div class="flex gap-1">${paginationHtml(data.page, data.pages)}</div></div>` : ''}
@@ -284,14 +285,14 @@ async function showAddUserModal() {
       const password = document.getElementById('mu_password').value;
       const role = document.getElementById('mu_role').value;
       if (!username || !password) { showToast('用户名和密码不能为空', 'error'); return; }
-      await API.post('/api/auth/register', { username, email, password });
+      const dlVal = document.getElementById('mu_daily_limit').value; const dl = dlVal ? parseInt(dlVal) : null; await API.post('/api/auth/register', { username, email, password, daily_limit: dl });
       showToast('用户创建成功', 'success');
       closeModal();
       navigateTo('users');
     });
 }
 
-async function editUser(id, username, email, role, isActive) {
+async function editUser(id, username, email, role, isActive, dailyLimit) {
   showModal(`编辑用户: ${username}`, `
     <div class="space-y-3">
       <div><label class="block text-sm font-medium mb-1">邮箱</label><input id="eu_email" type="email" value="${escHtml(email)}" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
@@ -299,10 +300,11 @@ async function editUser(id, username, email, role, isActive) {
       <div class="flex items-center gap-2"><input type="checkbox" id="eu_active" ${isActive?'checked':''} class="rounded" /><label for="eu_active" class="text-sm">启用账号</label></div>
     </div>`,
     async () => {
-      await API.put(`/api/auth/users/${id}`, {
+      const edlVal = document.getElementById('eu_daily_limit').value; const edl = edlVal ? parseInt(edlVal) : null; await API.put(`/api/auth/users/${id}`, {
         email: document.getElementById('eu_email').value.trim(),
         role: document.getElementById('eu_role').value,
         is_active: document.getElementById('eu_active').checked,
+          daily_limit: edl,
       });
       showToast('用户已更新', 'success');
       closeModal();
@@ -428,8 +430,13 @@ function readPermForm(type) {
 //  API Keys Page
 // ═══════════════════════════════════════════
 async function renderApiKeys(main) {
-  const configs = await API.get('/api/admin/config');
+  const [configs, apiKeyData] = await Promise.all([
+    API.get('/api/admin/config'),
+    API.get('/api/admin/config/api-key'),
+  ]);
   const cfg = configs.configs || {};
+  const realApiKey = apiKeyData.api_key || '';
+  const realBaseUrl = apiKeyData.base_url || 'https://api.deepseek.com';
   main.innerHTML = `
     <h1 class="text-2xl font-bold text-on-surface mb-6">API 密钥配置</h1>
     <div class="bg-surface rounded-xl shadow-card p-5 mb-6">
@@ -439,11 +446,11 @@ async function renderApiKeys(main) {
     <div class="bg-surface rounded-xl shadow-card p-5">
       <div class="space-y-4 max-w-xl">
         <div><label class="block text-sm font-medium mb-1">API Key</label>
-          <div class="relative"><input id="apiKey" type="password" value="${escHtml(cfg.deepseek_api_key || '')}" class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <div class="relative"><input id="apiKey" type="password" value="${escHtml(realApiKey)}" class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             <button onclick="toggleApiKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 hover:text-on-surface-variant"><i data-lucide="eye" class="w-4 h-4"></i></button>
           </div>
         </div>
-        <div><label class="block text-sm font-medium mb-1">Base URL</label><input id="baseUrl" type="text" value="${escHtml(cfg.deepseek_base_url || 'https://api.deepseek.com')}" class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+        <div><label class="block text-sm font-medium mb-1">Base URL</label><input id="baseUrl" type="text" value="${escHtml(realBaseUrl)}" class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
         <div class="flex gap-3 pt-2">
           <button onclick="saveApiConfig()" class="bg-primary text-on-primary rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90">保存配置</button>
           <button onclick="testConnection()" id="testBtn" class="border border-outline/30 text-on-surface rounded-lg px-4 py-2 text-sm font-medium hover:bg-surface-container transition-colors flex items-center gap-1"><i data-lucide="plug" class="w-4 h-4"></i>测试连接</button>

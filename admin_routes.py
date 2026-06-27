@@ -201,6 +201,9 @@ def update_user(user_id: int):
         user.role = data['role']
     if 'email' in data:
         user.email = data['email']
+    if 'daily_limit' in data:
+        val = data['daily_limit']
+        user.daily_limit = int(val) if val is not None and val != '' else None
 
     db.session.commit()
     return jsonify({'success': True, 'user': user.to_admin_dict()})
@@ -362,6 +365,43 @@ def get_system_config():
         else:
             result[c.key] = c.value
     return jsonify({'success': True, 'configs': result})
+
+
+@admin_bp.route('/api/admin/config/api-key', methods=['GET'])
+@require_admin
+def get_api_key():
+    """Get the actual API key value (admin only)."""
+    from datetime import datetime, timedelta
+    cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
+    today = datetime.utcnow().date()
+    month_start = today.replace(day=1)
+
+    # Calculate usage stats
+    today_calls = Message.query.filter(
+        Message.role == 'assistant',
+        db.func.date(Message.created_at) == today
+    ).count()
+
+    monthly_calls = Message.query.filter(
+        Message.role == 'assistant',
+        Message.created_at >= month_start
+    ).count()
+
+    monthly_tokens = db.session.query(db.func.coalesce(db.func.sum(Message.tokens), 0)).filter(
+        Message.role == 'assistant',
+        Message.created_at >= month_start
+    ).scalar()
+
+    return jsonify({
+        'success': True,
+        'api_key': cfg.value if cfg else '',
+        'base_url': SystemConfig.query.filter_by(key='deepseek_base_url').first().value if SystemConfig.query.filter_by(key='deepseek_base_url').first() else 'https://api.deepseek.com',
+        'usage': {
+            'today_calls': today_calls,
+            'monthly_calls': monthly_calls,
+            'monthly_tokens': monthly_tokens,
+        }
+    })
 
 
 @admin_bp.route('/api/admin/config', methods=['PUT'])

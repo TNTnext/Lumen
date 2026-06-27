@@ -24,6 +24,7 @@ def register():
     username = (data.get('username') or '').strip()
     password = data.get('password') or ''
     email = (data.get('email') or '').strip() or None
+    daily_limit = data.get('daily_limit')  # None = use default
 
     valid, msg = validate_username(username)
     if not valid:
@@ -40,6 +41,8 @@ def register():
         return jsonify({'error': '邮箱已被注册'}), 409
 
     user = User(username=username, email=email, role='user')
+    if daily_limit is not None:
+        user.daily_limit = int(daily_limit)
     user.set_password(password)
     db.session.add(user)
     db.session.flush()
@@ -183,6 +186,8 @@ def update_user(user_id: int):
             if User.query.filter_by(email=email).first():
                 return jsonify({'error': '邮箱已被使用'}), 409
             user.email = email or None
+    if 'daily_limit' in data:
+        user.daily_limit = data['daily_limit']  # None means use default
 
     db.session.commit()
     return jsonify({'success': True, 'user': user.to_admin_dict()})
