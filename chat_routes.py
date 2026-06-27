@@ -5,17 +5,10 @@ from datetime import datetime, timezone, date
 from flask import Blueprint, request, jsonify, Response, g, stream_with_context
 from models import db, User, Conversation, Message
 from auth_utils import require_auth, get_effective_permission, check_chat_permission
-from ai_service import AIService
+from ai_service import chat_completion, stream_chat_completion
 from config import Config
 
 chat_bp = Blueprint('chat', __name__)
-
-# Global AI service instance
-ai_service = AIService(
-    api_key=Config.DEEPSEEK_API_KEY,
-    base_url=Config.DEEPSEEK_BASE_URL,
-    vendor_id="deepseek",
-)
 
 # Config cache to avoid DB query on every request
 _config_cache = {'ts': 0, 'api_key': '', 'base_url': '', 'vendor_id': 'deepseek'}
@@ -27,7 +20,7 @@ def _load_ai_config():
     global _config_cache
     now = time.time()
     if now - _config_cache['ts'] < _CONFIG_CACHE_TTL:
-        return
+        return _config_cache
     from models import SystemConfig
     api_key_cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
     base_url_cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
@@ -35,16 +28,15 @@ def _load_ai_config():
     api_key = api_key_cfg.value if api_key_cfg else Config.DEEPSEEK_API_KEY
     base_url = base_url_cfg.value if base_url_cfg else Config.DEEPSEEK_BASE_URL
     vendor_id = vendor_cfg.value if vendor_cfg else 'deepseek'
-    if api_key != _config_cache['api_key'] or base_url != _config_cache['base_url'] or vendor_id != _config_cache['vendor_id']:
-        ai_service.update_config(api_key, base_url, vendor_id)
     _config_cache = {'ts': now, 'api_key': api_key, 'base_url': base_url, 'vendor_id': vendor_id}
+    return _config_cache
 
 
 @chat_bp.route('/api/chat/send', methods=['POST'])
 @require_auth
 def send_message():
     """Send a message and get AI response."""
-    _load_ai_config()
+    cfg = _load_ai_config()
 
     data = request.get_json(silent=True)
     if not data:
@@ -92,17 +84,20 @@ def send_message():
     ).all()
     messages = [{'role': m.role, 'content': m.content} for m in history]
 
-    # Call DeepSeek
+    # Call AI
     perm = get_effective_permission(g.current_user)
     max_tokens = perm.get('max_tokens_per_request', 4096)
 
-    result = ai_service.chat(
-        messages=messages,
+    result = chat_completion(
+        vendor_id=cfg['vendor_id'],
         model=model,
+        messages=messages,
+        api_key=cfg['api_key'],
+        base_url=cfg['base_url'],
         max_tokens=max_tokens,
     )
 
-    if not result.get('success'):
+    if 'error' in result:
         db.session.rollback()
         return jsonify({'error': result.get('error', 'AI服务异常')}), 500
 
@@ -111,12 +106,12 @@ def send_message():
         conversation_id=conv.id,
         role='assistant',
         content=result['content'],
-        tokens=result.get('completion_tokens', 0),
+        tokens=result.get('usage', {}).get('completion_tokens', 0),
     )
     db.session.add(assistant_msg)
 
     # Update conversation stats
-    conv.total_tokens = (conv.total_tokens or 0) + result.get('tokens', 0)
+    conv.total_tokens = (conv.total_tokens or 0) + result.get('usage', {}).get('total_tokens', 0)
     conv.message_count = conv.message_count + 2
     conv.model = model
     conv.updated_at = datetime.now(timezone.utc)
@@ -134,7 +129,7 @@ def send_message():
         'success': True,
         'conversation_id': conv.id,
         'message': assistant_msg.to_dict(),
-        'tokens': result.get('tokens', 0),
+        'tokens': result.get('usage', {}).get('total_tokens', 0),
     })
 
 
@@ -142,7 +137,7 @@ def send_message():
 @require_auth
 def send_message_stream():
     """Send a message and get streaming AI response."""
-    _load_ai_config()
+    cfg = _load_ai_config()
 
     data = request.get_json(silent=True)
     if not data:
@@ -197,8 +192,13 @@ def send_message_stream():
     def generate():
         full_content = ''
         try:
-            for chunk in ai_service.chat_stream(
-                messages=messages, model=model, max_tokens=max_tokens
+            for chunk in stream_chat_completion(
+                vendor_id=cfg['vendor_id'],
+                model=model,
+                messages=messages,
+                api_key=cfg['api_key'],
+                base_url=cfg['base_url'],
+                max_tokens=max_tokens,
             ):
                 full_content += chunk
                 yield f'data: {json.dumps({"content": chunk})}\n\n'

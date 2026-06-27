@@ -839,8 +839,8 @@ async function renderEndpoints() {
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-semibold tracking-tight">接口开关</h1>
       <div class="flex gap-2">
-        <button onclick="batchToggleEndpoints(true)" class="px-3 py-1.5 rounded-md border border-border text-xs hover:bg-surface-hover transition-colors">全部开启</button>
-        <button onclick="batchToggleEndpoints(false)" class="px-3 py-1.5 rounded-md border border-border text-xs hover:bg-surface-hover transition-colors">全部关闭</button>
+        <button disabled class="px-3 py-1.5 rounded-md border border-border text-xs text-text-tertiary cursor-not-allowed opacity-50">全部开启</button>
+        <button disabled class="px-3 py-1.5 rounded-md border border-border text-xs text-text-tertiary cursor-not-allowed opacity-50">全部关闭</button>
       </div>
     </div>
     <div class="space-y-4" id="endpoint-groups"></div>
@@ -855,8 +855,11 @@ async function renderEndpoints() {
     div.innerHTML = `
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold">${groupNames[key] || key}</h2>
-        <button onclick="batchToggleGroup('${key}', true)" class="text-xs text-accent hover:underline mr-2">全开</button>
-        <button onclick="batchToggleGroup('${key}', false)" class="text-xs text-text-secondary hover:underline">全关</button>
+        <div class="flex items-center gap-1">
+          <button onclick="batchToggleGroup('${key}', true)" class="px-2 py-0.5 rounded text-xs text-accent hover:bg-accent/10 transition-colors">全开</button>
+          <span class="text-border">|</span>
+          <button onclick="batchToggleGroup('${key}', false)" class="px-2 py-0.5 rounded text-xs text-text-secondary hover:bg-surface-hover transition-colors">全关</button>
+        </div>
       </div>
       <div class="space-y-1">
         ${group.endpoints.map(ep => `

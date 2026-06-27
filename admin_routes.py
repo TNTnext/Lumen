@@ -6,7 +6,7 @@ from models import db, User, Conversation, Message, GlobalPermission, UserPermis
 from auth_utils import require_admin, get_effective_permission, _invalidate_perm_cache
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
-from ai_service import AIService
+from ai_service import chat_completion
 from model_registry import get_vendor_list, get_all_models_flat, get_model_capabilities
 from config import Config
 
@@ -533,11 +533,27 @@ def test_deepseek_connection():
     if not api_key:
         return jsonify({'success': False, 'error': '请先配置 API Key'}), 400
 
-    service = AIService(api_key=api_key, base_url=base_url)
-    result = service.test_connection()
+    # Get vendor from config
+    vendor_cfg = SystemConfig.query.filter_by(key='ai_vendor').first()
+    vendor_id = vendor_cfg.value if vendor_cfg else 'deepseek'
+
+    # Get a valid model for this vendor
+    from model_registry import get_vendor
+    vendor = get_vendor(vendor_id)
+    model = list(vendor['models'].keys())[0] if vendor and vendor.get('models') else 'deepseek-chat'
+
+    result = chat_completion(
+        vendor_id=vendor_id,
+        model=model,
+        messages=[{"role": "user", "content": "Hi"}],
+        api_key=api_key,
+        base_url=base_url,
+        max_tokens=10,
+        timeout=15,
+    )
 
     # Record test call in stats counter (no conversation pollution)
-    if result.get('success'):
+    if 'error' not in result:
         try:
             today = date.today()
             cfg = SystemConfig.query.filter_by(key='test_call_count_today').first()
@@ -558,7 +574,9 @@ def test_deepseek_connection():
         except Exception:
             db.session.rollback()
 
-    return jsonify(result)
+    if 'error' in result:
+        return jsonify({'success': False, 'error': result['error']}), 500
+    return jsonify({'success': True, 'message': '连接成功', 'model': result.get('model', '')})
 
 
 @admin_bp.route('/api/admin/config/open-registration', methods=['GET'])

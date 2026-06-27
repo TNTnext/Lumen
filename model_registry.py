@@ -8,6 +8,8 @@ Each vendor has a list of models with capability flags:
 - tools: function calling / tool use
 - file_upload: file upload support
 - web_search: built-in web search capability
+
+Updated: 2026-06-27 — latest models from official docs.
 """
 
 VENDORS = {
@@ -19,16 +21,28 @@ VENDORS = {
         "chat_path": "/v1/chat/completions",
         "models": {
             "deepseek-chat": {
-                "name": "DeepSeek V3",
+                "name": "DeepSeek V3.2 (非思考)",
                 "capabilities": ["text", "streaming", "tools", "file_upload"],
                 "max_tokens": 8192,
-                "description": "通用对话模型，支持函数调用与文件上传",
+                "description": "通用对话模型，128K 上下文，支持工具调用与文件上传",
             },
             "deepseek-reasoner": {
-                "name": "DeepSeek R1",
+                "name": "DeepSeek V3.2 (思考)",
                 "capabilities": ["text", "streaming", "thinking"],
                 "max_tokens": 8192,
-                "description": "深度推理模型，内置思维链",
+                "description": "深度推理模型，内置思维链，128K 上下文",
+            },
+            "deepseek-v4-flash": {
+                "name": "DeepSeek V4 Flash",
+                "capabilities": ["text", "streaming", "thinking", "tools", "file_upload"],
+                "max_tokens": 8192,
+                "description": "V4 快速模型，1M 上下文，支持思考与工具调用",
+            },
+            "deepseek-v4-pro": {
+                "name": "DeepSeek V4 Pro",
+                "capabilities": ["text", "streaming", "thinking", "tools", "file_upload"],
+                "max_tokens": 8192,
+                "description": "V4 旗舰模型，1M 上下文，384K 最大输出",
             },
         },
     },
@@ -43,7 +57,7 @@ VENDORS = {
                 "name": "GPT-4o",
                 "capabilities": ["text", "vision", "streaming", "tools", "file_upload"],
                 "max_tokens": 16384,
-                "description": "旗舰多模态模型，支持视觉、工具调用",
+                "description": "旗舰多模态模型，支持视觉、工具调用，128K 上下文",
             },
             "gpt-4o-mini": {
                 "name": "GPT-4o Mini",
@@ -51,17 +65,29 @@ VENDORS = {
                 "max_tokens": 16384,
                 "description": "轻量多模态模型，高性价比",
             },
-            "o1": {
-                "name": "o1",
-                "capabilities": ["text", "streaming", "thinking"],
-                "max_tokens": 100000,
-                "description": "深度推理模型，复杂逻辑与数学",
+            "gpt-4.1": {
+                "name": "GPT-4.1",
+                "capabilities": ["text", "vision", "streaming", "tools", "file_upload"],
+                "max_tokens": 32768,
+                "description": "编程优化模型，1M 上下文，指令遵循增强",
             },
-            "o3-mini": {
-                "name": "o3 Mini",
-                "capabilities": ["text", "streaming", "thinking"],
+            "gpt-4.1-mini": {
+                "name": "GPT-4.1 Mini",
+                "capabilities": ["text", "vision", "streaming", "tools", "file_upload"],
+                "max_tokens": 16384,
+                "description": "轻量编程模型，1M 上下文，高性价比",
+            },
+            "o3": {
+                "name": "o3",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "web_search"],
                 "max_tokens": 100000,
-                "description": "轻量推理模型，STEM 优化",
+                "description": "旗舰推理模型，多模态思维链，支持工具与搜索",
+            },
+            "o4-mini": {
+                "name": "o4 Mini",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "web_search"],
+                "max_tokens": 100000,
+                "description": "轻量多模态推理模型，200K 上下文，STEM 优化",
             },
         },
     },
@@ -74,21 +100,21 @@ VENDORS = {
         "models": {
             "claude-sonnet-4-20250514": {
                 "name": "Claude Sonnet 4",
-                "capabilities": ["text", "vision", "streaming", "tools", "file_upload"],
-                "max_tokens": 8192,
-                "description": "高性能均衡模型，支持视觉与工具",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload"],
+                "max_tokens": 64000,
+                "description": "高性能均衡模型，200K 上下文，支持视觉与工具",
             },
-            "claude-3-5-sonnet-20241022": {
-                "name": "Claude 3.5 Sonnet",
-                "capabilities": ["text", "vision", "streaming", "tools", "file_upload"],
-                "max_tokens": 8192,
-                "description": "经典高性能模型",
+            "claude-opus-4-20250514": {
+                "name": "Claude Opus 4",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload"],
+                "max_tokens": 128000,
+                "description": "最强编程模型，500K-1M 上下文，长周期自主任务",
             },
-            "claude-3-haiku-20240307": {
-                "name": "Claude 3 Haiku",
+            "claude-3-5-haiku-20241022": {
+                "name": "Claude 3.5 Haiku",
                 "capabilities": ["text", "vision", "streaming", "tools"],
-                "max_tokens": 4096,
-                "description": "快速轻量模型",
+                "max_tokens": 8192,
+                "description": "最快轻量模型，低延迟高吞吐",
             },
         },
     },
@@ -99,29 +125,35 @@ VENDORS = {
         "auth_prefix": "Bearer ",
         "chat_path": "/v1/chat/completions",
         "models": {
-            "moonshot-v1-auto": {
-                "name": "Moonshot v1 Auto",
-                "capabilities": ["text", "streaming", "tools", "file_upload"],
-                "max_tokens": 4096,
-                "description": "自动选择最佳模型",
+            "kimi-k2.5": {
+                "name": "Kimi K2.5",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "web_search"],
+                "max_tokens": 8192,
+                "description": "最新旗舰，256K 上下文，原生多模态，思考+非思考双模式",
+            },
+            "kimi-k2-0905-preview": {
+                "name": "Kimi K2 (0905)",
+                "capabilities": ["text", "streaming", "thinking", "tools"],
+                "max_tokens": 8192,
+                "description": "K2 增强版，256K 上下文，Agentic Coding 优化",
             },
             "moonshot-v1-8k": {
                 "name": "Moonshot v1 8K",
                 "capabilities": ["text", "streaming", "tools", "file_upload"],
                 "max_tokens": 4096,
-                "description": "8K 上下文模型",
-            },
-            "moonshot-v1-32k": {
-                "name": "Moonshot v1 32K",
-                "capabilities": ["text", "streaming", "tools", "file_upload"],
-                "max_tokens": 4096,
-                "description": "32K 长上下文模型",
+                "description": "8K 上下文文本模型",
             },
             "moonshot-v1-128k": {
                 "name": "Moonshot v1 128K",
                 "capabilities": ["text", "streaming", "tools", "file_upload"],
                 "max_tokens": 4096,
-                "description": "128K 超长上下文模型",
+                "description": "128K 超长上下文文本模型",
+            },
+            "moonshot-v1-32k-vision-preview": {
+                "name": "Moonshot v1 Vision 32K",
+                "capabilities": ["text", "vision", "streaming"],
+                "max_tokens": 4096,
+                "description": "32K 上下文视觉理解模型",
             },
         },
     },
@@ -132,23 +164,35 @@ VENDORS = {
         "auth_prefix": "Bearer ",
         "chat_path": "/api/v3/chat/completions",
         "models": {
-            "doubao-1.5-pro-32k": {
-                "name": "豆包 1.5 Pro 32K",
-                "capabilities": ["text", "streaming", "thinking", "tools", "web_search"],
+            "doubao-seed-2-1-pro-260628": {
+                "name": "Seed 2.1 Pro",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "web_search"],
                 "max_tokens": 4096,
-                "description": "旗舰模型，支持思考与联网搜索",
+                "description": "旗舰 Agent 模型，256K 上下文，编程+多模态+工具调用",
             },
-            "doubao-1.5-lite-32k": {
-                "name": "豆包 1.5 Lite 32K",
-                "capabilities": ["text", "streaming"],
+            "doubao-seed-2-1-turbo-260628": {
+                "name": "Seed 2.1 Turbo",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "web_search"],
                 "max_tokens": 4096,
-                "description": "轻量高效模型",
+                "description": "高性能性价比模型，256K 上下文，规模化生产",
             },
-            "doubao-1.5-vision-pro-32k": {
-                "name": "豆包 视觉 Pro 32K",
-                "capabilities": ["text", "vision", "streaming"],
+            "doubao-seed-2-0-lite-260428": {
+                "name": "Seed 2.0 Lite",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools"],
                 "max_tokens": 4096,
-                "description": "多模态视觉模型",
+                "description": "轻量多模态模型，256K 上下文",
+            },
+            "doubao-seed-1-6-250615": {
+                "name": "Seed 1.6",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools"],
+                "max_tokens": 4096,
+                "description": "经典旗舰，256K 上下文，支持思考与视觉",
+            },
+            "doubao-seed-1-6-flash-250715": {
+                "name": "Seed 1.6 Flash",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools"],
+                "max_tokens": 4096,
+                "description": "极速推理模型，256K 上下文，视觉定位",
             },
         },
     },
@@ -160,28 +204,34 @@ VENDORS = {
         "chat_path": "/compatible-mode/v1/chat/completions",
         "models": {
             "qwen-max": {
-                "name": "通义千问 Max",
-                "capabilities": ["text", "vision", "streaming", "tools", "file_upload", "web_search"],
+                "name": "Qwen3 Max",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload", "web_search"],
                 "max_tokens": 8192,
-                "description": "旗舰模型，全能力覆盖",
+                "description": "旗舰模型，262K 上下文，全能力覆盖",
             },
             "qwen-plus": {
-                "name": "通义千问 Plus",
-                "capabilities": ["text", "vision", "streaming", "tools"],
+                "name": "Qwen3.6 Plus",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload"],
                 "max_tokens": 8192,
-                "description": "性能与成本均衡",
+                "description": "效果速度成本均衡，1M 上下文，多模态",
             },
             "qwen-turbo": {
-                "name": "通义千问 Turbo",
-                "capabilities": ["text", "streaming"],
+                "name": "Qwen3.5 Flash",
+                "capabilities": ["text", "streaming", "tools"],
                 "max_tokens": 4096,
-                "description": "高性价比快速模型",
+                "description": "高性价比快速模型，1M 上下文",
+            },
+            "qwen-coder-plus": {
+                "name": "Qwen Coder Plus",
+                "capabilities": ["text", "streaming", "thinking", "tools", "file_upload"],
+                "max_tokens": 8192,
+                "description": "卓越代码模型，1M 上下文，擅长工具调用",
             },
             "qwen-vl-max": {
-                "name": "通义千问 VL Max",
+                "name": "Qwen VL Max",
                 "capabilities": ["text", "vision", "streaming"],
                 "max_tokens": 4096,
-                "description": "旗舰视觉模型",
+                "description": "旗舰视觉理解模型",
             },
         },
     },
@@ -192,17 +242,17 @@ VENDORS = {
         "auth_prefix": "Bearer ",
         "chat_path": "/v1/chat/completions",
         "models": {
-            "grok-2-1212": {
-                "name": "Grok 2",
-                "capabilities": ["text", "streaming", "tools"],
-                "max_tokens": 4096,
-                "description": "通用对话模型",
+            "grok-4.3": {
+                "name": "Grok 4.3",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "web_search"],
+                "max_tokens": 8192,
+                "description": "最新旗舰，1M 上下文，可调推理强度，工具调用+搜索",
             },
-            "grok-2-vision-1212": {
-                "name": "Grok 2 Vision",
-                "capabilities": ["text", "vision", "streaming"],
-                "max_tokens": 4096,
-                "description": "多模态视觉模型",
+            "grok-build-0.1": {
+                "name": "Grok Build 0.1",
+                "capabilities": ["text", "streaming", "thinking", "tools"],
+                "max_tokens": 8192,
+                "description": "编程专用模型，代码生成与重构",
             },
         },
     },
@@ -213,23 +263,29 @@ VENDORS = {
         "auth_prefix": "Bearer ",
         "chat_path": "/api/paas/v4/chat/completions",
         "models": {
-            "glm-4-plus": {
-                "name": "GLM-4 Plus",
-                "capabilities": ["text", "vision", "streaming", "tools", "file_upload", "web_search"],
+            "glm-5.1": {
+                "name": "GLM-5.1",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload", "web_search"],
                 "max_tokens": 4096,
-                "description": "旗舰模型，全能力覆盖",
+                "description": "最新旗舰，200K 上下文，8小时自主工作，全能力覆盖",
             },
-            "glm-4v-plus": {
-                "name": "GLM-4V Plus",
-                "capabilities": ["text", "vision", "streaming"],
+            "glm-5": {
+                "name": "GLM-5",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload", "web_search"],
                 "max_tokens": 4096,
-                "description": "旗舰视觉模型",
+                "description": "Agentic Engineering 基座，200K 上下文，长程工程任务",
             },
-            "glm-4-flash": {
-                "name": "GLM-4 Flash",
-                "capabilities": ["text", "streaming", "tools", "web_search"],
+            "glm-4.7": {
+                "name": "GLM-4.7",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload"],
                 "max_tokens": 4096,
-                "description": "免费快速模型，支持工具与搜索",
+                "description": "Agentic Coding 专精，200K 上下文，前端审美跃升",
+            },
+            "glm-4.6": {
+                "name": "GLM-4.6",
+                "capabilities": ["text", "vision", "streaming", "thinking", "tools", "file_upload"],
+                "max_tokens": 4096,
+                "description": "均衡型模型，200K 上下文，Token 效率提升 30%",
             },
         },
     },
@@ -240,17 +296,23 @@ VENDORS = {
         "auth_prefix": "Bearer ",
         "chat_path": "/v1/text/chatcompletion_v2",
         "models": {
+            "MiniMax-M2.7": {
+                "name": "MiniMax M2.7",
+                "capabilities": ["text", "streaming", "thinking", "tools", "web_search"],
+                "max_tokens": 4096,
+                "description": "最新 Agent 旗舰，递归自我迭代，SWE-bench Pro 56%",
+            },
+            "MiniMax-M2.5": {
+                "name": "MiniMax M2.5",
+                "capabilities": ["text", "streaming", "thinking", "tools", "web_search"],
+                "max_tokens": 4096,
+                "description": "原生 Agent 生产级模型，SWE-Bench Verified 80.2%",
+            },
             "abab6.5s-chat": {
                 "name": "ABAB 6.5s",
-                "capabilities": ["text", "streaming"],
-                "max_tokens": 4096,
-                "description": "标准对话模型",
-            },
-            "abab6.5t-chat": {
-                "name": "ABAB 6.5t",
                 "capabilities": ["text", "streaming", "tools"],
                 "max_tokens": 4096,
-                "description": "支持函数调用的增强模型",
+                "description": "万亿参数 MoE，245K 上下文，支持函数调用",
             },
         },
     },
