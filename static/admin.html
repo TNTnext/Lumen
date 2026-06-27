@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理后台 - AI 对话管理平台</title>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-primary: #2F6BFF;
+      --color-primary-container: #D6E4FF;
+      --color-on-primary: #ffffff;
+      --color-background: #F6F8FB;
+      --color-surface-container-lowest: #F0F2F7;
+      --color-surface: #FFFFFF;
+      --color-surface-container: #EAEDF3;
+      --color-surface-container-high: #E4E8EF;
+      --color-surface-container-highest: #DEE3EB;
+      --color-on-surface: #152033;
+      --color-on-surface-variant: #637089;
+      --color-success: #16A37B;
+      --color-error: #ef4444;
+      --color-warning: #f59e0b;
+      --color-outline: #E6EAF2;
+      --color-outline-variant: #E6EAF2;
+      --radius-sm: 0.25rem;
+      --radius-md: 0.375rem;
+      --radius-lg: 0.5rem;
+      --radius-xl: 0.75rem;
+      --radius-2xl: 1rem;
+      --radius-full: 9999px;
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-float: 0 10px 25px rgba(0,0,0,0.10);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.15);
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-sans min-h-screen">
+  <!-- Header -->
+  <header class="bg-surface sticky top-0 z-40 h-16 flex items-center justify-between px-6 border-b border-outline/20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+        <i data-lucide="bot" class="w-4 h-4 text-on-primary"></i>
+      </div>
+      <span class="font-bold text-lg text-on-surface">AI 对话管理平台</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="headerUser" class="text-sm font-medium text-on-surface"></span>
+      <button onclick="doLogout()" class="text-sm text-on-surface-variant hover:text-error transition-colors flex items-center gap-1">
+        <i data-lucide="log-out" class="w-4 h-4"></i> 退出
+      </button>
+    </div>
+  </header>
+
+  <div class="flex" style="height: calc(100vh - 4rem)">
+    <!-- Sidebar -->
+    <aside class="w-56 shrink-0 bg-surface border-r border-outline/20 overflow-y-auto flex flex-col">
+      <nav class="p-3 space-y-0.5 flex-1" id="sidebarNav">
+        <a href="#" data-page="dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary/10 text-primary font-medium text-sm nav-item">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>数据看板
+        </a>
+        <a href="#" data-page="conversations" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
+          <i data-lucide="message-square" class="w-4 h-4"></i>对话记录
+        </a>
+        <a href="#" data-page="users" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
+          <i data-lucide="users" class="w-4 h-4"></i>用户管理
+        </a>
+        <a href="#" data-page="permissions" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
+          <i data-lucide="shield" class="w-4 h-4"></i>权限设置
+        </a>
+        <a href="#" data-page="api-keys" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
+          <i data-lucide="key" class="w-4 h-4"></i>API 密钥
+        </a>
+        <a href="#" data-page="settings" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
+          <i data-lucide="settings" class="w-4 h-4"></i>系统设置
+        </a>
+      </nav>
+      <div class="p-3 border-t border-outline/20">
+        <a href="login.html" onclick="localStorage.clear()" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i>退出登录
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0 overflow-y-auto bg-background p-6" id="mainContent">
+      <!-- Pages rendered here by JS -->
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-4 right-4 z-50 hidden bg-surface rounded-lg shadow-float px-4 py-3 text-sm font-medium border border-outline/20 max-w-sm"></div>
+
+  <script src="/static/js/admin.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
