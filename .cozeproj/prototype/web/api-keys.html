@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色 === */
+      --color-primary:              #2F6BFF;
+      --color-primary-container:    #D6E4FF;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面 === */
+      --color-background:                 #F6F8FB;
+      --color-surface-container-lowest:   #F0F2F7;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #EAEDF3;
+      --color-surface-container-high:     #E4E8EF;
+      --color-surface-container-highest:  #DEE3EB;
+      /* === 文字 === */
+      --color-on-surface:           #152033;
+      --color-on-surface-variant:   #637089;
+      /* === 功能色 === */
+      --color-success:  #16A37B;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #E6EAF2;
+      --color-outline-variant:  #E6EAF2;
+      /* === 圆角 === */
+      --radius-sm:   0.25rem;
+      --radius-md:   0.375rem;
+      --radius-lg:   0.5rem;
+      --radius-xl:   0.75rem;
+      --radius-2xl:  1rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 2px 8px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.10);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.15);
+      /* === 字体 === */
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans">
+
+  <!-- @nav:start 导航组件 -->
+  <header class="bg-surface sticky top-0 z-40 h-16 flex items-center justify-between px-6 border-b border-outline/20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+        <i data-lucide="bot" class="w-4 h-4 text-on-primary"></i>
+      </div>
+      <span class="font-bold text-lg text-on-surface">AI 对话管理平台</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center">
+          <span class="text-xs font-semibold text-primary">初</span>
+        </div>
+        <span class="text-sm font-medium text-on-surface">小初</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex" style="height: calc(100vh - 4rem)">
+    <aside class="w-56 shrink-0 bg-surface border-r border-outline/20 overflow-y-auto">
+      <div class="p-3 space-y-0.5">
+        <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>数据看板
+        </a>
+        <a href="conversations.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="message-square" class="w-4 h-4"></i>对话记录
+        </a>
+        <a href="users.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="users" class="w-4 h-4"></i>用户管理
+        </a>
+        <a href="permissions.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="shield" class="w-4 h-4"></i>权限设置
+        </a>
+        <a href="api-keys.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary/10 text-primary font-medium text-sm" aria-current="page">
+          <i data-lucide="key" class="w-4 h-4"></i>API 密钥
+        </a>
+      </div>
+      <div class="absolute bottom-0 left-0 w-56 p-3 border-t border-outline/20 bg-surface">
+        <a href="login.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i>退出登录
+        </a>
+      </div>
+    </aside>
+  <!-- @nav:end 导航组件 -->
+
+  <main class="flex-1 min-w-0 overflow-y-auto bg-background p-6">
+    <!-- @main-content:start -->
+
+    <!-- 页面标题 -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-on-surface">API 密钥配置</h1>
+      <p class="text-sm text-on-surface-variant mt-1">管理 DeepSeek API 密钥与模型偏好，监控调用使用情况</p>
+    </div>
+
+    <!-- 说明卡片 -->
+    <div class="bg-surface rounded-lg shadow-card p-5 mb-6">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <i data-lucide="info" class="w-5 h-5 text-primary"></i>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-base font-semibold text-on-surface mb-2">如何获取 DeepSeek API 密钥</h2>
+          <div class="space-y-2 text-sm text-on-surface-variant">
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">1</span>
+              <span>访问 <a href="https://platform.deepseek.com" target="_blank" class="text-primary font-medium hover:underline">platform.deepseek.com</a> 注册并登录 DeepSeek 开放平台</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">2</span>
+              <span>进入「API Keys」页面，点击「创建 API Key」，复制生成的密钥</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">3</span>
+              <span>将密钥粘贴到下方表单中，点击「测试连接」验证密钥有效性</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">4</span>
+              <span>选择需要使用的模型，点击「保存配置」完成设置</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 密钥配置表单区 -->
+    <div class="bg-surface rounded-lg shadow-card p-6 mb-6">
+      <h2 class="text-base font-semibold text-on-surface mb-5 flex items-center gap-2">
+        <i data-lucide="settings" class="w-4 h-4 text-primary"></i>密钥配置
+      </h2>
+
+      <!-- API Key 输入框 -->
+      <div class="mb-4">
+        <label for="input-api-key" class="block text-sm font-medium text-on-surface mb-1.5">API Key</label>
+        <div class="relative">
+          <input id="input-api-key" type="password" value="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                 class="w-full bg-surface-container border-none rounded-md px-3 py-2 pr-10 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+                 placeholder="请输入 DeepSeek API Key" />
+          <button id="btn-toggle-key" type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-on-surface-variant hover:text-on-surface transition-colors">
+            <i data-lucide="eye-off" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <p class="text-xs text-on-surface-variant mt-1">密钥已加密存储，仅用于 API 调用鉴权</p>
+      </div>
+
+      <!-- API Base URL 输入框 -->
+      <div class="mb-4">
+        <label for="input-base-url" class="block text-sm font-medium text-on-surface mb-1.5">API Base URL</label>
+        <input id="input-base-url" type="text" value="https://api.deepseek.com"
+               class="w-full bg-surface-container border-none rounded-md px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+               placeholder="请输入 API 基础地址" />
+        <p class="text-xs text-on-surface-variant mt-1">默认使用 DeepSeek 官方 API 地址，无需修改</p>
+      </div>
+
+      <!-- 模型选择多选 -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-on-surface mb-1.5">模型选择</label>
+        <div class="grid grid-cols-2 gap-2">
+          <!-- 模型选项-DeepSeek-V3 -->
+          <label class="flex items-center gap-3 p-3 rounded-md bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer">
+            <input id="chk-model-v3" type="checkbox" checked
+                   class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/30" />
+            <div class="flex-1">
+              <span class="text-sm font-medium text-on-surface block">DeepSeek-V3</span>
+              <span class="text-xs text-on-surface-variant">通用大语言模型，综合能力强</span>
+            </div>
+          </label>
+          <!-- 模型选项-DeepSeek-R1 -->
+          <label class="flex items-center gap-3 p-3 rounded-md bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer">
+            <input id="chk-model-r1" type="checkbox" checked
+                   class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/30" />
+            <div class="flex-1">
+              <span class="text-sm font-medium text-on-surface block">DeepSeek-R1</span>
+              <span class="text-xs text-on-surface-variant">深度推理模型，擅长复杂逻辑</span>
+            </div>
+          </label>
+          <!-- 模型选项-DeepSeek-Coder -->
+          <label class="flex items-center gap-3 p-3 rounded-md bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer">
+            <input id="chk-model-coder" type="checkbox"
+                   class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/30" />
+            <div class="flex-1">
+              <span class="text-sm font-medium text-on-surface block">DeepSeek-Coder</span>
+              <span class="text-xs text-on-surface-variant">代码生成与理解专用模型</span>
+            </div>
+          </label>
+          <!-- 模型选项-DeepSeek-Vision -->
+          <label class="flex items-center gap-3 p-3 rounded-md bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer">
+            <input id="chk-model-vision" type="checkbox"
+                   class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary/30" />
+            <div class="flex-1">
+              <span class="text-sm font-medium text-on-surface block">DeepSeek-Vision</span>
+              <span class="text-xs text-on-surface-variant">多模态模型，支持图像理解</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 连接测试按钮 -->
+      <div class="flex items-center gap-3 mb-5">
+        <button id="btn-test-connection" type="button"
+                class="bg-surface-container text-on-surface border-none px-4 py-2 rounded-md text-sm font-medium hover:bg-surface-container-high active:scale-[0.98] transition-all inline-flex items-center gap-2">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i>测试连接
+        </button>
+        <span id="test-result" class="text-sm font-medium hidden"></span>
+      </div>
+
+      <!-- 保存按钮 -->
+      <div class="flex items-center gap-3 pt-4 border-t border-outline/20">
+        <button id="btn-save-config" type="button"
+                class="bg-primary text-on-primary px-5 py-2 rounded-md text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all inline-flex items-center gap-2">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i>保存配置
+        </button>
+        <button id="btn-reset-config" type="button"
+                class="bg-surface-container text-on-surface border-none px-4 py-2 rounded-md text-sm font-medium hover:bg-surface-container-high active:scale-[0.98] transition-all">
+          重置
+        </button>
+      </div>
+    </div>
+
+    <!-- 使用统计区 -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <!-- 统计卡片-本月调用次数 -->
+      <div class="bg-surface rounded-lg shadow-card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <i data-lucide="bar-chart-3" class="w-4.5 h-4.5 text-primary"></i>
+          </div>
+          <span class="text-sm font-medium text-on-surface-variant">本月调用次数</span>
+        </div>
+        <p class="text-2xl font-bold text-on-surface">12,847</p>
+        <p class="text-xs text-success mt-1 flex items-center gap-1">
+          <i data-lucide="trending-up" class="w-3 h-3"></i>较上月增长 18.3%
+        </p>
+      </div>
+
+      <!-- 统计卡片-Token 消耗 -->
+      <div class="bg-surface rounded-lg shadow-card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-warning/10 flex items-center justify-center">
+            <i data-lucide="coins" class="w-4.5 h-4.5 text-warning"></i>
+          </div>
+          <span class="text-sm font-medium text-on-surface-variant">Token 消耗</span>
+        </div>
+        <p class="text-2xl font-bold text-on-surface">2,358,920</p>
+        <p class="text-xs text-on-surface-variant mt-1">本月累计 Token 使用量</p>
+      </div>
+
+      <!-- 统计卡片-剩余额度 -->
+      <div class="bg-surface rounded-lg shadow-card p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center">
+            <i data-lucide="wallet" class="w-4.5 h-4.5 text-success"></i>
+          </div>
+          <span class="text-sm font-medium text-on-surface-variant">剩余额度</span>
+        </div>
+        <p class="text-2xl font-bold text-on-surface">¥ 847.50</p>
+        <p class="text-xs text-on-surface-variant mt-1">有效期至 2025-06-30</p>
+      </div>
+    </div>
+
+    <!-- 调用日志简要列表 -->
+    <div class="bg-surface rounded-lg shadow-card overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-outline/20">
+        <h2 class="text-base font-semibold text-on-surface flex items-center gap-2">
+          <i data-lucide="list" class="w-4 h-4 text-primary"></i>调用日志
+        </h2>
+        <span class="text-xs text-on-surface-variant">最近 10 条记录</span>
+      </div>
+      <!-- 日志表头 -->
+      <div class="grid grid-cols-4 px-5 py-3 bg-surface-container text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
+        <span>时间</span>
+        <span>模型</span>
+        <span>状态</span>
+        <span>Token 消耗</span>
+      </div>
+      <!-- 日志列表 -->
+      <div id="log-list" class="divide-y divide-outline-variant/50">
+        <!-- 日志-1 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 14:32:18</span>
+          <span class="text-sm text-on-surface">DeepSeek-V3</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">1,280</span>
+        </div>
+        <!-- 日志-2 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 14:28:05</span>
+          <span class="text-sm text-on-surface">DeepSeek-R1</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">3,560</span>
+        </div>
+        <!-- 日志-3 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 13:55:42</span>
+          <span class="text-sm text-on-surface">DeepSeek-V3</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-error/15 text-error w-fit">失败</span>
+          <span class="text-sm text-on-surface-variant">0</span>
+        </div>
+        <!-- 日志-4 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 12:10:33</span>
+          <span class="text-sm text-on-surface">DeepSeek-Coder</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">890</span>
+        </div>
+        <!-- 日志-5 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 11:47:21</span>
+          <span class="text-sm text-on-surface">DeepSeek-V3</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">2,104</span>
+        </div>
+        <!-- 日志-6 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 10:32:09</span>
+          <span class="text-sm text-on-surface">DeepSeek-R1</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">5,720</span>
+        </div>
+        <!-- 日志-7 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-20 09:18:44</span>
+          <span class="text-sm text-on-surface">DeepSeek-Vision</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">4,350</span>
+        </div>
+        <!-- 日志-8 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-19 22:05:37</span>
+          <span class="text-sm text-on-surface">DeepSeek-V3</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-error/15 text-error w-fit">超时</span>
+          <span class="text-sm text-on-surface-variant">0</span>
+        </div>
+        <!-- 日志-9 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-19 18:42:15</span>
+          <span class="text-sm text-on-surface">DeepSeek-V3</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">1,960</span>
+        </div>
+        <!-- 日志-10 -->
+        <div class="grid grid-cols-4 px-5 py-3 hover:bg-surface-container/50 transition-colors items-center">
+          <span class="text-sm text-on-surface">2025-01-19 16:20:08</span>
+          <span class="text-sm text-on-surface">DeepSeek-R1</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-success/15 text-success w-fit">成功</span>
+          <span class="text-sm text-on-surface-variant">6,840</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- @main-content:end -->
+  </main>
+  </div>
+
+  <script>
+    $(function() {
+
+      // API Key 显示/隐藏切换
+      $('#btn-toggle-key').on('click', function() {
+        var $input = $('#input-api-key');
+        var $icon = $(this).find('i');
+        if ($input.attr('type') === 'password') {
+          $input.attr('type', 'text');
+          $icon.attr('data-lucide', 'eye');
+        } else {
+          $input.attr('type', 'password');
+          $icon.attr('data-lucide', 'eye-off');
+        }
+        lucide.createIcons();
+      });
+
+      // 测试连接按钮
+      $('#btn-test-connection').on('click', function() {
+        var $btn = $(this);
+        var $result = $('#test-result');
+        var apiKey = $('#input-api-key').val();
+
+        // 模拟测试过程
+        $btn.prop('disabled', true).text('测试中...');
+        $result.removeClass('hidden text-success text-error').addClass('text-on-surface-variant').text('正在检测连接...').show();
+
+        setTimeout(function() {
+          if (apiKey && apiKey.length > 10) {
+            $result.removeClass('text-on-surface-variant text-error').addClass('text-success').html('<i data-lucide="check-circle" class="w-4 h-4 inline-block mr-1"></i>连接成功 — API 密钥有效');
+          } else {
+            $result.removeClass('text-on-surface-variant text-success').addClass('text-error').html('<i data-lucide="x-circle" class="w-4 h-4 inline-block mr-1"></i>连接失败 — 请检查 API Key 是否正确');
+          }
+          lucide.createIcons();
+          $btn.prop('disabled', false).html('<i data-lucide="zap" class="w-3.5 h-3.5"></i>测试连接');
+          lucide.createIcons();
+        }, 1500);
+      });
+
+      // 保存配置按钮
+      $('#btn-save-config').on('click', function() {
+        var apiKey = $('#input-api-key').val();
+        var baseUrl = $('#input-base-url').val();
+        var models = [];
+        if ($('#chk-model-v3').is(':checked')) models.push('DeepSeek-V3');
+        if ($('#chk-model-r1').is(':checked')) models.push('DeepSeek-R1');
+        if ($('#chk-model-coder').is(':checked')) models.push('DeepSeek-Coder');
+        if ($('#chk-model-vision').is(':checked')) models.push('DeepSeek-Vision');
+
+        console.log('保存配置:', { apiKey: '***', baseUrl: baseUrl, models: models });
+
+        // 模拟保存成功提示
+        var $btn = $(this);
+        var originalHtml = $btn.html();
+        $btn.html('<i data-lucide="check" class="w-3.5 h-3.5"></i>已保存');
+        $btn.addClass('bg-success');
+        lucide.createIcons();
+
+        setTimeout(function() {
+          $btn.html(originalHtml);
+          $btn.removeClass('bg-success');
+          lucide.createIcons();
+        }, 2000);
+      });
+
+      // 重置配置按钮
+      $('#btn-reset-config').on('click', function() {
+        $('#input-api-key').val('sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+        $('#input-base-url').val('https://api.deepseek.com');
+        $('#chk-model-v3').prop('checked', true);
+        $('#chk-model-r1').prop('checked', true);
+        $('#chk-model-coder').prop('checked', false);
+        $('#chk-model-vision').prop('checked', false);
+        $('#test-result').addClass('hidden');
+      });
+
+    });
+  </script>
+
+  <script>lucide.createIcons();</script>
+</body>
+
+</html>

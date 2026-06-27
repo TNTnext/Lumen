@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色 === */
+      --color-primary:              #2F6BFF;
+      --color-primary-container:    #D6E4FF;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面 === */
+      --color-background:                 #F6F8FB;
+      --color-surface-container-lowest:   #F0F2F7;
+      --color-surface:                    #FFFFFF;
+      --color-surface-container:          #EAEDF3;
+      --color-surface-container-high:     #E4E8EF;
+      --color-surface-container-highest:  #DEE3EB;
+      /* === 文字 === */
+      --color-on-surface:           #152033;
+      --color-on-surface-variant:   #637089;
+      /* === 功能色 === */
+      --color-success:  #16A37B;
+      --color-error:    #ef4444;
+      --color-warning:  #f59e0b;
+      /* === 边框 === */
+      --color-outline:          #E6EAF2;
+      --color-outline-variant:  #E6EAF2;
+      /* === 圆角 === */
+      --radius-sm:   0.25rem;
+      --radius-md:   0.375rem;
+      --radius-lg:   0.5rem;
+      --radius-xl:   0.75rem;
+      --radius-2xl:  1rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 2px 8px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.10);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.15);
+      /* === 字体 === */
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans">
+
+  <!-- @nav:start 导航组件 -->
+  <header class="bg-surface sticky top-0 z-40 h-16 flex items-center justify-between px-6 border-b border-outline/20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+        <i data-lucide="bot" class="w-4 h-4 text-on-primary"></i>
+      </div>
+      <span class="font-bold text-lg text-on-surface">AI 对话管理平台</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center">
+          <span class="text-xs font-semibold text-primary">初</span>
+        </div>
+        <span class="text-sm font-medium text-on-surface">小初</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex" style="height: calc(100vh - 4rem)">
+    <aside class="w-56 shrink-0 bg-surface border-r border-outline/20 overflow-y-auto">
+      <div class="p-3 space-y-0.5">
+        <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>数据看板
+        </a>
+        <a href="conversations.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="message-square" class="w-4 h-4"></i>对话记录
+        </a>
+        <a href="users.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="users" class="w-4 h-4"></i>用户管理
+        </a>
+        <a href="permissions.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary/10 text-primary font-medium text-sm" aria-current="page">
+          <i data-lucide="shield" class="w-4 h-4"></i>权限设置
+        </a>
+        <a href="api-keys.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="key" class="w-4 h-4"></i>API 密钥
+        </a>
+      </div>
+      <div class="absolute bottom-0 left-0 w-56 p-3 border-t border-outline/20 bg-surface">
+        <a href="login.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i>退出登录
+        </a>
+      </div>
+    </aside>
+  <!-- @nav:end 导航组件 -->
+
+  <!-- @main-content:start -->
+  <main class="flex-1 min-w-0 overflow-y-auto bg-background p-6">
+    <!-- 页面标题 -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-on-surface">权限设置</h1>
+      <p class="text-sm text-on-surface-variant mt-1">管理系统全局默认权限与用户单独权限配置</p>
+    </div>
+
+    <!-- Tab 切换 -->
+    <div class="flex items-center gap-1 bg-surface-container rounded-lg p-1 w-fit mb-6" id="tab-container">
+      <button id="tab-global" class="px-4 py-2 rounded-md text-sm font-medium transition-all bg-surface text-on-surface shadow-card">全局默认权限</button>
+      <button id="tab-user" class="px-4 py-2 rounded-md text-sm font-medium transition-all text-on-surface-variant hover:text-on-surface">用户单独权限</button>
+    </div>
+
+    <!-- ==================== Tab 1：全局默认权限 ==================== -->
+    <div id="panel-global">
+      <div class="bg-surface rounded-xl shadow-card overflow-hidden">
+        <!-- 权限列表头部 -->
+        <div class="px-5 py-4 border-b border-outline/20">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-on-surface">全局默认权限配置</h2>
+              <p class="text-xs text-on-surface-variant mt-0.5">设置新用户注册时的默认权限，修改后仅对新用户生效</p>
+            </div>
+            <button id="btn-reset-global" class="bg-surface-container text-on-surface border-none px-4 py-2 rounded-md text-sm font-medium hover:bg-surface-container-high active:scale-[0.98] transition-all inline-flex items-center gap-2">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>恢复默认
+            </button>
+          </div>
+        </div>
+
+        <!-- 权限列表-对话功能 -->
+        <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-global-chat">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <i data-lucide="message-circle" class="w-4 h-4 text-primary"></i>
+              <span class="text-sm font-semibold text-on-surface">对话功能</span>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户与 AI 进行对话交互，发送消息并接收回复</p>
+          </div>
+          <!-- Toggle 开关 -->
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-global-chat" class="sr-only peer" checked>
+            <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+        </div>
+
+        <!-- 权限列表-文件上传 -->
+        <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-global-upload">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <i data-lucide="upload-cloud" class="w-4 h-4 text-primary"></i>
+              <span class="text-sm font-semibold text-on-surface">文件上传</span>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户上传图片、文档等文件作为对话上下文</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-global-upload" class="sr-only peer" checked>
+            <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+        </div>
+
+        <!-- 权限列表-API调用 -->
+        <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-global-api">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+              <span class="text-sm font-semibold text-on-surface">API 调用</span>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户通过 API 接口调用模型能力，适用于开发者场景</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-global-api" class="sr-only peer">
+            <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+        </div>
+
+        <!-- 权限列表-模型选择 -->
+        <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-global-model">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <i data-lucide="cpu" class="w-4 h-4 text-primary"></i>
+              <span class="text-sm font-semibold text-on-surface">模型选择</span>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户在不同 AI 模型之间切换，选择适合的模型进行对话</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-global-model" class="sr-only peer" checked>
+            <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+        </div>
+
+        <!-- 权限列表-数据导出 -->
+        <div class="px-5 py-4 flex items-center justify-between" id="perm-global-export">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4 text-primary"></i>
+              <span class="text-sm font-semibold text-on-surface">数据导出</span>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户导出对话记录、使用统计等个人数据</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-global-export" class="sr-only peer">
+            <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 保存按钮 -->
+      <div class="mt-6 flex justify-end">
+        <button id="btn-save-global" class="bg-primary text-on-primary px-6 py-2.5 rounded-md text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all inline-flex items-center gap-2">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>保存全局设置
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== Tab 2：用户单独权限 ==================== -->
+    <div id="panel-user" class="hidden">
+      <!-- 用户选择区域 -->
+      <div class="bg-surface rounded-xl shadow-card p-5 mb-6">
+        <div class="flex items-end gap-4">
+          <div class="flex-1 max-w-md">
+            <label class="block text-sm font-medium text-on-surface mb-1.5">选择用户</label>
+            <div class="relative" id="user-search-wrapper">
+              <input
+                type="text"
+                id="input-user-search"
+                class="w-full bg-surface-container border-none rounded-md pl-9 pr-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+                placeholder="搜索用户姓名或邮箱..."
+                autocomplete="off"
+              />
+              <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/50"></i>
+              <!-- 下拉搜索结果 -->
+              <div id="dropdown-user-list" class="hidden absolute top-full left-0 right-0 mt-1 bg-surface rounded-lg shadow-float border border-outline/20 z-20 max-h-48 overflow-y-auto"></div>
+            </div>
+          </div>
+          <div id="selected-user-info" class="hidden flex items-center gap-3 px-4 py-2 bg-surface-container rounded-md">
+            <div class="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center">
+              <span id="selected-user-avatar" class="text-xs font-semibold text-primary">张</span>
+            </div>
+            <div>
+              <span id="selected-user-name" class="text-sm font-medium text-on-surface">张三</span>
+              <span id="selected-user-email" class="text-xs text-on-surface-variant ml-2">zhangsan@example.com</span>
+            </div>
+            <button id="btn-clear-user" class="text-on-surface-variant hover:text-on-surface transition-colors">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 用户权限配置卡片（选择用户后显示） -->
+      <div id="user-permission-panel" class="hidden">
+        <!-- 权限模式选择 -->
+        <div class="bg-surface rounded-xl shadow-card p-5 mb-6">
+          <h2 class="text-base font-semibold text-on-surface mb-4">权限模式</h2>
+          <div class="flex gap-3" id="permission-mode-group">
+            <label class="flex-1 cursor-pointer" id="label-mode-inherit">
+              <input type="radio" name="permission-mode" id="radio-mode-inherit" class="sr-only peer" checked>
+              <div class="p-4 rounded-lg border border-outline/20 peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+                <div class="flex items-center gap-2 mb-1">
+                  <i data-lucide="git-merge" class="w-4 h-4 text-on-surface-variant peer-checked:text-primary"></i>
+                  <span class="text-sm font-semibold text-on-surface">继承全局默认</span>
+                </div>
+                <p class="text-xs text-on-surface-variant">使用全局默认权限配置，当全局设置变更时自动同步</p>
+              </div>
+            </label>
+            <label class="flex-1 cursor-pointer" id="label-mode-custom">
+              <input type="radio" name="permission-mode" id="radio-mode-custom" class="sr-only peer">
+              <div class="p-4 rounded-lg border border-outline/20 peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+                <div class="flex items-center gap-2 mb-1">
+                  <i data-lucide="settings-2" class="w-4 h-4 text-on-surface-variant peer-checked:text-primary"></i>
+                  <span class="text-sm font-semibold text-on-surface">自定义权限</span>
+                </div>
+                <p class="text-xs text-on-surface-variant">为该用户单独配置权限，不受全局默认设置影响</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 自定义权限列表（仅自定义模式下显示） -->
+        <div id="custom-permission-list" class="hidden">
+          <div class="bg-surface rounded-xl shadow-card overflow-hidden">
+            <div class="px-5 py-4 border-b border-outline/20">
+              <h2 class="text-base font-semibold text-on-surface">自定义权限配置</h2>
+              <p class="text-xs text-on-surface-variant mt-0.5">下方标记了与全局默认设置的差异项</p>
+            </div>
+
+            <!-- 自定义权限-对话功能（与全局一致） -->
+            <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-user-chat">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="message-circle" class="w-4 h-4 text-primary"></i>
+                  <span class="text-sm font-semibold text-on-surface">对话功能</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-success/15 text-success" id="badge-chat">与全局一致</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户与 AI 进行对话交互，发送消息并接收回复</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-user-chat" class="sr-only peer" checked>
+                <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+
+            <!-- 自定义权限-文件上传（与全局一致） -->
+            <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-user-upload">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="upload-cloud" class="w-4 h-4 text-primary"></i>
+                  <span class="text-sm font-semibold text-on-surface">文件上传</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-success/15 text-success" id="badge-upload">与全局一致</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户上传图片、文档等文件作为对话上下文</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-user-upload" class="sr-only peer" checked>
+                <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+
+            <!-- 自定义权限-API调用（与全局不一致：全局关闭，用户开启） -->
+            <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10 bg-warning/5" id="perm-user-api">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="terminal" class="w-4 h-4 text-warning"></i>
+                  <span class="text-sm font-semibold text-on-surface">API 调用</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-warning/15 text-warning" id="badge-api">与全局不同</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户通过 API 接口调用模型能力，适用于开发者场景</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-user-api" class="sr-only peer" checked>
+                <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+
+            <!-- 自定义权限-模型选择（与全局一致） -->
+            <div class="px-5 py-4 flex items-center justify-between border-b border-outline/10" id="perm-user-model">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="cpu" class="w-4 h-4 text-primary"></i>
+                  <span class="text-sm font-semibold text-on-surface">模型选择</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-success/15 text-success" id="badge-model">与全局一致</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户在不同 AI 模型之间切换，选择适合的模型进行对话</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-user-model" class="sr-only peer" checked>
+                <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+
+            <!-- 自定义权限-数据导出（与全局不一致：全局关闭，用户关闭） -->
+            <div class="px-5 py-4 flex items-center justify-between" id="perm-user-export">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="download" class="w-4 h-4 text-primary"></i>
+                  <span class="text-sm font-semibold text-on-surface">数据导出</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-success/15 text-success" id="badge-export">与全局一致</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 ml-6">允许用户导出对话记录、使用统计等个人数据</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-user-export" class="sr-only peer">
+                <div class="w-10 h-5 bg-surface-container-high rounded-full peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 保存按钮 -->
+        <div class="mt-6 flex justify-end">
+          <button id="btn-save-user" class="bg-primary text-on-primary px-6 py-2.5 rounded-md text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all inline-flex items-center gap-2">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>保存用户权限
+          </button>
+        </div>
+      </div>
+
+      <!-- 未选择用户时的占位提示 -->
+      <div id="user-placeholder" class="bg-surface rounded-xl shadow-card p-12 flex flex-col items-center justify-center text-center">
+        <div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4">
+          <i data-lucide="user-search" class="w-7 h-7 text-on-surface-variant/40"></i>
+        </div>
+        <h3 class="text-base font-semibold text-on-surface mb-1">选择用户以配置权限</h3>
+        <p class="text-sm text-on-surface-variant max-w-sm">在上方搜索并选择一位用户，即可查看和修改其权限配置</p>
+      </div>
+    </div>
+  </main>
+  <!-- @main-content:end -->
+  </div>
+
+  <script>lucide.createIcons();</script>
+
+  <script>
+    $(function() {
+
+      // ==================== Tab 切换 ====================
+      $('#tab-global').on('click', function() {
+        $('#tab-global').addClass('bg-surface text-on-surface shadow-card').removeClass('text-on-surface-variant hover:text-on-surface');
+        $('#tab-user').addClass('text-on-surface-variant hover:text-on-surface').removeClass('bg-surface text-on-surface shadow-card');
+        $('#panel-global').removeClass('hidden');
+        $('#panel-user').addClass('hidden');
+        lucide.createIcons();
+      });
+
+      $('#tab-user').on('click', function() {
+        $('#tab-user').addClass('bg-surface text-on-surface shadow-card').removeClass('text-on-surface-variant hover:text-on-surface');
+        $('#tab-global').addClass('text-on-surface-variant hover:text-on-surface').removeClass('bg-surface text-on-surface shadow-card');
+        $('#panel-global').addClass('hidden');
+        $('#panel-user').removeClass('hidden');
+        lucide.createIcons();
+      });
+
+      // ==================== 全局默认权限 - 恢复默认 ====================
+      $('#btn-reset-global').on('click', function() {
+        // 恢复默认：对话功能开、文件上传开、API调用关、模型选择开、数据导出关
+        $('#toggle-global-chat').prop('checked', true);
+        $('#toggle-global-upload').prop('checked', true);
+        $('#toggle-global-api').prop('checked', false);
+        $('#toggle-global-model').prop('checked', true);
+        $('#toggle-global-export').prop('checked', false);
+      });
+
+      // ==================== 全局默认权限 - 保存 ====================
+      $('#btn-save-global').on('click', function() {
+        var config = {
+          chat: $('#toggle-global-chat').is(':checked'),
+          upload: $('#toggle-global-upload').is(':checked'),
+          api: $('#toggle-global-api').is(':checked'),
+          model: $('#toggle-global-model').is(':checked'),
+          export: $('#toggle-global-export').is(':checked')
+        };
+        console.log('保存全局默认权限配置:', config);
+        // 后续应实现：调用后端 API 保存全局默认权限配置
+        // 1. POST /api/permissions/global 发送 config 数据
+        // 2. 成功后显示 Toast 提示"全局权限已保存"
+        // 3. 失败则显示错误信息并恢复原状态
+        alert('全局默认权限已保存');
+      });
+
+      // ==================== 用户搜索下拉 ====================
+      // Mock 用户数据
+      var mockUsers = [
+        { id: 1, name: '张三', email: 'zhangsan@example.com' },
+        { id: 2, name: '李四', email: 'lisi@example.com' },
+        { id: 3, name: '王小明', email: 'wangxm@example.com' },
+        { id: 4, name: '陈芳', email: 'chenfang@example.com' },
+        { id: 5, name: '赵大伟', email: 'zhaodawei@example.com' }
+      ];
+
+      var currentSelectedUser = null;
+
+      // 搜索输入 - 显示下拉
+      $('#input-user-search').on('input', function() {
+        var keyword = $(this).val().toLowerCase().trim();
+        var $dropdown = $('#dropdown-user-list');
+        $dropdown.empty();
+
+        if (!keyword) {
+          $dropdown.addClass('hidden');
+          return;
+        }
+
+        var filtered = mockUsers.filter(function(u) {
+          return u.name.toLowerCase().includes(keyword) || u.email.toLowerCase().includes(keyword);
+        });
+
+        if (filtered.length === 0) {
+          $dropdown.append('<div class="px-3 py-2 text-xs text-on-surface-variant">未找到匹配用户</div>');
+        } else {
+          filtered.forEach(function(user) {
+            var $item = $('<div>')
+              .addClass('px-3 py-2.5 flex items-center gap-3 hover:bg-surface-container cursor-pointer transition-colors text-sm')
+              .attr('data-user-id', user.id)
+              .attr('data-user-name', user.name)
+              .attr('data-user-email', user.email)
+              .html(
+                '<div class="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center">' +
+                '<span class="text-xs font-semibold text-primary">' + user.name.charAt(0) + '</span>' +
+                '</div>' +
+                '<div>' +
+                '<div class="text-sm font-medium text-on-surface">' + user.name + '</div>' +
+                '<div class="text-xs text-on-surface-variant">' + user.email + '</div>' +
+                '</div>'
+              );
+            $dropdown.append($item);
+          });
+        }
+
+        $dropdown.removeClass('hidden');
+      });
+
+      // 点击下拉项 - 选中用户
+      $('#dropdown-user-list').on('click', 'div[data-user-id]', function() {
+        var userId = $(this).data('user-id');
+        var userName = $(this).data('user-name');
+        var userEmail = $(this).data('user-email');
+
+        currentSelectedUser = { id: userId, name: userName, email: userEmail };
+
+        // 更新选中用户显示
+        $('#selected-user-avatar').text(userName.charAt(0));
+        $('#selected-user-name').text(userName);
+        $('#selected-user-email').text(userEmail);
+        $('#selected-user-info').removeClass('hidden');
+        $('#input-user-search').val('');
+
+        // 隐藏下拉
+        $('#dropdown-user-list').addClass('hidden');
+
+        // 显示权限配置面板，隐藏占位
+        $('#user-placeholder').addClass('hidden');
+        $('#user-permission-panel').removeClass('hidden');
+
+        // 重置为继承模式
+        $('#radio-mode-inherit').prop('checked', true);
+        $('#custom-permission-list').addClass('hidden');
+
+        // 根据选中用户加载其权限配置
+        loadUserPermissions(userId);
+      });
+
+      // 点击输入框外部关闭下拉
+      $(document).on('click', function(e) {
+        if (!$(e.target).closest('#user-search-wrapper').length) {
+          $('#dropdown-user-list').addClass('hidden');
+        }
+      });
+
+      // 清除选中用户
+      $('#btn-clear-user').on('click', function() {
+        currentSelectedUser = null;
+        $('#selected-user-info').addClass('hidden');
+        $('#user-permission-panel').addClass('hidden');
+        $('#user-placeholder').removeClass('hidden');
+        $('#input-user-search').val('');
+      });
+
+      // ==================== 权限模式切换 ====================
+      $('input[name="permission-mode"]').on('change', function() {
+        if ($('#radio-mode-custom').is(':checked')) {
+          $('#custom-permission-list').removeClass('hidden');
+        } else {
+          $('#custom-permission-list').addClass('hidden');
+        }
+        lucide.createIcons();
+      });
+
+      // ==================== 自定义权限开关 - 差异标记更新 ====================
+      // 全局默认值（与 Tab1 初始状态一致）
+      var globalDefaults = {
+        chat: true,
+        upload: true,
+        api: false,
+        model: true,
+        export: false
+      };
+
+      // 监听每个自定义权限开关变化，更新差异标记
+      var permKeys = ['chat', 'upload', 'api', 'model', 'export'];
+      permKeys.forEach(function(key) {
+        $('#toggle-user-' + key).on('change', function() {
+          updateDiffBadge(key);
+        });
+      });
+
+      function updateDiffBadge(key) {
+        var userVal = $('#toggle-user-' + key).is(':checked');
+        var globalVal = globalDefaults[key];
+        var $badge = $('#badge-' + key);
+        var $row = $('#perm-user-' + key);
+
+        if (userVal === globalVal) {
+          $badge.removeClass('bg-warning/15 text-warning').addClass('bg-success/15 text-success').text('与全局一致');
+          $row.removeClass('bg-warning/5');
+          $row.find('i').eq(0).removeClass('text-warning').addClass('text-primary');
+        } else {
+          $badge.removeClass('bg-success/15 text-success').addClass('bg-warning/15 text-warning').text('与全局不同');
+          $row.addClass('bg-warning/5');
+          $row.find('i').eq(0).removeClass('text-primary').addClass('text-warning');
+        }
+      }
+
+      // 加载用户权限（Mock：不同用户有不同配置）
+      function loadUserPermissions(userId) {
+        // Mock 用户权限数据
+        var userPerms = {
+          1: { chat: true, upload: true, api: true, model: true, export: false },   // 张三：API 与全局不同
+          2: { chat: true, upload: false, api: false, model: true, export: false },  // 李四：上传与全局不同
+          3: { chat: true, upload: true, api: false, model: false, export: true },   // 王小明：模型和数据导出与全局不同
+          4: { chat: true, upload: true, api: false, model: true, export: false },   // 陈芳：全部与全局一致
+          5: { chat: false, upload: false, api: true, model: false, export: true }   // 赵大伟：多项与全局不同
+        };
+
+        var perms = userPerms[userId] || userPerms[1];
+
+        // 设置开关状态
+        $('#toggle-user-chat').prop('checked', perms.chat);
+        $('#toggle-user-upload').prop('checked', perms.upload);
+        $('#toggle-user-api').prop('checked', perms.api);
+        $('#toggle-user-model').prop('checked', perms.model);
+        $('#toggle-user-export').prop('checked', perms.export);
+
+        // 更新所有差异标记
+        permKeys.forEach(function(key) {
+          updateDiffBadge(key);
+        });
+      }
+
+      // ==================== 用户权限 - 保存 ====================
+      $('#btn-save-user').on('click', function() {
+        if (!currentSelectedUser) return;
+
+        var mode = $('input[name="permission-mode"]:checked').val();
+        var config = {
+          userId: currentSelectedUser.id,
+          mode: mode,
+          permissions: {
+            chat: $('#toggle-user-chat').is(':checked'),
+            upload: $('#toggle-user-upload').is(':checked'),
+            api: $('#toggle-user-api').is(':checked'),
+            model: $('#toggle-user-model').is(':checked'),
+            export: $('#toggle-user-export').is(':checked')
+          }
+        };
+
+        console.log('保存用户权限配置:', config);
+        // 后续应实现：调用后端 API 保存用户权限配置
+        // 1. PUT /api/permissions/user/{userId} 发送 config 数据
+        // 2. 成功后显示 Toast 提示"用户权限已保存"
+        // 3. 失败则显示错误信息
+        alert('用户 ' + currentSelectedUser.name + ' 的权限已保存');
+      });
+
+    });
+  </script>
+</body>
+
+</html>
