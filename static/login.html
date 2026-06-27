@@ -3,78 +3,60 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>登录 - AI 对话管理平台</title>
+  <title>登录</title>
   <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
   <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
   <style type="text/tailwindcss">
     @theme {
-      --color-primary: #2F6BFF;
-      --color-primary-container: #D6E4FF;
-      --color-on-primary: #ffffff;
-      --color-background: #F6F8FB;
-      --color-surface-container-lowest: #F0F2F7;
-      --color-surface: #FFFFFF;
-      --color-surface-container: #EAEDF3;
-      --color-surface-container-high: #E4E8EF;
-      --color-surface-container-highest: #DEE3EB;
-      --color-on-surface: #152033;
-      --color-on-surface-variant: #637089;
-      --color-success: #16A37B;
-      --color-error: #ef4444;
-      --color-warning: #f59e0b;
-      --color-outline: #E6EAF2;
-      --color-outline-variant: #E6EAF2;
-      --radius-sm: 0.25rem;
-      --radius-md: 0.375rem;
-      --radius-lg: 0.5rem;
-      --radius-xl: 0.75rem;
-      --radius-2xl: 1rem;
-      --radius-full: 9999px;
-      --shadow-card: 0 2px 8px rgba(0,0,0,0.06);
-      --shadow-float: 0 10px 25px rgba(0,0,0,0.10);
-      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.15);
-      --font-sans: "Inter", system-ui, sans-serif;
+      --color-bg: #f5f5f7;
+      --color-surface: #ffffff;
+      --color-border: #e5e5ea;
+      --color-text: #1d1d1f;
+      --color-text-secondary: #86868b;
+      --color-accent: #0071e3;
+      --color-accent-hover: #0077ed;
+      --color-danger: #ff3b30;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
     }
   </style>
 </head>
-<body class="bg-background text-on-surface font-sans min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
-    <div class="bg-surface rounded-2xl shadow-card p-8">
-      <div class="text-center mb-8">
-        <div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
-          <i data-lucide="bot" class="w-6 h-6 text-on-primary"></i>
-        </div>
-        <h1 class="text-2xl font-bold text-on-surface">AI 对话管理平台</h1>
-        <p class="text-sm text-on-surface-variant mt-1">登录您的账号以继续</p>
-      </div>
+<body class="bg-bg text-text font-sans min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <h1 class="text-xl font-semibold tracking-tight">AI 对话管理平台</h1>
+      <p class="text-sm text-text-secondary mt-1">登录以继续</p>
+    </div>
 
+    <div class="bg-surface rounded-xl border border-border p-6">
       <form id="loginForm" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-on-surface mb-1.5">用户名</label>
+          <label class="block text-xs font-medium text-text-secondary mb-1.5">用户名</label>
           <input type="text" id="username" placeholder="admin"
-            class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+            class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-on-surface mb-1.5">密码</label>
+          <label class="block text-xs font-medium text-text-secondary mb-1.5">密码</label>
           <div class="relative">
             <input type="password" id="password" placeholder="admin123"
-              class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 pr-10 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
-            <button type="button" id="togglePwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 hover:text-on-surface-variant transition-colors">
+              class="w-full px-3 py-2 pr-10 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" />
+            <button type="button" id="togglePwd" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text transition-colors">
               <i data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
-        <div id="errorMsg" class="text-sm text-error hidden"></div>
+        <div id="errorMsg" class="text-sm text-danger hidden"></div>
         <button type="submit"
-          class="w-full bg-primary text-on-primary rounded-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-          <i data-lucide="log-in" class="w-4 h-4"></i> 登录
+          class="w-full py-2.5 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">
+          登录
         </button>
       </form>
-
-      <div class="mt-6 pt-4 border-t border-outline/20 text-center">
-        <p class="text-xs text-on-surface-variant">默认管理员: admin / admin123</p>
-      </div>
     </div>
+
+    <p class="text-center text-xs text-text-secondary mt-4">默认管理员: admin / admin123</p>
   </div>
 
   <script>
@@ -108,14 +90,13 @@
           body: JSON.stringify({ username, password }),
         });
         const data = await resp.json();
-        if (!resp.ok) {
+        if (!resp.ok || !data.success) {
           errorMsg.textContent = data.error || '登录失败';
           errorMsg.classList.remove('hidden');
           return;
         }
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        window.location.href = '/admin.html';
+        localStorage.setItem('admin_token', data.token);
+        window.location.href = '/admin';
       } catch (err) {
         errorMsg.textContent = '网络错误，请稍后重试';
         errorMsg.classList.remove('hidden');

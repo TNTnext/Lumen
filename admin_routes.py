@@ -4,7 +4,10 @@ from flask import Blueprint, request, jsonify, g
 from sqlalchemy import func
 from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig
 from auth_utils import require_admin, get_effective_permission
-from deepseek_service import DeepSeekService
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.security import generate_password_hash
+from ai_service import AIService
+from model_registry import get_vendor_list, get_all_models_flat, get_model_capabilities
 from config import Config
 
 admin_bp = Blueprint('admin', __name__)
@@ -530,7 +533,7 @@ def test_deepseek_connection():
     if not api_key:
         return jsonify({'success': False, 'error': '请先配置 API Key'}), 400
 
-    service = DeepSeekService(api_key=api_key, base_url=base_url)
+    service = AIService(api_key=api_key, base_url=base_url)
     result = service.test_connection()
 
     # Record test call in stats counter (no conversation pollution)
@@ -655,6 +658,127 @@ def batch_update_endpoints():
     app_module._load_endpoint_cache()
 
     return jsonify({'success': True, 'updated': count})
+
+
+# ─── Vendor & Model Registry ──────────────────────────────
+
+@admin_bp.route('/api/admin/vendors', methods=['GET'])
+@require_admin
+def list_vendors():
+    """Return all supported vendors with their models and capabilities."""
+    return jsonify({'success': True, 'vendors': get_vendor_list()})
+
+
+@admin_bp.route('/api/admin/models', methods=['GET'])
+@require_admin
+def list_models():
+    """Return flat list of all models with capabilities."""
+    return jsonify({'success': True, 'models': get_all_models_flat()})
+
+
+# ─── Onboarding ───────────────────────────────────────────
+
+@admin_bp.route('/api/admin/onboarding/status', methods=['GET'])
+@jwt_required()
+def onboarding_status():
+    """Check if current admin needs onboarding."""
+    uid = get_jwt_identity()
+    u = User.query.filter_by(id=int(uid)).first()
+    if not u or u.role != 'admin':
+        return jsonify({'success': True, 'needs_onboarding': False})
+    cfg = SystemConfig.query.filter_by(key='onboarding_completed').first()
+    needs = not cfg or cfg.value != 'true'
+    return jsonify({'success': True, 'needs_onboarding': needs, 'must_change_password': u.must_change_password})
+
+
+@admin_bp.route('/api/admin/onboarding/complete', methods=['POST'])
+@jwt_required()
+def complete_onboarding():
+    """Complete onboarding with initial setup."""
+    uid = get_jwt_identity()
+    u = User.query.filter_by(id=int(uid)).first()
+    if not u or u.role != 'admin':
+        return jsonify({'success': False, 'error': '仅管理员可操作'}), 403
+
+    data = request.get_json(silent=True) or {}
+
+    # Update admin password if provided
+    new_password = data.get('new_password')
+    if new_password:
+        u.password_hash = generate_password_hash(new_password)
+        u.must_change_password = False
+
+    # Update admin email
+    new_email = data.get('email')
+    if new_email:
+        u.email = new_email
+
+    # AI vendor config
+    vendor_id = data.get('vendor_id')
+    if vendor_id:
+        _upsert_config('ai_vendor', vendor_id)
+    api_key = data.get('api_key')
+    if api_key:
+        _upsert_config('deepseek_api_key', api_key, encrypt=True)
+    base_url = data.get('base_url')
+    if base_url:
+        _upsert_config('deepseek_base_url', base_url)
+    model = data.get('model')
+    if model:
+        _upsert_config('deepseek_model', model)
+
+    # Global permissions
+    perms = data.get('permissions', {})
+    gp = GlobalPermission.query.first()
+    if gp:
+        if 'max_daily_chats' in perms:
+            gp.max_daily_chats = perms['max_daily_chats']
+        if 'max_tokens_per_request' in perms:
+            gp.max_tokens_per_request = perms['max_tokens_per_request']
+        if 'rate_limit_per_minute' in perms:
+            gp.rate_limit_per_minute = perms['rate_limit_per_minute']
+        if 'allowed_models' in perms:
+            gp.allowed_models = perms['allowed_models']
+        if 'allow_export' in perms:
+            gp.allow_export = perms['allow_export']
+        if 'allow_file_upload' in perms:
+            gp.allow_file_upload = perms['allow_file_upload']
+
+    # System settings
+    if 'open_registration' in data:
+        _upsert_config('open_registration', str(data['open_registration']).lower())
+    if 'admin_can_view_content' in data:
+        _upsert_config('admin_can_view_content', str(data['admin_can_view_content']).lower())
+    if 'conversation_retention_days' in data:
+        _upsert_config('conversation_retention_days', str(data['conversation_retention_days']))
+
+    # Endpoint toggles
+    from models import EndpointToggle
+    endpoint_toggles = data.get('endpoint_toggles', {})
+    for group, enabled in endpoint_toggles.items():
+        EndpointToggle.query.filter_by(group=group).update({'enabled': bool(enabled)})
+
+    # Mark onboarding complete
+    _upsert_config('onboarding_completed', 'true')
+
+    db.session.commit()
+
+    # Refresh endpoint cache
+    import app as app_module
+    app_module._load_endpoint_cache()
+
+    return jsonify({'success': True, 'message': '初始化完成'})
+
+
+def _upsert_config(key, value, encrypt=False):
+    """Insert or update a system config."""
+    cfg = SystemConfig.query.filter_by(key=key).first()
+    if cfg:
+        cfg.value = value
+        if encrypt:
+            cfg.is_encrypted = True
+    else:
+        db.session.add(SystemConfig(key=key, value=value, is_encrypted=encrypt))
 
 
 # ─── System Reset ─────────────────────────────────────────

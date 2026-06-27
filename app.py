@@ -76,10 +76,21 @@ def create_app():
         db.create_all()
         _init_default_data()
 
-    # Serve frontend
+    # ── Frontend routes ──
     @app.route('/')
     def index():
+        """Root returns 404 — use /admin or /login."""
+        return jsonify({'error': 'Not Found', 'hint': '访问 /admin 管理后台 或 /login 登录'}), 404
+
+    @app.route('/login')
+    @app.route('/login/')
+    def serve_login():
         return send_from_directory('static', 'login.html')
+
+    @app.route('/admin')
+    @app.route('/admin/')
+    def serve_admin():
+        return send_from_directory('static', 'admin.html')
 
     @app.route('/docx')
     @app.route('/docx/')
@@ -92,12 +103,11 @@ def create_app():
 
     @app.route('/<path:path>')
     def serve_static(path):
-        # Don't intercept API routes
         if path.startswith('api/'):
             return jsonify({'error': 'Not found'}), 404
         if os.path.exists(os.path.join('static', path)):
             return send_from_directory('static', path)
-        return send_from_directory('static', 'login.html')
+        return jsonify({'error': 'Not Found'}), 404
 
     # Health check
     @app.route('/api/health')

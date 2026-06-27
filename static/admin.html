@@ -3,103 +3,67 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>管理后台 - AI 对话管理平台</title>
+  <title>管理后台</title>
   <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
   <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
   <style type="text/tailwindcss">
     @theme {
-      --color-primary: #2F6BFF;
-      --color-primary-container: #D6E4FF;
-      --color-on-primary: #ffffff;
-      --color-background: #F6F8FB;
-      --color-surface-container-lowest: #F0F2F7;
-      --color-surface: #FFFFFF;
-      --color-surface-container: #EAEDF3;
-      --color-surface-container-high: #E4E8EF;
-      --color-surface-container-highest: #DEE3EB;
-      --color-on-surface: #152033;
-      --color-on-surface-variant: #637089;
-      --color-success: #16A37B;
-      --color-error: #ef4444;
-      --color-warning: #f59e0b;
-      --color-outline: #E6EAF2;
-      --color-outline-variant: #E6EAF2;
-      --radius-sm: 0.25rem;
-      --radius-md: 0.375rem;
-      --radius-lg: 0.5rem;
-      --radius-xl: 0.75rem;
-      --radius-2xl: 1rem;
-      --radius-full: 9999px;
-      --shadow-card: 0 2px 8px rgba(0,0,0,0.06);
-      --shadow-float: 0 10px 25px rgba(0,0,0,0.10);
-      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.15);
-      --font-sans: "Inter", system-ui, sans-serif;
+      --color-bg: #f5f5f7;
+      --color-surface: #ffffff;
+      --color-surface-hover: #f0f0f2;
+      --color-border: #e5e5ea;
+      --color-text: #1d1d1f;
+      --color-text-secondary: #86868b;
+      --color-text-tertiary: #aeaeb2;
+      --color-accent: #0071e3;
+      --color-accent-hover: #0077ed;
+      --color-danger: #ff3b30;
+      --color-success: #34c759;
+      --color-warning: #ff9500;
+      --color-sidebar: #f5f5f7;
+      --color-sidebar-hover: #e8e8ed;
+      --color-sidebar-active: #e0e0e5;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      --font-mono: "SF Mono", "Menlo", "Monaco", monospace;
     }
   </style>
 </head>
-<body class="bg-background text-on-surface font-sans min-h-screen">
-  <!-- Header -->
-  <header class="bg-surface sticky top-0 z-40 h-16 flex items-center justify-between px-6 border-b border-outline/20">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-        <i data-lucide="bot" class="w-4 h-4 text-on-primary"></i>
-      </div>
-      <span class="font-bold text-lg text-on-surface">AI 对话管理平台</span>
-    </div>
-    <div class="flex items-center gap-4">
-      <span id="headerUser" class="text-sm font-medium text-on-surface"></span>
-      <button onclick="doLogout()" class="text-sm text-on-surface-variant hover:text-error transition-colors flex items-center gap-1">
-        <i data-lucide="log-out" class="w-4 h-4"></i> 退出
-      </button>
-    </div>
-  </header>
-
-  <div class="flex" style="height: calc(100vh - 4rem)">
+<body class="bg-bg text-text font-sans antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-52 shrink-0 bg-surface border-r border-outline/20 overflow-y-auto flex flex-col">
-      <nav class="p-3 space-y-0.5 flex-1" id="sidebarNav">
-        <a href="#" data-page="dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary/10 text-primary font-medium text-sm nav-item">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>数据看板
-        </a>
-        <a href="#" data-page="conversations" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
-          <i data-lucide="message-square" class="w-4 h-4"></i>对话记录
-        </a>
-        <a href="#" data-page="users" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
-          <i data-lucide="users" class="w-4 h-4"></i>用户管理
-        </a>
-        <a href="#" data-page="permissions" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
-          <i data-lucide="shield" class="w-4 h-4"></i>权限设置
-        </a>
-        <a href="#" data-page="api-keys" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
-          <i data-lucide="key" class="w-4 h-4"></i>API 密钥
-        </a>
-        <a href="#" data-page="settings" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
-          <i data-lucide="settings" class="w-4 h-4"></i>系统设置
-        </a>
-        <a href="#" data-page="endpoints" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors nav-item">
-          <i data-lucide="toggle-right" class="w-4 h-4"></i>接口开关
-        </a>
-      </nav>
-      <div class="p-3 border-t border-outline/20 space-y-0.5">
-        <a href="/docx" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
-          <i data-lucide="file-text" class="w-4 h-4"></i>API 文档
-        </a>
-        <a href="login.html" onclick="localStorage.clear()" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-medium text-sm transition-colors">
-          <i data-lucide="log-out" class="w-4 h-4"></i>退出登录
-        </a>
+    <aside id="sidebar" class="w-56 bg-sidebar border-r border-border flex flex-col shrink-0">
+      <div class="px-5 py-5">
+        <span class="text-sm font-semibold tracking-tight text-text">AI 对话管理平台</span>
+      </div>
+      <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto" id="sidebar-nav"></nav>
+      <div class="px-3 py-3 border-t border-border">
+        <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-text-secondary">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          <span id="sidebar-user" class="truncate">admin</span>
+        </div>
+        <button onclick="doLogout()" class="w-full flex items-center gap-2.5 px-2.5 py-2 mt-0.5 rounded-md text-sm text-text-secondary hover:bg-sidebar-hover transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span>退出登录</span>
+        </button>
       </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 min-w-0 overflow-y-auto bg-background p-6" id="mainContent">
-      <!-- Pages rendered here by JS -->
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto" id="main-content">
+      <div class="max-w-5xl mx-auto px-8 py-8" id="page-container"></div>
     </main>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="fixed top-4 right-4 z-50 hidden bg-surface rounded-lg shadow-float px-4 py-3 text-sm font-medium border border-outline/20 max-w-sm"></div>
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg opacity-0 transition-all duration-300 pointer-events-none z-50"></div>
 
   <script src="/static/js/admin.js"></script>
-  <script>lucide.createIcons();</script>
 </body>
 </html>

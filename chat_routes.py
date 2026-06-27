@@ -5,24 +5,25 @@ from datetime import datetime, timezone, date
 from flask import Blueprint, request, jsonify, Response, g, stream_with_context
 from models import db, User, Conversation, Message
 from auth_utils import require_auth, get_effective_permission, check_chat_permission
-from deepseek_service import DeepSeekService
+from ai_service import AIService
 from config import Config
 
 chat_bp = Blueprint('chat', __name__)
 
-# Global DeepSeek service instance
-deepseek_service = DeepSeekService(
+# Global AI service instance
+ai_service = AIService(
     api_key=Config.DEEPSEEK_API_KEY,
     base_url=Config.DEEPSEEK_BASE_URL,
+    vendor_id="deepseek",
 )
 
 # Config cache to avoid DB query on every request
-_config_cache = {'ts': 0, 'api_key': '', 'base_url': ''}
+_config_cache = {'ts': 0, 'api_key': '', 'base_url': '', 'vendor_id': 'deepseek'}
 _CONFIG_CACHE_TTL = 30  # seconds
 
 
-def _load_deepseek_config():
-    """Load DeepSeek config from system settings (with cache)."""
+def _load_ai_config():
+    """Load AI config from system settings (with cache)."""
     global _config_cache
     now = time.time()
     if now - _config_cache['ts'] < _CONFIG_CACHE_TTL:
@@ -30,18 +31,20 @@ def _load_deepseek_config():
     from models import SystemConfig
     api_key_cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
     base_url_cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
+    vendor_cfg = SystemConfig.query.filter_by(key='ai_vendor').first()
     api_key = api_key_cfg.value if api_key_cfg else Config.DEEPSEEK_API_KEY
     base_url = base_url_cfg.value if base_url_cfg else Config.DEEPSEEK_BASE_URL
-    if api_key != _config_cache['api_key'] or base_url != _config_cache['base_url']:
-        deepseek_service.update_config(api_key, base_url)
-    _config_cache = {'ts': now, 'api_key': api_key, 'base_url': base_url}
+    vendor_id = vendor_cfg.value if vendor_cfg else 'deepseek'
+    if api_key != _config_cache['api_key'] or base_url != _config_cache['base_url'] or vendor_id != _config_cache['vendor_id']:
+        ai_service.update_config(api_key, base_url, vendor_id)
+    _config_cache = {'ts': now, 'api_key': api_key, 'base_url': base_url, 'vendor_id': vendor_id}
 
 
 @chat_bp.route('/api/chat/send', methods=['POST'])
 @require_auth
 def send_message():
     """Send a message and get AI response."""
-    _load_deepseek_config()
+    _load_ai_config()
 
     data = request.get_json(silent=True)
     if not data:
@@ -93,7 +96,7 @@ def send_message():
     perm = get_effective_permission(g.current_user)
     max_tokens = perm.get('max_tokens_per_request', 4096)
 
-    result = deepseek_service.chat(
+    result = ai_service.chat(
         messages=messages,
         model=model,
         max_tokens=max_tokens,
@@ -139,7 +142,7 @@ def send_message():
 @require_auth
 def send_message_stream():
     """Send a message and get streaming AI response."""
-    _load_deepseek_config()
+    _load_ai_config()
 
     data = request.get_json(silent=True)
     if not data:
@@ -194,7 +197,7 @@ def send_message_stream():
     def generate():
         full_content = ''
         try:
-            for chunk in deepseek_service.chat_stream(
+            for chunk in ai_service.chat_stream(
                 messages=messages, model=model, max_tokens=max_tokens
             ):
                 full_content += chunk
