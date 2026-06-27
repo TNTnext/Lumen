@@ -79,8 +79,7 @@ def create_app():
     # ── Frontend routes ──
     @app.route('/')
     def index():
-        """Root returns 404 — use /admin or /login."""
-        return jsonify({'error': 'Not Found', 'hint': '访问 /admin 管理后台 或 /login 登录'}), 404
+        return '', 404
 
     @app.route('/login')
     @app.route('/login/')
@@ -104,10 +103,10 @@ def create_app():
     @app.route('/<path:path>')
     def serve_static(path):
         if path.startswith('api/'):
-            return jsonify({'error': 'Not found'}), 404
+            return '', 404
         if os.path.exists(os.path.join('static', path)):
             return send_from_directory('static', path)
-        return jsonify({'error': 'Not Found'}), 404
+        return '', 404
 
     # Health check
     @app.route('/api/health')
