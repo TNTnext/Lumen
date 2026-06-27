@@ -15,10 +15,13 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/api/admin/dashboard', methods=['GET'])
 @require_admin
 def dashboard():
-    """Get dashboard statistics."""
+    """Get advanced multi-dimensional dashboard statistics."""
     today = date.today()
     today_start = datetime.combine(today, datetime.min.time())
+    this_week_start = today - timedelta(days=today.weekday())
+    this_month_start = today.replace(day=1)
 
+    # Basic counts
     total_users = User.query.count()
     active_today = User.query.filter(
         User.daily_chat_date == today,
@@ -27,39 +30,105 @@ def dashboard():
     total_conversations = Conversation.query.count()
     total_messages = Message.query.count()
 
-    # Today's API calls (messages created today)
-    today_messages = Message.query.filter(
+    # Today's API calls
+    today_api_calls = Message.query.filter(
         Message.created_at >= today_start,
         Message.role == 'assistant',
     ).count()
 
-    # Token usage today
+    # Token usage
     today_tokens = db.session.query(func.coalesce(func.sum(Message.tokens), 0)).filter(
         Message.created_at >= today_start,
         Message.role == 'assistant',
     ).scalar()
+    week_tokens = db.session.query(func.coalesce(func.sum(Message.tokens), 0)).filter(
+        Message.created_at >= datetime.combine(this_week_start, datetime.min.time()),
+        Message.role == 'assistant',
+    ).scalar()
+    month_tokens = db.session.query(func.coalesce(func.sum(Message.tokens), 0)).filter(
+        Message.created_at >= datetime.combine(this_month_start, datetime.min.time()),
+        Message.role == 'assistant',
+    ).scalar()
 
-    # Last 7 days chat trend
+    # Last 7 days chat trend (messages by day)
     seven_days_ago = today - timedelta(days=6)
     daily_stats = []
     for i in range(7):
         d = seven_days_ago + timedelta(days=i)
         day_start = datetime.combine(d, datetime.min.time())
         day_end = datetime.combine(d + timedelta(days=1), datetime.min.time())
-        count = Message.query.filter(
+        user_msgs = Message.query.filter(
             Message.created_at >= day_start,
             Message.created_at < day_end,
             Message.role == 'user',
         ).count()
+        ai_msgs = Message.query.filter(
+            Message.created_at >= day_start,
+            Message.created_at < day_end,
+            Message.role == 'assistant',
+        ).count()
         daily_stats.append({
             'date': d.isoformat(),
-            'count': count,
+            'user_messages': user_msgs,
+            'ai_messages': ai_msgs,
+            'count': user_msgs + ai_msgs,
         })
+
+    # Last 7 days active users trend
+    active_users_trend = []
+    for i in range(7):
+        d = seven_days_ago + timedelta(days=i)
+        day_start = datetime.combine(d, datetime.min.time())
+        day_end = datetime.combine(d + timedelta(days=1), datetime.min.time())
+        count = db.session.query(func.count(func.distinct(Conversation.user_id))).filter(
+            Conversation.created_at >= day_start,
+            Conversation.created_at < day_end,
+        ).scalar()
+        active_users_trend.append({'date': d.isoformat(), 'count': count or 0})
 
     # Model usage distribution
     model_stats = db.session.query(
         Conversation.model, func.count(Conversation.id)
     ).group_by(Conversation.model).all()
+
+    # User ranking (top 10 by message count)
+    user_ranking = db.session.query(
+        User.username, func.count(Message.id).label('msg_count')
+    ).join(Conversation, Message.conversation_id == Conversation.id).join(
+        User, Conversation.user_id == User.id
+    ).filter(
+        Message.role == 'user'
+    ).group_by(User.username).order_by(
+        func.count(Message.id).desc()
+    ).limit(10).all()
+
+    # Hourly distribution (today)
+    hourly_dist = db.session.query(
+        func.extract('hour', Message.created_at).label('hour'),
+        func.count(Message.id)
+    ).filter(
+        Message.created_at >= today_start,
+        Message.role == 'user',
+    ).group_by('hour').order_by('hour').all()
+
+    # New users this week
+    new_users_week = User.query.filter(
+        User.created_at >= datetime.combine(this_week_start, datetime.min.time())
+    ).count()
+
+    # Average messages per conversation
+    subq = db.session.query(
+        func.count(Message.id).label('cnt')
+    ).group_by(Message.conversation_id).subquery()
+    avg_msgs = db.session.query(
+        func.round(func.avg(subq.c.cnt))
+    ).scalar()
+
+    # Disabled users count
+    disabled_users = User.query.filter_by(is_active=False).count()
+
+    # Admin count
+    admin_count = User.query.filter_by(role='admin').count()
 
     return jsonify({
         'success': True,
@@ -68,11 +137,24 @@ def dashboard():
             'active_today': active_today,
             'total_conversations': total_conversations,
             'total_messages': total_messages,
-            'today_api_calls': today_messages,
+            'today_api_calls': today_api_calls,
             'today_tokens': today_tokens or 0,
+            'week_tokens': week_tokens or 0,
+            'month_tokens': month_tokens or 0,
+            'new_users_week': new_users_week,
+            'disabled_users': disabled_users,
+            'admin_count': admin_count,
+            'avg_messages_per_conv': float(avg_msgs) if avg_msgs else 0,
             'daily_trend': daily_stats,
+            'active_users_trend': active_users_trend,
             'model_distribution': [
                 {'model': m, 'count': c} for m, c in model_stats
+            ],
+            'user_ranking': [
+                {'username': u, 'message_count': c} for u, c in user_ranking
+            ],
+            'hourly_distribution': [
+                {'hour': int(h), 'count': c} for h, c in hourly_dist
             ],
         },
     })
@@ -433,7 +515,7 @@ def update_system_config():
 @admin_bp.route('/api/admin/config/test-connection', methods=['POST'])
 @require_admin
 def test_deepseek_connection():
-    """Test DeepSeek API connection."""
+    """Test DeepSeek API connection and record usage."""
     data = request.get_json(silent=True) or {}
     api_key = data.get('api_key', '')
     base_url = data.get('base_url', 'https://api.deepseek.com')
@@ -452,6 +534,31 @@ def test_deepseek_connection():
     service = DeepSeekService(api_key=api_key, base_url=base_url)
     result = service.test_connection()
 
+    # Record test call in stats (create a system conversation for counting)
+    if result.get('success'):
+        try:
+            system_user = User.query.filter_by(username='admin').first()
+            if system_user:
+                test_conv = Conversation(
+                    user_id=system_user.id,
+                    title='[连接测试]',
+                    model=result.get('model', 'unknown'),
+                    message_count=1,
+                    total_tokens=result.get('tokens', {}).get('total', 0) if isinstance(result.get('tokens'), dict) else 0,
+                )
+                db.session.add(test_conv)
+                db.session.flush()
+                test_msg = Message(
+                    conversation_id=test_conv.id,
+                    role='assistant',
+                    content='[连接测试] ' + (result.get('message', 'success')),
+                    tokens=result.get('tokens', {}).get('total', 0) if isinstance(result.get('tokens'), dict) else 0,
+                )
+                db.session.add(test_msg)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     return jsonify(result)
 
 
@@ -462,6 +569,65 @@ def get_open_registration():
     cfg = SystemConfig.query.filter_by(key='open_registration').first()
     is_open = cfg.value == 'true' if cfg else Config.OPEN_REGISTRATION
     return jsonify({'success': True, 'open_registration': is_open})
+
+
+# ─── System Reset ─────────────────────────────────────────
+
+@admin_bp.route('/api/admin/reset', methods=['POST'])
+@require_admin
+def reset_system():
+    """Reset system: clear conversations, messages, configs, and optionally users.
+    Body: { scope: 'all' | 'conversations' | 'configs' }
+    """
+    data = request.get_json(silent=True) or {}
+    scope = data.get('scope', 'all')
+
+    results = {}
+
+    if scope in ('all', 'conversations'):
+        # Delete all messages first (FK constraint)
+        msg_count = Message.query.count()
+        Message.query.delete()
+        # Delete all conversations
+        conv_count = Conversation.query.count()
+        Conversation.query.delete()
+        # Reset user daily counters
+        User.query.update({User.daily_chat_count: 0, User.daily_chat_date: None})
+        results['messages_deleted'] = msg_count
+        results['conversations_deleted'] = conv_count
+
+    if scope in ('all', 'configs'):
+        # Reset system configs to defaults
+        SystemConfig.query.filter(SystemConfig.key.notin_(['deepseek_api_key', 'deepseek_base_url'])).delete()
+        defaults = {
+            'open_registration': 'true',
+            'conversation_retention_days': '90',
+            'admin_can_view_content': 'false',
+        }
+        for key, value in defaults.items():
+            if not SystemConfig.query.filter_by(key=key).first():
+                db.session.add(SystemConfig(key=key, value=value))
+        # Reset global permissions
+        gp = GlobalPermission.query.first()
+        if gp:
+            gp.max_daily_chats = 100
+            gp.allowed_models = 'deepseek-chat,deepseek-reasoner'
+            gp.max_tokens_per_request = 4096
+            gp.allow_export = False
+            gp.allow_file_upload = False
+            gp.rate_limit_per_minute = 10
+        # Reset user custom permissions
+        UserPermission.query.delete()
+        results['configs_reset'] = True
+
+    if scope in ('all', 'users'):
+        # Delete non-admin users
+        non_admin_count = User.query.filter(User.role != 'admin').count()
+        User.query.filter(User.role != 'admin').delete()
+        results['non_admin_users_deleted'] = non_admin_count
+
+    db.session.commit()
+    return jsonify({'success': True, 'message': '系统已重置', 'results': results})
 
 
 @admin_bp.route('/api/admin/config/open-registration', methods=['PUT'])

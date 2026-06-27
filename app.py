@@ -34,6 +34,7 @@ def create_app():
     def index():
         return send_from_directory('static', 'login.html')
 
+    @app.route('/docx')
     @app.route('/docx/')
     def serve_docx_index():
         return send_from_directory('docx', 'index.html')

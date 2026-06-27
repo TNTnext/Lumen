@@ -1,7 +1,7 @@
 """Authentication API blueprint."""
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, g
-from flask_jwt_extended import create_access_token, get_jwt_identity
+from flask_jwt_extended import create_access_token, get_jwt_identity, verify_jwt_in_request
 from models import db, User, GlobalPermission, UserPermission
 from auth_utils import (
     require_auth, require_admin, validate_username, validate_password_strength
@@ -14,9 +14,6 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/api/auth/register', methods=['POST'])
 def register():
     """Register a new user."""
-    if not Config.OPEN_REGISTRATION:
-        return jsonify({'error': '当前未开放注册'}), 403
-
     data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': '请提供注册信息'}), 400
@@ -25,6 +22,38 @@ def register():
     password = data.get('password') or ''
     email = (data.get('email') or '').strip() or None
     daily_limit = data.get('daily_limit')  # None = use default
+    role = (data.get('role') or 'user').strip()
+
+    # Check if request is from an admin (allow role setting)
+    from flask_jwt_extended import verify_jwt_in_request
+    try:
+        verify_jwt_in_request(optional=True)
+        from flask_jwt_extended import get_jwt_identity
+        current_id = get_jwt_identity()
+        if current_id:
+            current_user = db.session.get(User, int(current_id))
+            if current_user and current_user.role == 'admin':
+                pass  # Admin can set role
+            else:
+                role = 'user'
+        else:
+            role = 'user'
+    except Exception:
+        role = 'user'
+
+    if role not in ('admin', 'user'):
+        role = 'user'
+
+    if not Config.OPEN_REGISTRATION and role == 'user':
+        # Check if admin is creating user (token present)
+        try:
+            verify_jwt_in_request()
+            current_id = get_jwt_identity()
+            current_user = db.session.get(User, int(current_id))
+            if not current_user or current_user.role != 'admin':
+                return jsonify({'error': '当前未开放注册'}), 403
+        except Exception:
+            return jsonify({'error': '当前未开放注册'}), 403
 
     valid, msg = validate_username(username)
     if not valid:
@@ -40,7 +69,7 @@ def register():
     if email and User.query.filter_by(email=email).first():
         return jsonify({'error': '邮箱已被注册'}), 409
 
-    user = User(username=username, email=email, role='user')
+    user = User(username=username, email=email, role=role)
     if daily_limit is not None:
         user.daily_limit = int(daily_limit)
     user.set_password(password)

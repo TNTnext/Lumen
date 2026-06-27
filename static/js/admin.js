@@ -95,9 +95,11 @@ async function navigateTo(page) {
 async function renderDashboard(main) {
   const data = await API.get('/api/admin/dashboard');
   const s = data.stats;
+
+  // Daily trend bars
   const trendBars = s.daily_trend.map((d, i) => {
     const max = Math.max(...s.daily_trend.map(x => x.count), 1);
-    const h = Math.max((d.count / max) * 120, 4);
+    const h = Math.max((d.count / max) * 100, 4);
     const isToday = i === s.daily_trend.length - 1;
     return `<div class="flex flex-col items-center gap-1 flex-1">
       <span class="text-xs text-on-surface-variant">${d.count}</span>
@@ -106,46 +108,99 @@ async function renderDashboard(main) {
     </div>`;
   }).join('');
 
+  // Model distribution
+  const totalModel = s.model_distribution.reduce((a, b) => a + b.count, 0) || 1;
   const models = s.model_distribution.map(m => {
-    const total = s.model_distribution.reduce((a, b) => a + b.count, 0) || 1;
-    const pct = Math.round((m.count / total) * 100);
+    const pct = Math.round((m.count / totalModel) * 100);
     return `<div class="flex items-center justify-between py-2">
       <span class="text-sm text-on-surface">${m.model}</span>
       <div class="flex items-center gap-2">
-        <div class="w-24 h-2 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full" style="width:${pct}%"></div></div>
+        <div class="w-20 h-2 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full" style="width:${pct}%"></div></div>
         <span class="text-xs text-on-surface-variant w-10 text-right">${pct}%</span>
       </div>
     </div>`;
   }).join('');
 
+  // User ranking
+  const ranking = (s.user_ranking || []).map((u, i) => `
+    <div class="flex items-center justify-between py-1.5">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-mono text-on-surface-variant w-5">${i+1}</span>
+        <span class="text-sm text-on-surface">${escHtml(u.username)}</span>
+      </div>
+      <span class="text-xs text-on-surface-variant">${u.message_count} 条</span>
+    </div>`).join('');
+
+  // Hourly distribution
+  const hourlyMax = Math.max(...(s.hourly_distribution || []).map(h => h.count), 1);
+  const hourly = (s.hourly_distribution || []).map(h => {
+    const hh = Math.round((h.count / hourlyMax) * 60);
+    return `<div class="flex flex-col items-center gap-0.5 flex-1">
+      <div class="w-full bg-primary/30 rounded-t-sm" style="height:${Math.max(hh, 2)}px"></div>
+      <span class="text-[10px] text-on-surface-variant">${h.hour}</span>
+    </div>`;
+  }).join('');
+
   main.innerHTML = `
     <h1 class="text-2xl font-bold text-on-surface mb-6">数据看板</h1>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5 text-primary"></i></div></div>
-        <div class="text-2xl font-bold text-on-surface">${s.total_users}</div><div class="text-xs text-on-surface-variant mt-1">总用户数</div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+      <div class="bg-surface rounded-xl shadow-card p-4">
+        <div class="flex items-center gap-2 mb-2"><div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><i data-lucide="users" class="w-4 h-4 text-primary"></i></div></div>
+        <div class="text-xl font-bold text-on-surface">${s.total_users}</div><div class="text-xs text-on-surface-variant">总用户 <span class="text-primary/70">${s.new_users_week||0} 本周新增</span></div>
       </div>
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center"><i data-lucide="user-check" class="w-5 h-5 text-success"></i></div></div>
-        <div class="text-2xl font-bold text-on-surface">${s.active_today}</div><div class="text-xs text-on-surface-variant mt-1">今日活跃用户</div>
+      <div class="bg-surface rounded-xl shadow-card p-4">
+        <div class="flex items-center gap-2 mb-2"><div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center"><i data-lucide="user-check" class="w-4 h-4 text-success"></i></div></div>
+        <div class="text-xl font-bold text-on-surface">${s.active_today}</div><div class="text-xs text-on-surface-variant">今日活跃 / ${s.disabled_users||0} 已禁用</div>
       </div>
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center"><i data-lucide="message-square" class="w-5 h-5 text-warning"></i></div></div>
-        <div class="text-2xl font-bold text-on-surface">${s.total_conversations}</div><div class="text-xs text-on-surface-variant mt-1">总对话数</div>
+      <div class="bg-surface rounded-xl shadow-card p-4">
+        <div class="flex items-center gap-2 mb-2"><div class="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center"><i data-lucide="message-square" class="w-4 h-4 text-warning"></i></div></div>
+        <div class="text-xl font-bold text-on-surface">${s.total_conversations}</div><div class="text-xs text-on-surface-variant">总对话 · 均${s.avg_messages_per_conv||0}条/对话</div>
       </div>
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><i data-lucide="zap" class="w-5 h-5 text-primary"></i></div></div>
-        <div class="text-2xl font-bold text-on-surface">${s.today_api_calls}</div><div class="text-xs text-on-surface-variant mt-1">今日API调用</div>
+      <div class="bg-surface rounded-xl shadow-card p-4">
+        <div class="flex items-center gap-2 mb-2"><div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><i data-lucide="zap" class="w-4 h-4 text-primary"></i></div></div>
+        <div class="text-xl font-bold text-on-surface">${s.today_api_calls}</div><div class="text-xs text-on-surface-variant">今日调用 · ${(s.today_tokens||0).toLocaleString()} Token</div>
       </div>
     </div>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 bg-surface rounded-xl shadow-card p-5">
-        <h2 class="text-base font-semibold text-on-surface mb-4">近7天对话趋势</h2>
-        <div class="flex items-end gap-1 h-40">${trendBars}</div>
+
+    <!-- Token Stats -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-surface rounded-xl shadow-card p-3 text-center">
+        <div class="text-lg font-bold text-on-surface">${(s.today_tokens||0).toLocaleString()}</div>
+        <div class="text-xs text-on-surface-variant">今日 Token</div>
+      </div>
+      <div class="bg-surface rounded-xl shadow-card p-3 text-center">
+        <div class="text-lg font-bold text-on-surface">${(s.week_tokens||0).toLocaleString()}</div>
+        <div class="text-xs text-on-surface-variant">本周 Token</div>
+      </div>
+      <div class="bg-surface rounded-xl shadow-card p-3 text-center">
+        <div class="text-lg font-bold text-on-surface">${(s.month_tokens||0).toLocaleString()}</div>
+        <div class="text-xs text-on-surface-variant">本月 Token</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+      <div class="bg-surface rounded-xl shadow-card p-5">
+        <h2 class="text-sm font-semibold text-on-surface mb-4">近7天对话趋势</h2>
+        <div class="flex items-end gap-1 h-32">${trendBars}</div>
       </div>
       <div class="bg-surface rounded-xl shadow-card p-5">
-        <h2 class="text-base font-semibold text-on-surface mb-4">模型使用分布</h2>
-        ${models || '<p class="text-sm text-on-surface-variant">暂无数据</p>'}
+        <h2 class="text-sm font-semibold text-on-surface mb-4">今日时段分布</h2>
+        <div class="flex items-end gap-0.5 h-32">${hourly || '<p class="text-xs text-on-surface-variant self-center">暂无数据</p>'}</div>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="bg-surface rounded-xl shadow-card p-5">
+        <h2 class="text-sm font-semibold text-on-surface mb-3">模型使用分布</h2>
+        ${models || '<p class="text-xs text-on-surface-variant">暂无数据</p>'}
+      </div>
+      <div class="bg-surface rounded-xl shadow-card p-5">
+        <h2 class="text-sm font-semibold text-on-surface mb-3">用户活跃排行 (Top 10)</h2>
+        ${ranking || '<p class="text-xs text-on-surface-variant">暂无数据</p>'}
       </div>
     </div>`;
 }
@@ -231,10 +286,10 @@ async function renderUsers(main) {
       <td class="px-4 py-3 text-sm text-on-surface-variant">${fmtDate(u.created_at)}</td>
       <td class="px-4 py-3 text-sm text-on-surface">${u.conversation_count || 0}</td>
       <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${u.is_active ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}">${u.is_active ? '启用' : '禁用'}</span></td>
-	      <td class="px-4 py-3 text-sm text-on-surface">${u.daily_limit != null ? u.daily_limit : chr(39) + "默认" + chr(39)}</td>
+	      <td class="px-4 py-3 text-sm text-on-surface">${u.daily_limit != null ? u.daily_limit : '默认'}</td>
       <td class="px-4 py-3">
         <div class="flex items-center gap-2">
-          <button onclick="editUser(${u.id},'${escHtml(u.username)}','${escHtml(u.email||'')}','${u.role}',${u.is_active})" class="text-primary text-sm hover:underline">编辑</button>
+          <button onclick="editUser(${u.id},'${escHtml(u.username)}','${escHtml(u.email||'')}','${u.role}',${u.is_active},${u.daily_limit != null ? u.daily_limit : 'null'})" class="text-primary text-sm hover:underline">编辑</button>
           <button onclick="resetUserPwd(${u.id})" class="text-warning text-sm hover:underline">重置密码</button>
           <button onclick="deleteUser(${u.id},'${escHtml(u.username)}')" class="text-error text-sm hover:underline">删除</button>
         </div>
@@ -262,9 +317,10 @@ async function renderUsers(main) {
             <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">注册时间</th>
             <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">对话数</th>
             <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">状态</th>
+            <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">每日限额</th>
             <th class="px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">操作</th>
           </tr></thead>
-          <tbody>${rows || '<tr><td colspan="7" class="px-4 py-8 text-center text-sm text-on-surface-variant">暂无用户</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td colspan="8" class="px-4 py-8 text-center text-sm text-on-surface-variant">暂无用户</td></tr>'}</tbody>
         </table>
       </div>
       ${data.pages > 1 ? `<div class="flex items-center justify-between px-4 py-3 border-t border-outline/10"><span class="text-sm text-on-surface-variant">共 ${data.total} 条</span><div class="flex gap-1">${paginationHtml(data.page, data.pages)}</div></div>` : ''}
@@ -277,6 +333,7 @@ async function showAddUserModal() {
       <div><label class="block text-sm font-medium mb-1">用户名</label><input id="mu_username" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
       <div><label class="block text-sm font-medium mb-1">邮箱</label><input id="mu_email" type="email" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
       <div><label class="block text-sm font-medium mb-1">密码</label><input id="mu_password" type="password" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+      <div><label class="block text-sm font-medium mb-1">每日限额（留空使用全局默认）</label><input id="mu_daily_limit" type="number" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
       <div><label class="block text-sm font-medium mb-1">角色</label><select id="mu_role" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"><option value="user">普通用户</option><option value="admin">管理员</option></select></div>
     </div>`,
     async () => {
@@ -285,7 +342,8 @@ async function showAddUserModal() {
       const password = document.getElementById('mu_password').value;
       const role = document.getElementById('mu_role').value;
       if (!username || !password) { showToast('用户名和密码不能为空', 'error'); return; }
-      const dlVal = document.getElementById('mu_daily_limit').value; const dl = dlVal ? parseInt(dlVal) : null; await API.post('/api/auth/register', { username, email, password, daily_limit: dl });
+      const dlVal = document.getElementById('mu_daily_limit').value; const dl = dlVal ? parseInt(dlVal) : null;
+      await API.post('/api/auth/register', { username, email, password, role, daily_limit: dl });
       showToast('用户创建成功', 'success');
       closeModal();
       navigateTo('users');
@@ -293,9 +351,11 @@ async function showAddUserModal() {
 }
 
 async function editUser(id, username, email, role, isActive, dailyLimit) {
+  const dl = (dailyLimit != null && dailyLimit !== 'null') ? dailyLimit : '';
   showModal(`编辑用户: ${username}`, `
     <div class="space-y-3">
       <div><label class="block text-sm font-medium mb-1">邮箱</label><input id="eu_email" type="email" value="${escHtml(email)}" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
+      <div><label class="block text-sm font-medium mb-1">每日限额（留空使用全局默认）</label><input id="eu_daily_limit" type="number" value="${dl}" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" /></div>
       <div><label class="block text-sm font-medium mb-1">角色</label><select id="eu_role" class="w-full border-none bg-surface-container rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"><option value="user" ${role==='user'?'selected':''}>普通用户</option><option value="admin" ${role==='admin'?'selected':''}>管理员</option></select></div>
       <div class="flex items-center gap-2"><input type="checkbox" id="eu_active" ${isActive?'checked':''} class="rounded" /><label for="eu_active" class="text-sm">启用账号</label></div>
     </div>`,
@@ -304,7 +364,7 @@ async function editUser(id, username, email, role, isActive, dailyLimit) {
         email: document.getElementById('eu_email').value.trim(),
         role: document.getElementById('eu_role').value,
         is_active: document.getElementById('eu_active').checked,
-          daily_limit: edl,
+        daily_limit: edl,
       });
       showToast('用户已更新', 'success');
       closeModal();
@@ -429,6 +489,18 @@ function readPermForm(type) {
 // ═══════════════════════════════════════════
 //  API Keys Page
 // ═══════════════════════════════════════════
+const VENDOR_PRESETS = {
+  deepseek: { name: 'DeepSeek', base_url: 'https://api.deepseek.com', models: 'deepseek-chat, deepseek-reasoner' },
+  openai: { name: 'OpenAI', base_url: 'https://api.openai.com/v1', models: 'gpt-4o, gpt-4o-mini, gpt-3.5-turbo' },
+  anthropic: { name: 'Anthropic', base_url: 'https://api.anthropic.com/v1', models: 'claude-3-5-sonnet, claude-3-opus' },
+  kimi: { name: 'Kimi (月之暗面)', base_url: 'https://api.moonshot.cn/v1', models: 'moonshot-v1-8k, moonshot-v1-32k' },
+  volcengine: { name: '火山引擎 (豆包)', base_url: 'https://ark.cn-beijing.volces.com/api/v3', models: 'doubao-pro-32k, doubao-lite-32k' },
+  aliyun: { name: '阿里云 (通义)', base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: 'qwen-turbo, qwen-plus, qwen-max' },
+  xai: { name: 'xAI (Grok)', base_url: 'https://api.x.ai/v1', models: 'grok-2, grok-2-vision' },
+  glm: { name: '智谱 (GLM)', base_url: 'https://open.bigmodel.cn/api/paas/v4', models: 'glm-4, glm-4-flash' },
+  minimax: { name: 'MiniMax', base_url: 'https://api.minimax.chat/v1', models: 'abab6.5s-chat, abab6.5-chat' },
+};
+
 async function renderApiKeys(main) {
   const [configs, apiKeyData] = await Promise.all([
     API.get('/api/admin/config'),
@@ -437,14 +509,40 @@ async function renderApiKeys(main) {
   const cfg = configs.configs || {};
   const realApiKey = apiKeyData.api_key || '';
   const realBaseUrl = apiKeyData.base_url || 'https://api.deepseek.com';
+  const usage = apiKeyData.usage || {};
+
+  const vendorOpts = Object.entries(VENDOR_PRESETS).map(([k, v]) =>
+    `<option value="${k}" data-url="${v.base_url}">${v.name}</option>`
+  ).join('');
+
   main.innerHTML = `
     <h1 class="text-2xl font-bold text-on-surface mb-6">API 密钥配置</h1>
-    <div class="bg-surface rounded-xl shadow-card p-5 mb-6">
-      <h2 class="text-base font-semibold mb-4 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4 text-primary"></i>配置说明</h2>
-      <p class="text-sm text-on-surface-variant">在此配置 DeepSeek API 密钥与连接参数。API Key 将以加密形式存储。配置完成后请使用"测试连接"验证。</p>
+
+    <!-- Usage Stats -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-surface rounded-xl shadow-card p-3 text-center">
+        <div class="text-lg font-bold text-on-surface">${usage.today_calls||0}</div>
+        <div class="text-xs text-on-surface-variant">今日调用</div>
+      </div>
+      <div class="bg-surface rounded-xl shadow-card p-3 text-center">
+        <div class="text-lg font-bold text-on-surface">${usage.monthly_calls||0}</div>
+        <div class="text-xs text-on-surface-variant">本月调用</div>
+      </div>
+      <div class="bg-surface rounded-xl shadow-card p-3 text-center">
+        <div class="text-lg font-bold text-on-surface">${(usage.monthly_tokens||0).toLocaleString()}</div>
+        <div class="text-xs text-on-surface-variant">本月 Token</div>
+      </div>
     </div>
+
     <div class="bg-surface rounded-xl shadow-card p-5">
       <div class="space-y-4 max-w-xl">
+        <div>
+          <label class="block text-sm font-medium mb-1">厂商预设</label>
+          <select id="vendorPreset" onchange="applyVendorPreset()" class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">-- 手动配置 --</option>
+            ${vendorOpts}
+          </select>
+        </div>
         <div><label class="block text-sm font-medium mb-1">API Key</label>
           <div class="relative"><input id="apiKey" type="password" value="${escHtml(realApiKey)}" class="w-full border-none bg-surface-container rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             <button onclick="toggleApiKey()" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 hover:text-on-surface-variant"><i data-lucide="eye" class="w-4 h-4"></i></button>
@@ -458,6 +556,15 @@ async function renderApiKeys(main) {
         </div>
       </div>
     </div>`;
+}
+
+function applyVendorPreset() {
+  const sel = document.getElementById('vendorPreset');
+  const preset = VENDOR_PRESETS[sel.value];
+  if (preset) {
+    document.getElementById('baseUrl').value = preset.base_url;
+    showToast(`已选择 ${preset.name}`, 'info');
+  }
 }
 
 function toggleApiKey() {
@@ -506,9 +613,9 @@ async function renderSettings(main) {
   const regData = await API.get('/api/admin/config/open-registration');
   main.innerHTML = `
     <h1 class="text-2xl font-bold text-on-surface mb-6">系统设置</h1>
-    <div class="space-y-6 max-w-xl">
+    <div class="space-y-5 max-w-xl">
       <div class="bg-surface rounded-xl shadow-card p-5">
-        <h2 class="text-base font-semibold mb-4">开放注册</h2>
+        <h2 class="text-sm font-semibold mb-4">开放注册</h2>
         <div class="flex items-center gap-3">
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="openReg" ${regData.open_registration ? 'checked' : ''} class="sr-only peer" onchange="toggleRegistration(this.checked)" />
@@ -518,12 +625,14 @@ async function renderSettings(main) {
         </div>
       </div>
       <div class="bg-surface rounded-xl shadow-card p-5">
-        <h2 class="text-base font-semibold mb-4">对话历史保留天数</h2>
-        <input id="retentionDays" type="number" value="${cfg.conversation_retention_days || '90'}" class="w-32 border-none bg-surface-container rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        <button onclick="saveRetention()" class="ml-3 bg-primary text-on-primary rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90">保存</button>
+        <h2 class="text-sm font-semibold mb-4">对话历史保留天数</h2>
+        <div class="flex items-center gap-3">
+          <input id="retentionDays" type="number" value="${cfg.conversation_retention_days || '90'}" class="w-24 border-none bg-surface-container rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <button onclick="saveRetention()" class="bg-primary text-on-primary rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90">保存</button>
+        </div>
       </div>
       <div class="bg-surface rounded-xl shadow-card p-5">
-        <h2 class="text-base font-semibold mb-4">管理员查看对话内容</h2>
+        <h2 class="text-sm font-semibold mb-4">管理员查看对话内容</h2>
         <div class="flex items-center gap-3">
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="adminViewContent" ${cfg.admin_can_view_content === 'true' ? 'checked' : ''} class="sr-only peer" onchange="toggleAdminView(this.checked)" />
@@ -532,7 +641,27 @@ async function renderSettings(main) {
           <span class="text-sm text-on-surface-variant">允许管理员查看用户对话内容</span>
         </div>
       </div>
+      <div class="bg-surface rounded-xl shadow-card p-5 border border-error/20">
+        <h2 class="text-sm font-semibold mb-2 text-error">危险操作</h2>
+        <p class="text-xs text-on-surface-variant mb-3">重置系统将清除指定数据，此操作不可撤销。</p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="resetSystem('conversations')" class="border border-error/30 text-error rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-error/5 transition-colors">清空对话数据</button>
+          <button onclick="resetSystem('configs')" class="border border-error/30 text-error rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-error/5 transition-colors">重置配置</button>
+          <button onclick="resetSystem('users')" class="border border-error/30 text-error rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-error/5 transition-colors">清空非管理员用户</button>
+          <button onclick="resetSystem('all')" class="bg-error text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:opacity-90">一键全部重置</button>
+        </div>
+      </div>
     </div>`;
+}
+
+async function resetSystem(scope) {
+  const labels = { all: '重置全部数据（配置+对话+用户）', conversations: '清空所有对话和消息', configs: '重置所有配置和权限为默认值', users: '删除所有非管理员用户' };
+  if (!confirm(`确定要${labels[scope]}吗？此操作不可撤销！`)) return;
+  try {
+    const data = await API.post('/api/admin/reset', { scope });
+    showToast(data.message || '重置完成', 'success');
+    navigateTo('dashboard');
+  } catch (err) { showToast(err.message, 'error'); }
 }
 
 async function toggleRegistration(val) {
