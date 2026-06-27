@@ -129,11 +129,11 @@ All runtime configuration is stored in the database and managed through the admi
 **Tnt-next**
 
 <p align="left">
-  <a href="https://afdian.com/a/tntminecraft"><img src="https://img.shields.io/badge/爱发电-赞助支持-946CE6?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="爱发电" /></a>
+  <a href="https://afdian.com/a/tntminecraft"><img src="https://img.shields.io/badge/Afdian-Sponsor-946CE6?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Afdian" /></a>
   &nbsp;
-  <a href="https://space.bilibili.com/3546659195718047"><img src="https://img.shields.io/badge/Bilibili-关注-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white" alt="Bilibili" /></a>
+  <a href="https://space.bilibili.com/3546659195718047"><img src="https://img.shields.io/badge/Bilibili-Follow-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white" alt="Bilibili" /></a>
   &nbsp;
-  <a href="mailto:cyy.nex.zdwxx.py.12@gmail.com"><img src="https://img.shields.io/badge/Email-联系作者-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
+  <a href="mailto:cyy.nex.zdwxx.py.12@gmail.com"><img src="https://img.shields.io/badge/Email-Contact-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
 </p>
 
 ---
