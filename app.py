@@ -1,10 +1,50 @@
 """Main application entry point."""
 import os
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
 from models import db
+
+# In-memory endpoint toggle cache {endpoint_path: bool}
+_endpoint_cache = {}
+_endpoint_cache_loaded = False
+
+
+def _load_endpoint_cache():
+    """Load endpoint toggle states from DB into memory."""
+    global _endpoint_cache, _endpoint_cache_loaded
+    from models import EndpointToggle
+    toggles = EndpointToggle.query.all()
+    _endpoint_cache = {t.endpoint: t.enabled for t in toggles}
+    _endpoint_cache_loaded = True
+
+
+def _check_endpoint_enabled(req_path):
+    """Check if the requested API endpoint is enabled. Returns (allowed, endpoint_key)."""
+    global _endpoint_cache_loaded
+    if not _endpoint_cache_loaded:
+        _load_endpoint_cache()
+
+    # Normalize: strip trailing slash, only check /api/ paths
+    path = req_path.rstrip('/')
+    if not path.startswith('/api/'):
+        return True, None
+
+    # Exact match
+    if path in _endpoint_cache:
+        return _endpoint_cache[path], path
+
+    # Try matching dynamic routes: /api/chat/conversations/123 → /api/chat/conversations/<id>
+    parts = path.split('/')
+    for i in range(len(parts) - 1, 0, -1):
+        candidate = '/'.join(parts[:i]) + '/<id>'
+        if candidate in _endpoint_cache:
+            return _endpoint_cache[candidate], candidate
+
+    # Unknown endpoint — allow (not managed by toggle system)
+    return True, None
+
 
 def create_app():
     app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -14,6 +54,13 @@ def create_app():
     CORS(app, supports_credentials=True)
     db.init_app(app)
     JWTManager(app)
+
+    # ── Endpoint toggle middleware ──
+    @app.before_request
+    def enforce_endpoint_toggle():
+        allowed, key = _check_endpoint_enabled(request.path)
+        if not allowed:
+            return jsonify({'error': f'接口 {key} 已被管理员关闭', 'disabled_endpoint': key}), 403
 
     # Register blueprints
     from auth_routes import auth_bp
@@ -61,8 +108,8 @@ def create_app():
 
 
 def _init_default_data():
-    """Initialize default data: admin user, global permissions, system configs."""
-    from models import User, GlobalPermission, SystemConfig
+    """Initialize default data: admin user, global permissions, system configs, endpoint toggles."""
+    from models import User, GlobalPermission, SystemConfig, EndpointToggle, DEFAULT_ENDPOINTS
     from werkzeug.security import generate_password_hash
 
     # Create default admin
@@ -101,6 +148,17 @@ def _init_default_data():
         if not SystemConfig.query.filter_by(key=key).first():
             cfg = SystemConfig(key=key, value=value, is_encrypted=(key == 'deepseek_api_key'))
             db.session.add(cfg)
+
+    # Create default endpoint toggles
+    for ep in DEFAULT_ENDPOINTS:
+        if not EndpointToggle.query.filter_by(endpoint=ep['endpoint']).first():
+            toggle = EndpointToggle(
+                endpoint=ep['endpoint'],
+                description=ep['description'],
+                group=ep['group'],
+                enabled=ep['enabled'],
+            )
+            db.session.add(toggle)
 
     db.session.commit()
 

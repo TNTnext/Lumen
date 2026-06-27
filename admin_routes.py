@@ -567,6 +567,96 @@ def get_open_registration():
     return jsonify({'success': True, 'open_registration': is_open})
 
 
+# ─── Endpoint Toggles ───────────────────────────────────
+
+@admin_bp.route('/api/admin/endpoints', methods=['GET'])
+@require_admin
+def list_endpoints():
+    """List all endpoint toggles, grouped."""
+    from models import EndpointToggle, ENDPOINT_GROUPS, DEFAULT_ENDPOINTS
+
+    toggles = EndpointToggle.query.order_by(EndpointToggle.group, EndpointToggle.id).all()
+
+    # Ensure all default endpoints exist in DB
+    existing = {t.endpoint for t in toggles}
+    for ep in DEFAULT_ENDPOINTS:
+        if ep['endpoint'] not in existing:
+            t = EndpointToggle(
+                endpoint=ep['endpoint'],
+                description=ep['description'],
+                group=ep['group'],
+                enabled=ep['enabled'],
+            )
+            db.session.add(t)
+            toggles.append(t)
+    db.session.commit()
+
+    # Build grouped response
+    groups = {}
+    for t in toggles:
+        d = t.to_dict()
+        group_key = t.group or 'other'
+        group_name = ENDPOINT_GROUPS.get(group_key, group_key)
+        if group_key not in groups:
+            groups[group_key] = {'name': group_name, 'endpoints': []}
+        groups[group_key]['endpoints'].append(d)
+
+    return jsonify({'success': True, 'groups': groups})
+
+
+@admin_bp.route('/api/admin/endpoints/<int:endpoint_id>', methods=['PUT'])
+@require_admin
+def update_endpoint(endpoint_id):
+    """Toggle an endpoint on/off."""
+    from models import EndpointToggle
+    import app as app_module
+
+    toggle = db.session.get(EndpointToggle, endpoint_id)
+    if not toggle:
+        return jsonify({'error': '接口不存在'}), 404
+
+    data = request.get_json(silent=True) or {}
+    if 'enabled' in data:
+        toggle.enabled = bool(data['enabled'])
+
+    db.session.commit()
+
+    # Refresh in-memory cache
+    app_module._load_endpoint_cache()
+
+    return jsonify({'success': True, 'endpoint': toggle.to_dict()})
+
+
+@admin_bp.route('/api/admin/endpoints/batch', methods=['PUT'])
+@require_admin
+def batch_update_endpoints():
+    """Batch toggle endpoints. Body: { endpoint_ids: [1,2,3], enabled: true/false }
+    Or: { group: 'chat', enabled: true/false }"""
+    from models import EndpointToggle
+    import app as app_module
+
+    data = request.get_json(silent=True) or {}
+    enabled = bool(data.get('enabled', True))
+
+    if 'group' in data:
+        group = data['group']
+        count = EndpointToggle.query.filter_by(group=group).update({EndpointToggle.enabled: enabled})
+    elif 'endpoint_ids' in data:
+        ids = data['endpoint_ids']
+        count = EndpointToggle.query.filter(EndpointToggle.id.in_(ids)).update(
+            {EndpointToggle.enabled: enabled}, synchronize_session='fetch'
+        )
+    else:
+        return jsonify({'error': '请提供 group 或 endpoint_ids'}), 400
+
+    db.session.commit()
+
+    # Refresh cache
+    app_module._load_endpoint_cache()
+
+    return jsonify({'success': True, 'updated': count})
+
+
 # ─── System Reset ─────────────────────────────────────────
 
 @admin_bp.route('/api/admin/reset', methods=['POST'])

@@ -173,3 +173,54 @@ class SystemConfig(db.Model):
     is_encrypted = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
+
+
+# ── API endpoint toggle ──────────────────────────────
+ENDPOINT_GROUPS = {
+    'auth':    '认证接口',
+    'chat':    '对话接口',
+    'admin':   '管理接口',
+}
+
+# Default endpoints that can be toggled
+DEFAULT_ENDPOINTS = [
+    # Auth
+    {'endpoint': '/api/auth/register',     'description': '用户注册',       'group': 'auth',   'enabled': True},
+    {'endpoint': '/api/auth/login',        'description': '用户登录',       'group': 'auth',   'enabled': True},
+    {'endpoint': '/api/auth/logout',       'description': '用户登出',       'group': 'auth',   'enabled': True},
+    {'endpoint': '/api/auth/me',           'description': '获取用户信息',   'group': 'auth',   'enabled': True},
+    {'endpoint': '/api/auth/change-password','description': '修改密码',     'group': 'auth',   'enabled': True},
+    # Chat
+    {'endpoint': '/api/chat/send',         'description': '发送消息',       'group': 'chat',   'enabled': True},
+    {'endpoint': '/api/chat/send-stream',  'description': '流式发送消息',   'group': 'chat',   'enabled': True},
+    {'endpoint': '/api/chat/conversations','description': '对话列表',       'group': 'chat',   'enabled': True},
+    {'endpoint': '/api/chat/conversations/<id>','description': '对话详情/删除','group':'chat',   'enabled': True},
+    {'endpoint': '/api/chat/models',       'description': '可用模型列表',   'group': 'chat',   'enabled': True},
+    # Admin
+    {'endpoint': '/api/admin/dashboard',   'description': '数据看板',       'group': 'admin',  'enabled': True},
+    {'endpoint': '/api/admin/users',       'description': '用户管理',       'group': 'admin',  'enabled': True},
+    {'endpoint': '/api/admin/conversations','description': '对话管理',      'group': 'admin',  'enabled': True},
+    {'endpoint': '/api/admin/permissions', 'description': '权限管理',       'group': 'admin',  'enabled': True},
+    {'endpoint': '/api/admin/config',      'description': '系统配置',       'group': 'admin',  'enabled': True},
+    {'endpoint': '/api/admin/reset',       'description': '系统重置',       'group': 'admin',  'enabled': True},
+]
+
+
+class EndpointToggle(db.Model):
+    """API endpoint on/off toggle."""
+    __tablename__ = 'endpoint_toggle'
+
+    id = db.Column(db.Integer, primary_key=True)
+    endpoint = db.Column(db.String(256), unique=True, nullable=False, index=True)
+    enabled = db.Column(db.Boolean, default=True, nullable=False)
+    description = db.Column(db.String(256), default='')
+    group = db.Column(db.String(64), default='other')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'endpoint': self.endpoint,
+            'enabled': self.enabled,
+            'description': self.description,
+            'group': self.group,
+        }

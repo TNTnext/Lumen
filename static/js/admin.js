@@ -83,6 +83,7 @@ async function navigateTo(page) {
       case 'permissions': await renderPermissions(main); break;
       case 'api-keys': await renderApiKeys(main); break;
       case 'settings': await renderSettings(main); break;
+      case 'endpoints': await renderEndpoints(main); break;
     }
   } catch (err) {
     main.innerHTML = `<div class="text-center py-12 text-error">加载失败: ${err.message}</div>`;
@@ -603,6 +604,89 @@ async function testConnection() {
   btn.disabled = false;
   btn.innerHTML = '<i data-lucide="plug" class="w-4 h-4"></i>测试连接';
   lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════
+//  Endpoint Toggles Page
+// ═══════════════════════════════════════════
+async function renderEndpoints(main) {
+  const data = await API.get('/api/admin/endpoints');
+  const groups = data.groups || {};
+  let html = `
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-on-surface">接口开关</h1>
+      <div class="flex gap-2">
+        <button onclick="batchEndpoints(true)" class="bg-primary text-on-primary rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90">全部开启</button>
+        <button onclick="batchEndpoints(false)" class="border border-outline/30 text-on-surface-variant rounded-lg px-4 py-2 text-sm font-medium hover:bg-surface-container">全部关闭</button>
+      </div>
+    </div>
+    <p class="text-sm text-on-surface-variant mb-5">控制各 API 接口的访问开关，关闭后对应接口将返回 403，管理员接口始终可用。</p>`;
+
+  for (const [groupKey, group] of Object.entries(groups)) {
+    const enabledCount = group.endpoints.filter(e => e.enabled).length;
+    const totalCount = group.endpoints.length;
+    html += `
+    <div class="bg-surface rounded-xl shadow-card mb-4">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-outline/10">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-on-surface">${escHtml(group.name)}</h2>
+          <span class="text-xs text-on-surface-variant">${enabledCount}/${totalCount} 已开启</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="batchGroupEndpoints('${groupKey}', true)" class="text-xs text-primary hover:underline">全部开启</button>
+          <button onclick="batchGroupEndpoints('${groupKey}', false)" class="text-xs text-on-surface-variant hover:underline">全部关闭</button>
+        </div>
+      </div>
+      <div class="divide-y divide-outline/5">`;
+    for (const ep of group.endpoints) {
+      html += `
+        <div class="flex items-center justify-between px-5 py-3">
+          <div>
+            <div class="text-sm font-medium text-on-surface">${escHtml(ep.description)}</div>
+            <div class="text-xs text-on-surface-variant font-mono">${escHtml(ep.endpoint)}</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" ${ep.enabled ? 'checked' : ''} class="sr-only peer" onchange="toggleEndpoint(${ep.id}, this.checked)" />
+            <div class="w-10 h-5 bg-surface-container-high rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+        </div>`;
+    }
+    html += `
+      </div>
+    </div>`;
+  }
+
+  main.innerHTML = html;
+}
+
+async function toggleEndpoint(id, enabled) {
+  try {
+    await API.put(`/api/admin/endpoints/${id}`, { enabled });
+    navigateTo('endpoints');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function batchGroupEndpoints(group, enabled) {
+  try {
+    const data = await API.put('/api/admin/endpoints/batch', { group, enabled });
+    showToast(`已${enabled ? '开启' : '关闭'} ${data.updated} 个接口`, 'success');
+    navigateTo('endpoints');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function batchEndpoints(enabled) {
+  if (!confirm(`确定要${enabled ? '开启' : '关闭'}所有接口吗？`)) return;
+  try {
+    // Collect all endpoint IDs
+    const data = await API.get('/api/admin/endpoints');
+    const ids = [];
+    for (const group of Object.values(data.groups || {})) {
+      for (const ep of group.endpoints) ids.push(ep.id);
+    }
+    const result = await API.put('/api/admin/endpoints/batch', { endpoint_ids: ids, enabled });
+    showToast(`已${enabled ? '开启' : '关闭'} ${result.updated} 个接口`, 'success');
+    navigateTo('endpoints');
+  } catch (err) { showToast(err.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════
