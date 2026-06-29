@@ -60,7 +60,7 @@ const i18n = {
     onboarding_done: '配置完成', onboarding_failed: '配置失败',
     need_admin: '需要管理员权限',
     // Vendor management
-    nav_vendors: '厂商管理', vendor_title: '厂商管理',
+    nav_vendors: '厂商与密钥', vendor_title: '厂商与密钥',
     vendor_enable: '启用', vendor_disable: '禁用',
     vendor_add: '添加厂商', vendor_save: '保存', vendor_cancel: '取消',
     vendor_delete: '删除', vendor_delete_confirm: '确定要删除此厂商吗？',
@@ -146,17 +146,32 @@ const i18n = {
   }
 };
 
-let lang = localStorage.getItem('lumen_lang') || 'zh';
+let lang = localStorage.getItem('lumen_lang') || (navigator.language && navigator.language.startsWith('zh') ? 'zh' : 'en');
 function t(key) { return (i18n[lang] && i18n[lang][key]) || i18n.zh[key] || key; }
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
   localStorage.setItem('lumen_lang', lang);
   const btn = document.getElementById('langToggle');
   if (btn) btn.textContent = lang === 'zh' ? 'EN' : '中';
-  // Re-render current page
+  // Re-render current page - keep onboarding if active
+  if (state.needsOnboarding) {
+    renderOnboarding();
+    return;
+  }
+  if (state.needsOnboarding) { renderOnboarding(); return; }
   renderNav();
   const fn = window['render' + state.page.charAt(0).toUpperCase() + state.page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
   if (fn) fn();
+}
+
+// ─── Sidebar Mobile ─────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.remove('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.remove('hidden');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.add('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
 }
 
 // ─── State ────────────────────────────────────────────────
@@ -226,7 +241,6 @@ const navItems = [
   { id: 'conversations', labelKey: 'nav_conversations', icon: 'message-square' },
   { id: 'users', labelKey: 'nav_users', icon: 'users' },
   { id: 'permissions', labelKey: 'nav_permissions', icon: 'shield' },
-  { id: 'api-keys', labelKey: 'nav_api_keys', icon: 'key' },
   { id: 'vendors', labelKey: 'nav_vendors', icon: 'cpu' },
   { id: 'endpoints', labelKey: 'nav_endpoints', icon: 'toggle-right' },
   { id: 'settings', labelKey: 'nav_settings', icon: 'settings' },
@@ -249,12 +263,15 @@ function renderNav() {
 }
 
 function navigate(page) {
+  if (page === 'api-keys') page = 'vendors';
   state.page = page;
   renderNav();
   const container = document.getElementById('page-container');
   container.innerHTML = '';
   const fn = window['render' + page.charAt(0).toUpperCase() + page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
   if (fn) fn();
+  closeSidebar(); // Close mobile sidebar on navigation
+  container.scrollTop = 0;
 }
 
 // ─── Onboarding ───────────────────────────────────────────
@@ -442,30 +459,30 @@ async function renderDashboard() {
 
   document.getElementById('page-container').innerHTML = `
     <h1 class="text-xl font-semibold tracking-tight mb-6">${t('dashboard_title')}</h1>
-    <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
       ${statCard(t('total_users'), s.total_users, 'users')}
       ${statCard(t('active_today'), s.active_today, 'user-check')}
       ${statCard(t('total_convs'), s.total_conversations, 'message-square')}
       ${statCard(t('today_calls'), s.today_api_calls, 'zap')}
     </div>
-    <div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
       ${statCard(t('today_tokens'), s.today_tokens, 'hash')}
       ${statCard(t('month_tokens'), s.month_tokens, 'bar-chart-2')}
       ${statCard(t('new_users_week'), s.new_users_week, 'user-plus')}
       ${statCard(t('admin_count'), s.admin_count, 'shield')}
     </div>
 
-    <div class="bg-surface rounded-xl border border-border p-6 mb-6">
+    <div class="bg-surface rounded-xl border border-border p-4 lg:p-6 mb-6">
       <h2 class="text-sm font-semibold mb-4">${t('trend_7d')}</h2>
-      <div class="h-48 flex items-end gap-2" id="daily-trend-chart"></div>
+      <div class="h-48 flex items-end gap-1 lg:gap-2" id="daily-trend-chart"></div>
     </div>
 
-    <div class="grid grid-cols-2 gap-6">
-      <div class="bg-surface rounded-xl border border-border p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+      <div class="bg-surface rounded-xl border border-border p-4 lg:p-6">
         <h2 class="text-sm font-semibold mb-4">${t('model_dist')}</h2>
         <div class="space-y-3" id="model-dist"></div>
       </div>
-      <div class="bg-surface rounded-xl border border-border p-6">
+      <div class="bg-surface rounded-xl border border-border p-4 lg:p-6">
         <h2 class="text-sm font-semibold mb-4">${t('user_ranking')}</h2>
         <div class="space-y-3" id="user-ranking"></div>
       </div>
@@ -539,8 +556,8 @@ async function renderConversations() {
 
   document.getElementById('page-container').innerHTML = `
     <h1 class="text-xl font-semibold tracking-tight mb-6">${t('conv_title')}</h1>
-    <div class="bg-surface rounded-xl border border-border overflow-hidden">
-      <table class="w-full text-sm">
+    <div class="bg-surface rounded-xl border border-border overflow-hidden overflow-x-auto">
+      <table class="w-full text-sm min-w-[700px]" role="table" aria-label="${t('conv_title')}">
         <thead>
           <tr class="border-b border-border">
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('conv_id')}</th>
@@ -999,8 +1016,8 @@ async function renderEndpoints() {
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-semibold tracking-tight">${t('ep_title')}</h1>
       <div class="flex gap-2">
-        <button disabled class="px-3 py-1.5 rounded-md border border-border text-xs text-text-tertiary cursor-not-allowed opacity-50">${t('ep_all_on')}</button>
-        <button disabled class="px-3 py-1.5 rounded-md border border-border text-xs text-text-tertiary cursor-not-allowed opacity-50">${t('ep_all_off')}</button>
+        <button onclick="batchToggleAll(true)" class="px-3 py-1.5 rounded-md border border-border text-xs text-accent hover:bg-accent/10 transition-colors">${t('ep_all_on')}</button>
+        <button onclick="batchToggleAll(false)" class="px-3 py-1.5 rounded-md border border-border text-xs text-text-secondary hover:bg-surface-hover transition-colors">${t('ep_all_off')}</button>
       </div>
     </div>
     <div class="space-y-4" id="endpoint-groups"></div>
@@ -1047,6 +1064,17 @@ async function toggleEndpoint(id, enabled) {
 async function batchToggleGroup(group, enabled) {
   const res = await api('/api/admin/endpoints/batch', { method: 'PUT', body: { group, enabled } });
   if (res && res.success) { toast(enabled ? t('ep_toggled_on') : t('ep_toggled_off'), 'success'); renderEndpoints(); }
+}
+
+async function batchToggleAll(enabled) {
+  // Batch toggle all groups (auth, chat, admin)
+  let allOk = true;
+  for (const group of ['auth', 'chat', 'admin']) {
+    const res = await api('/api/admin/endpoints/batch', { method: 'PUT', body: { group, enabled } });
+    if (!res || !res.success) allOk = false;
+  }
+  if (allOk) { toast(enabled ? t('ep_toggled_on') : t('ep_toggled_off'), 'success'); renderEndpoints(); }
+  else toast(t('save_failed'), 'error');
 }
 
 // ─── Settings ─────────────────────────────────────────────
