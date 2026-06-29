@@ -41,8 +41,9 @@
   <div id="app" class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
     <aside id="sidebar" class="w-56 bg-sidebar border-r border-border flex flex-col shrink-0">
-      <div class="px-5 py-5">
+      <div class="px-5 py-5 flex items-center justify-between">
         <span class="text-sm font-semibold tracking-tight text-text">Lumen</span>
+        <button id="langToggle" onclick="toggleLang()" class="text-xs px-2 py-0.5 rounded border border-border text-text-secondary hover:bg-sidebar-hover transition-colors" title="Switch Language">EN</button>
       </div>
       <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto" id="sidebar-nav"></nav>
       <div class="px-3 py-3 border-t border-border">
