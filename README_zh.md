@@ -76,7 +76,7 @@ python app.py
 
 | 分组 | 接口 |
 |------|------|
-| **认证** | `POST /api/auth/register` · `POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/me` · `PUT /api/auth/change-password` |
+| **认证** | `POST /api/auth/register` · `POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/me` · `POST /api/auth/change-password` |
 | **对话** | `POST /api/chat/send` · `GET /api/chat/conversations` · `GET /api/chat/conversations/<id>` · `DELETE /api/chat/conversations/<id>` |
 | **管理** | `GET /api/admin/dashboard` · `GET/PUT /api/admin/users` · `GET/PUT /api/admin/permissions` · `GET/PUT /api/admin/config` · `GET /api/admin/vendors` · `GET/PUT /api/admin/endpoints` · `POST /api/admin/onboarding/complete` · `POST /api/admin/reset` |
 
@@ -91,20 +91,30 @@ python app.py
 
 | 厂商 | 模型 | 文本 | 流式 | 推理 | 视觉 | 工具 | 文件 | 搜索 |
 |------|------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-| **DeepSeek** | deepseek-chat | ✓ | ✓ | — | — | ✓ | — | — |
-| | deepseek-reasoner | ✓ | ✓ | ✓ | — | — | — | — |
-| **OpenAI** | gpt-4o | ✓ | ✓ | — | ✓ | ✓ | ✓ | — |
-| | gpt-4o-mini | ✓ | ✓ | — | ✓ | ✓ | ✓ | — |
-| | o1 / o3-mini | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| **DeepSeek** | deepseek-chat (V3.2) | ✓ | ✓ | — | — | ✓ | ✓ | — |
+| | deepseek-reasoner (V3.2) | ✓ | ✓ | ✓ | — | — | — | — |
+| | deepseek-v4-flash / v4-pro | ✓ | ✓ | ✓ | — | ✓ | ✓ | — |
+| **OpenAI** | gpt-4o / gpt-4o-mini | ✓ | ✓ | — | ✓ | ✓ | ✓ | — |
+| | gpt-4.1 / gpt-4.1-mini | ✓ | ✓ | — | ✓ | ✓ | ✓ | — |
+| | o3 / o4-mini | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
 | **Anthropic** | claude-sonnet-4-20250514 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-| | claude-haiku-3.5 | ✓ | ✓ | — | ✓ | ✓ | — | — |
-| **Kimi** | moonshot-v1-8k/32k/128k | ✓ | ✓ | — | — | ✓ | ✓ | — |
-| **火山引擎** | doubao-1.5-pro-256k | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
-| | doubao-1.5-lite-32k | ✓ | ✓ | — | — | ✓ | — | — |
-| **阿里云** | qwen-turbo / qwen-plus / qwen-max | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
-| **xAI** | grok-2 | ✓ | ✓ | — | ✓ | ✓ | — | — |
-| **GLM** | glm-4-flash / glm-4-plus | ✓ | ✓ | — | ✓ | ✓ | — | ✓ |
-| **Minimax** | abab6.5s-chat | ✓ | ✓ | — | — | ✓ | — | — |
+| | claude-opus-4-20250514 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| | claude-3-5-haiku-20241022 | ✓ | ✓ | — | ✓ | ✓ | — | — |
+| **Kimi** | kimi-k2.5 (旗舰) | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| | kimi-k2-0905-preview | ✓ | ✓ | ✓ | — | ✓ | — | — |
+| | moonshot-v1-8k/32k/128k | ✓ | ✓ | — | — | ✓ | ✓ | — |
+| **火山引擎** | doubao-seed-2-1-pro/turbo | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| | doubao-seed-2-0-lite | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| | doubao-seed-1-6 / 1-6-flash | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| **阿里云** | qwen-max (Qwen3) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| | qwen-plus (Qwen3.6) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| | qwen-turbo / qwen-coder-plus | ✓ | ✓ | ✓ | — | ✓ | ✓ | — |
+| **xAI** | grok-4.3 | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
+| | grok-build-0.1 | ✓ | ✓ | ✓ | — | ✓ | — | — |
+| **GLM** | glm-5.1 / glm-5 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| | glm-4.7 / glm-4.6 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| **Minimax** | MiniMax-M2.7 / M2.5 | ✓ | ✓ | ✓ | — | ✓ | — | ✓ |
+| | abab6.5s-chat | ✓ | ✓ | — | — | ✓ | — | — |
 
 > **自定义端点**：通过管理后台添加任意 OpenAI 兼容的 API 端点，Lumen 会尽可能自动检测模型能力。
 

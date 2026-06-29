@@ -16,6 +16,10 @@ __pycache__/
 .cozeproj/
 .coze
 
+# Agent & design docs (internal only)
+AGENTS.md
+DESIGN.md
+
 # JS/TS bundlers & build outputs
 .next
 .nuxt
