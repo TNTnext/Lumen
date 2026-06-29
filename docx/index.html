@@ -55,6 +55,15 @@
     [data-lang-zh-block] { display: block; }
     .fade-in { animation: fadeIn 0.4s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* Card hover — applies to all bg-surface cards */
+    .bg-surface.rounded-2xl { transition: all 0.2s ease-out; }
+    .bg-surface.rounded-2xl:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    /* Sidebar nav hover */
+    .sidebar a { transition: all 0.15s ease-out; }
+    .sidebar a:hover { background: var(--color-surface-container); border-radius: 0.5rem; }
+    /* Method badge hover */
+    .method-badge { transition: all 0.15s ease-out; }
+    .method-badge:hover { transform: scale(1.05); }
     @media (max-width: 768px) {
       .sidebar { display: none; }
       .sidebar.open { display: flex; position: fixed; inset: 0; z-index: 50; }

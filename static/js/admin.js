@@ -321,7 +321,7 @@ function navigate(page) {
   container.style.opacity = '0';
   container.innerHTML = '';
   const fn = window['render' + page.charAt(0).toUpperCase() + page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
-  if (fn) fn();
+  if (fn) await fn();
   // Auto-enhance all pages with animations
   requestAnimationFrame(() => {
     // Cards: lift on hover
@@ -405,11 +405,11 @@ async function renderOnboarding() {
           <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step4')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
-              <input id="onb-reg-open" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
+              <input id="onb-reg-open" type="checkbox" checked class="apple-switch">
               <span class="text-sm">${t('onboarding_reg_open')}</span>
             </label>
             <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
-              <input id="onb-admin-view" type="checkbox" class="w-4 h-4 rounded accent-accent">
+              <input id="onb-admin-view" type="checkbox" class="apple-switch">
               <span class="text-sm">${t('onboarding_admin_view')}</span>
             </label>
             <div class="sm:col-span-2">
@@ -424,11 +424,11 @@ async function renderOnboarding() {
           <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step5')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
-              <input id="onb-ep-auth" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
+              <input id="onb-ep-auth" type="checkbox" checked class="apple-switch">
               <span class="text-sm">${t('onboarding_ep_auth')}</span>
             </label>
             <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
-              <input id="onb-ep-chat" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
+              <input id="onb-ep-chat" type="checkbox" checked class="apple-switch">
               <span class="text-sm">${t('onboarding_ep_chat')}</span>
             </label>
           </div>
@@ -842,8 +842,8 @@ async function renderPermissions() {
         </div>
       </div>
       <div class="flex gap-4 mt-4">
-        <label class="flex items-center gap-2 text-sm"><input id="gp-export" type="checkbox" ${gp.allow_export ? 'checked' : ''} class="w-4 h-4 rounded accent-accent"> ${t('perm_allow_export')}</label>
-        <label class="flex items-center gap-2 text-sm"><input id="gp-upload" type="checkbox" ${gp.allow_file_upload ? 'checked' : ''} class="w-4 h-4 rounded accent-accent"> ${t('perm_allow_upload')}</label>
+        <label class="flex items-center gap-2 text-sm"><input id="gp-export" type="checkbox" ${gp.allow_export ? 'checked' : ''} class="apple-switch"> ${t('perm_allow_export')}</label>
+        <label class="flex items-center gap-2 text-sm"><input id="gp-upload" type="checkbox" ${gp.allow_file_upload ? 'checked' : ''} class="apple-switch"> ${t('perm_allow_upload')}</label>
       </div>
       <button onclick="saveGlobalPermissions()" class="mt-4 px-4 py-2 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">${t('perm_save_global')}</button>
     </div>
@@ -886,7 +886,7 @@ async function editUserPermissions(userId, username) {
     <div class="bg-surface rounded-xl border border-border p-6 w-96 shadow-lg">
       <h2 class="text-sm font-semibold mb-4">${esc(username)} ${t('perm_title')}</h2>
       <label class="flex items-center gap-2 mb-4 text-sm">
-        <input id="up-custom" type="checkbox" ${up.use_custom ? 'checked' : ''} class="w-4 h-4 rounded accent-accent" onchange="document.getElementById('up-fields').style.display=this.checked?'block':'none'">
+        <input id="up-custom" type="checkbox" ${up.use_custom ? 'checked' : ''} class="apple-switch" onchange="document.getElementById('up-fields').style.display=this.checked?'block':'none'">
         ${t('perm_custom')}
       </label>
       <div id="up-fields" style="display:${up.use_custom?'block':'none'}" class="space-y-3">
