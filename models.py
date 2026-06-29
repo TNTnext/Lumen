@@ -1,4 +1,5 @@
 """Database models for AI Chat Application."""
+import json
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -224,3 +225,55 @@ class EndpointToggle(db.Model):
             'description': self.description,
             'group': self.group,
         }
+
+
+class VendorConfig(db.Model):
+    """Per-vendor API key, base URL, enabled status, and model priority list."""
+    __tablename__ = 'vendor_configs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    vendor_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    display_name = db.Column(db.String(100), nullable=True)
+    api_key = db.Column(db.String(500), nullable=True)
+    base_url = db.Column(db.String(500), nullable=True)
+    enabled = db.Column(db.Boolean, default=False)
+    priority = db.Column(db.Integer, default=0)
+    default_model = db.Column(db.String(100), nullable=True)
+    model_priorities = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
+
+    def get_model_priorities(self) -> list:
+        """Return ordered model priority list: [{'model': 'gpt-4o', 'priority': 1}, ...]"""
+        if not self.model_priorities:
+            return []
+        try:
+            return json.loads(self.model_priorities)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def set_model_priorities(self, models: list):
+        """Set ordered model priority list."""
+        self.model_priorities = json.dumps(models, ensure_ascii=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'vendor_id': self.vendor_id,
+            'display_name': self.display_name,
+            'api_key': self.api_key[:8] + '••••' + self.api_key[-4:] if self.api_key and len(self.api_key) > 12 else (self.api_key or ''),
+            'base_url': self.base_url,
+            'enabled': self.enabled,
+            'priority': self.priority,
+            'default_model': self.default_model,
+            'model_priorities': self.get_model_priorities(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def to_admin_dict(self):
+        """Full dict including raw api_key for admin use."""
+        d = self.to_dict()
+        d['api_key'] = self.api_key or ''
+        return d

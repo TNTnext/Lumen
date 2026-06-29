@@ -117,8 +117,8 @@ def create_app():
 
 
 def _init_default_data():
-    """Initialize default data: admin user, global permissions, system configs, endpoint toggles."""
-    from models import User, GlobalPermission, SystemConfig, EndpointToggle, DEFAULT_ENDPOINTS
+    """Initialize default data: admin user, global permissions, system configs, endpoint toggles, vendor configs."""
+    from models import User, GlobalPermission, SystemConfig, EndpointToggle, VendorConfig, DEFAULT_ENDPOINTS
     from werkzeug.security import generate_password_hash
 
     # Create default admin
@@ -168,6 +168,23 @@ def _init_default_data():
                 enabled=ep['enabled'],
             )
             db.session.add(toggle)
+
+    # Create default vendor configs from model_registry
+    from model_registry import VENDORS
+    for i, (vendor_id, vendor) in enumerate(VENDORS.items()):
+        if not VendorConfig.query.filter_by(vendor_id=vendor_id).first():
+            default_models = [{'model': m_id, 'priority': j + 1}
+                              for j, m_id in enumerate(vendor['models'].keys())]
+            vc = VendorConfig(
+                vendor_id=vendor_id,
+                display_name=vendor['name'],
+                api_key='',
+                base_url=vendor['base_url'],
+                enabled=(vendor_id == 'deepseek'),
+                priority=i + 1,
+            )
+            vc.set_model_priorities(default_models)
+            db.session.add(vc)
 
     db.session.commit()
 

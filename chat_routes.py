@@ -1,303 +1,403 @@
-"""Chat API blueprint."""
+"""Chat routes — conversation management with multi-vendor fallback."""
+
 import json
-import time
-from datetime import datetime, timezone, date
-from flask import Blueprint, request, jsonify, Response, g, stream_with_context
-from models import db, User, Conversation, Message
-from auth_utils import require_auth, get_effective_permission, check_chat_permission
+import logging
+from flask import Blueprint, request, jsonify, Response, stream_with_context
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+from models import db, User, Conversation, Message, VendorConfig
+from auth_utils import get_effective_permission
 from ai_service import chat_completion, stream_chat_completion
-from config import Config
+from model_registry import get_vendor_list, get_all_models_flat
 
 chat_bp = Blueprint('chat', __name__)
-
-# Config cache to avoid DB query on every request
-_config_cache = {'ts': 0, 'api_key': '', 'base_url': '', 'vendor_id': 'deepseek'}
-_CONFIG_CACHE_TTL = 30  # seconds
+logger = logging.getLogger(__name__)
 
 
-def _load_ai_config():
-    """Load AI config from system settings (with cache)."""
-    global _config_cache
-    now = time.time()
-    if now - _config_cache['ts'] < _CONFIG_CACHE_TTL:
-        return _config_cache
-    from models import SystemConfig
-    api_key_cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
-    base_url_cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
-    vendor_cfg = SystemConfig.query.filter_by(key='ai_vendor').first()
-    api_key = api_key_cfg.value if api_key_cfg else Config.DEEPSEEK_API_KEY
-    base_url = base_url_cfg.value if base_url_cfg else Config.DEEPSEEK_BASE_URL
-    vendor_id = vendor_cfg.value if vendor_cfg else 'deepseek'
-    _config_cache = {'ts': now, 'api_key': api_key, 'base_url': base_url, 'vendor_id': vendor_id}
-    return _config_cache
+def _get_active_vendor_configs():
+    """Get all enabled vendor configs ordered by priority."""
+    return VendorConfig.query.filter_by(enabled=True).order_by(VendorConfig.priority).all()
+
+
+def _extract_model_names(model_priorities_json):
+    """Extract model name strings from model_priorities JSON.
+    Handles both [{model, priority}, ...] and flat [model_name, ...] formats."""
+    if not model_priorities_json:
+        return []
+    try:
+        data = json.loads(model_priorities_json)
+        if isinstance(data, list):
+            if data and isinstance(data[0], dict):
+                return [item.get('model', '') for item in data if item.get('model')]
+            return [str(x) for x in data if x]
+        return []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+def _get_first_model(cfg):
+    """Get the first available model from a vendor config."""
+    if cfg.default_model:
+        return cfg.default_model
+    names = _extract_model_names(cfg.model_priorities)
+    return names[0] if names else None
+
+
+def _resolve_model(user, requested_model=None):
+    """
+    Resolve which model to use.
+    1. If user requests a specific model, use it (must be in user's allowed models)
+    2. Otherwise, use the first vendor's default_model
+    3. Fall back to the first model in the first vendor's model_priority list
+    """
+    perm = get_effective_permission(user)
+    allowed_models = perm.get('allowed_models', []) if perm else []
+
+    configs = _get_active_vendor_configs()
+    if not configs:
+        return None, None, '没有可用的 AI 厂商配置'
+
+    if requested_model:
+        # Check if model is allowed
+        if allowed_models and requested_model not in allowed_models:
+            return None, None, f'模型 {requested_model} 不在允许列表中'
+        # Find which vendor has this model
+        for cfg in configs:
+            model_names = _extract_model_names(cfg.model_priorities)
+            if requested_model in model_names or requested_model == cfg.default_model:
+                return cfg, requested_model, None
+        # Model not found in any vendor — try first vendor anyway
+        return configs[0], requested_model, None
+
+    # Auto-select: use first vendor's default model
+    primary = configs[0]
+    model = primary.default_model
+    if not model:
+        # Fall back to first model in priority list
+        model_names = _extract_model_names(primary.model_priorities)
+        model = model_names[0] if model_names else None
+
+    if not model:
+        return None, None, '没有可用的模型'
+
+    # Check allowed models
+    if allowed_models and model not in allowed_models:
+        # Try to find an allowed model from the priority list
+        model_names = _extract_model_names(primary.model_priorities)
+        for m in model_names:
+            if m in allowed_models:
+                model = m
+                break
+        else:
+            return None, None, '没有权限使用任何可用模型'
+
+    return primary, model, None
+
+
+def _try_chat_completion(vendor_config, model, messages, **kwargs):
+    """Attempt chat completion with a specific vendor. Returns (result, error)."""
+    try:
+        result = chat_completion(
+            vendor_id=vendor_config.vendor_id,
+            api_key=vendor_config.api_key,
+            base_url=vendor_config.base_url,
+            model=model,
+            messages=messages,
+            **kwargs
+        )
+        if result.get('error'):
+            return None, f"{vendor_config.vendor_id}/{model}: {result['error']}"
+        return result, None
+    except Exception as e:
+        logger.warning(f"Vendor {vendor_config.vendor_id} model {model} failed: {e}")
+        return None, str(e)
+
+
+def _try_stream_chat_completion(vendor_config, model, messages, **kwargs):
+    """Attempt streaming chat completion. Returns (generator, error)."""
+    try:
+        gen = stream_chat_completion(
+            vendor_id=vendor_config.vendor_id,
+            api_key=vendor_config.api_key,
+            base_url=vendor_config.base_url,
+            model=model,
+            messages=messages,
+            **kwargs
+        )
+        return gen, None
+    except Exception as e:
+        logger.warning(f"Vendor {vendor_config.vendor_id} model {model} stream failed: {e}")
+        return None, str(e)
 
 
 @chat_bp.route('/api/chat/send', methods=['POST'])
-@require_auth
+@jwt_required()
 def send_message():
-    """Send a message and get AI response."""
-    cfg = _load_ai_config()
+    """Send a message with multi-vendor fallback."""
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
 
     data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': '请提供消息内容'}), 400
 
-    content = (data.get('content') or '').strip()
+    content = data.get('content', '').strip()
     if not content:
         return jsonify({'error': '消息内容不能为空'}), 400
 
-    model = data.get('model', 'deepseek-chat')
     conversation_id = data.get('conversation_id')
-
-    # Permission check
-    allowed, error_msg = check_chat_permission(g.current_user, model)
-    if not allowed:
-        return jsonify({'error': error_msg}), 403
+    model = data.get('model')  # optional user override
+    stream = data.get('stream', False)
+    max_tokens = data.get('max_tokens')
+    temperature = data.get('temperature')
+    top_p = data.get('top_p')
 
     # Get or create conversation
     if conversation_id:
-        conv = Conversation.query.filter_by(
-            id=conversation_id, user_id=g.current_user.id
-        ).first()
+        conv = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
         if not conv:
             return jsonify({'error': '对话不存在'}), 404
     else:
-        conv = Conversation(
-            user_id=g.current_user.id,
-            title=content[:50] + ('...' if len(content) > 50 else ''),
-            model=model,
-        )
+        conv = Conversation(user_id=user_id, title=content[:50])
         db.session.add(conv)
         db.session.flush()
 
     # Save user message
-    user_msg = Message(
-        conversation_id=conv.id,
-        role='user',
-        content=content,
-    )
+    user_msg = Message(conversation_id=conv.id, role='user', content=content)
     db.session.add(user_msg)
+    db.session.flush()
 
-    # Build messages array from history
-    history = Message.query.filter_by(conversation_id=conv.id).order_by(
-        Message.created_at.asc()
-    ).all()
+    # Build message history
+    history = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at).all()
     messages = [{'role': m.role, 'content': m.content} for m in history]
 
-    # Call AI
-    perm = get_effective_permission(g.current_user)
-    max_tokens = perm.get('max_tokens_per_request', 4096)
+    # Resolve model with fallback
+    primary_config, resolved_model, resolve_error = _resolve_model(user, model)
+    if resolve_error:
+        return jsonify({'error': resolve_error}), 400
 
-    result = chat_completion(
-        vendor_id=cfg['vendor_id'],
-        model=model,
-        messages=messages,
-        api_key=cfg['api_key'],
-        base_url=cfg['base_url'],
-        max_tokens=max_tokens,
-    )
+    # Get all active configs for fallback
+    all_configs = _get_active_vendor_configs()
 
-    if 'error' in result:
-        db.session.rollback()
-        return jsonify({'error': result.get('error', 'AI服务异常')}), 500
+    # Build fallback chain: primary first, then others by priority
+    fallback_chain = []
+    if primary_config:
+        fallback_chain.append((primary_config, resolved_model))
+    for cfg in all_configs:
+        if cfg.id != (primary_config.id if primary_config else -1):
+            fm = _get_first_model(cfg)
+            if fm:
+                fallback_chain.append((cfg, fm))
 
-    # Save assistant message
-    assistant_msg = Message(
-        conversation_id=conv.id,
-        role='assistant',
-        content=result['content'],
-        tokens=result.get('usage', {}).get('completion_tokens', 0),
-    )
-    db.session.add(assistant_msg)
+    # Extra kwargs
+    extra_kwargs = {}
+    if max_tokens:
+        extra_kwargs['max_tokens'] = max_tokens
+    if temperature is not None:
+        extra_kwargs['temperature'] = temperature
+    if top_p is not None:
+        extra_kwargs['top_p'] = top_p
 
-    # Update conversation stats
-    conv.total_tokens = (conv.total_tokens or 0) + result.get('usage', {}).get('total_tokens', 0)
-    conv.message_count = conv.message_count + 2
-    conv.model = model
-    conv.updated_at = datetime.now(timezone.utc)
+    if stream:
+        return _handle_stream(conv, user_msg, messages, fallback_chain, extra_kwargs)
 
-    # Update user daily count
-    today = date.today()
-    if g.current_user.daily_chat_date != today:
-        g.current_user.daily_chat_count = 0
-        g.current_user.daily_chat_date = today
-    g.current_user.daily_chat_count += 1
-
-    db.session.commit()
-
-    return jsonify({
-        'success': True,
-        'conversation_id': conv.id,
-        'message': assistant_msg.to_dict(),
-        'tokens': result.get('usage', {}).get('total_tokens', 0),
-    })
-
-
-@chat_bp.route('/api/chat/send-stream', methods=['POST'])
-@require_auth
-def send_message_stream():
-    """Send a message and get streaming AI response."""
-    cfg = _load_ai_config()
-
-    data = request.get_json(silent=True)
-    if not data:
-        return jsonify({'error': '请提供消息内容'}), 400
-
-    content = (data.get('content') or '').strip()
-    if not content:
-        return jsonify({'error': '消息内容不能为空'}), 400
-
-    model = data.get('model', 'deepseek-chat')
-    conversation_id = data.get('conversation_id')
-
-    # Permission check
-    allowed, error_msg = check_chat_permission(g.current_user, model)
-    if not allowed:
-        return jsonify({'error': error_msg}), 403
-
-    # Get or create conversation
-    if conversation_id:
-        conv = Conversation.query.filter_by(
-            id=conversation_id, user_id=g.current_user.id
-        ).first()
-        if not conv:
-            return jsonify({'error': '对话不存在'}), 404
-    else:
-        conv = Conversation(
-            user_id=g.current_user.id,
-            title=content[:50] + ('...' if len(content) > 50 else ''),
-            model=model,
-        )
-        db.session.add(conv)
-        db.session.flush()
-
-    # Save user message
-    user_msg = Message(
-        conversation_id=conv.id,
-        role='user',
-        content=content,
-    )
-    db.session.add(user_msg)
-    db.session.commit()
-
-    # Build messages array
-    history = Message.query.filter_by(conversation_id=conv.id).order_by(
-        Message.created_at.asc()
-    ).all()
-    messages = [{'role': m.role, 'content': m.content} for m in history]
-
-    perm = get_effective_permission(g.current_user)
-    max_tokens = perm.get('max_tokens_per_request', 4096)
-
-    def generate():
-        full_content = ''
-        try:
-            for chunk in stream_chat_completion(
-                vendor_id=cfg['vendor_id'],
-                model=model,
-                messages=messages,
-                api_key=cfg['api_key'],
-                base_url=cfg['base_url'],
-                max_tokens=max_tokens,
-            ):
-                full_content += chunk
-                yield f'data: {json.dumps({"content": chunk})}\n\n'
+    # Non-streaming: try each vendor in order
+    last_error = None
+    for vendor_cfg, mdl in fallback_chain:
+        result, error = _try_chat_completion(vendor_cfg, mdl, messages, **extra_kwargs)
+        if result and result.get('success'):
+            assistant_content = result.get('content', '')
+            tokens_used = result.get('tokens', 0)
 
             # Save assistant message
             assistant_msg = Message(
                 conversation_id=conv.id,
                 role='assistant',
-                content=full_content,
-                tokens=0,
+                content=assistant_content,
+                tokens=tokens_used
             )
             db.session.add(assistant_msg)
-            conv.message_count = conv.message_count + 2
-            conv.updated_at = datetime.now(timezone.utc)
 
-            today = date.today()
-            if g.current_user.daily_chat_date != today:
-                g.current_user.daily_chat_count = 0
-                g.current_user.daily_chat_date = today
-            g.current_user.daily_chat_count += 1
-
+            # Update conversation
+            conv.model = f"{vendor_cfg.vendor_id}/{mdl}"
+            conv.total_tokens = (conv.total_tokens or 0) + tokens_used
+            conv.message_count = (conv.message_count or 0) + 2
+            if not conv.title or conv.title == content[:50]:
+                conv.title = content[:50]
             db.session.commit()
 
-            yield f'data: {json.dumps({"done": True, "conversation_id": conv.id})}\n\n'
-        except Exception as e:
-            yield f'data: {json.dumps({"error": str(e)})}\n\n'
+            return jsonify({
+                'success': True,
+                'conversation_id': conv.id,
+                'message': assistant_msg.to_dict(),
+                'tokens': tokens_used,
+                'vendor': vendor_cfg.vendor_id,
+                'model': mdl,
+                'fallback_used': vendor_cfg.id != fallback_chain[0][0].id if fallback_chain else False
+            })
+        last_error = error
+
+    return jsonify({'error': f'所有厂商均请求失败: {last_error}'}), 502
+
+
+def _handle_stream(conv, user_msg, messages, fallback_chain, extra_kwargs):
+    """Handle streaming response with fallback."""
+    def generate():
+        last_error = None
+        assistant_content = ''
+        used_vendor = None
+        used_model = None
+
+        for vendor_cfg, mdl in fallback_chain:
+            gen, error = _try_stream_chat_completion(vendor_cfg, mdl, messages, **extra_kwargs)
+            if error:
+                last_error = error
+                continue
+
+            used_vendor = vendor_cfg.vendor_id
+            used_model = mdl
+            try:
+                for chunk in gen:
+                    if isinstance(chunk, dict):
+                        delta = chunk.get('content', '')
+                        if delta:
+                            assistant_content += delta
+                            yield f"data: {json.dumps({'content': delta})}\n\n"
+                        if chunk.get('done'):
+                            break
+                    else:
+                        assistant_content += str(chunk)
+                        yield f"data: {json.dumps({'content': str(chunk)})}\n\n"
+                break  # Success — don't try next vendor
+            except Exception as e:
+                logger.warning(f"Stream from {vendor_cfg.vendor_id}/{mdl} interrupted: {e}")
+                last_error = str(e)
+                continue
+
+        if not assistant_content and last_error:
+            yield f"data: {json.dumps({'error': f'所有厂商均请求失败: {last_error}'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        # Save assistant message
+        with db.session.begin():
+            assistant_msg = Message(
+                conversation_id=conv.id,
+                role='assistant',
+                content=assistant_content,
+                tokens=len(assistant_content) // 4  # rough estimate
+            )
+            db.session.add(assistant_msg)
+            conv.model = f"{used_vendor}/{used_model}" if used_vendor else conv.model
+            conv.total_tokens = (conv.total_tokens or 0) + len(assistant_content) // 4
+            conv.message_count = (conv.message_count or 0) + 2
+            if not conv.title or conv.title == messages[-1]['content'][:50]:
+                conv.title = messages[-1]['content'][:50]
+
+        yield f"data: {json.dumps({'done': True, 'conversation_id': conv.id, 'vendor': used_vendor, 'model': used_model})}\n\n"
+        yield "data: [DONE]\n\n"
 
     return Response(
         stream_with_context(generate()),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-        },
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
+        }
     )
 
 
 @chat_bp.route('/api/chat/conversations', methods=['GET'])
-@require_auth
+@jwt_required()
 def list_conversations():
-    """List current user's conversations."""
+    """List user's conversations with pagination."""
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
 
-    pagination = Conversation.query.filter_by(user_id=g.current_user.id).order_by(
-        Conversation.updated_at.desc()
-    ).paginate(page=page, per_page=per_page, error_out=False)
+    pagination = Conversation.query.filter_by(user_id=user_id)\
+        .order_by(Conversation.updated_at.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
 
     return jsonify({
         'success': True,
         'conversations': [c.to_dict() for c in pagination.items],
         'total': pagination.total,
         'pages': pagination.pages,
-        'page': page,
+        'page': page
     })
 
 
 @chat_bp.route('/api/chat/conversations/<int:conv_id>', methods=['GET'])
-@require_auth
-def get_conversation(conv_id: int):
+@jwt_required()
+def get_conversation(conv_id):
     """Get conversation detail with messages."""
-    conv = Conversation.query.filter_by(
-        id=conv_id, user_id=g.current_user.id
-    ).first()
+    user_id = int(get_jwt_identity())
+    conv = Conversation.query.filter_by(id=conv_id, user_id=user_id).first()
     if not conv:
         return jsonify({'error': '对话不存在'}), 404
 
-    messages = Message.query.filter_by(conversation_id=conv.id).order_by(
-        Message.created_at.asc()
-    ).all()
+    messages = Message.query.filter_by(conversation_id=conv_id)\
+        .order_by(Message.created_at).all()
 
     return jsonify({
         'success': True,
         'conversation': conv.to_dict(),
-        'messages': [m.to_dict() for m in messages],
+        'messages': [m.to_dict() for m in messages]
     })
 
 
 @chat_bp.route('/api/chat/conversations/<int:conv_id>', methods=['DELETE'])
-@require_auth
-def delete_conversation(conv_id: int):
-    """Delete a conversation."""
-    conv = Conversation.query.filter_by(
-        id=conv_id, user_id=g.current_user.id
-    ).first()
+@jwt_required()
+def delete_conversation(conv_id):
+    """Delete a conversation and its messages."""
+    user_id = int(get_jwt_identity())
+    conv = Conversation.query.filter_by(id=conv_id, user_id=user_id).first()
     if not conv:
         return jsonify({'error': '对话不存在'}), 404
 
+    Message.query.filter_by(conversation_id=conv_id).delete()
     db.session.delete(conv)
     db.session.commit()
+
     return jsonify({'success': True, 'message': '对话已删除'})
 
 
 @chat_bp.route('/api/chat/models', methods=['GET'])
-@require_auth
-def get_available_models():
-    """Get available models for current user."""
-    perm = get_effective_permission(g.current_user)
-    return jsonify({
-        'success': True,
-        'models': perm.get('allowed_models', []),
-    })
+@jwt_required()
+def list_available_models():
+    """List models available to the current user, considering vendor configs and permissions."""
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    perm = get_effective_permission(user)
+    allowed_models = perm.get('allowed_models', []) if perm else []
+
+    configs = _get_active_vendor_configs()
+    available = []
+
+    for cfg in configs:
+        model_names = _extract_model_names(cfg.model_priorities)
+        for m in model_names:
+            if not allowed_models or m in allowed_models:
+                available.append({
+                    'vendor_id': cfg.vendor_id,
+                    'vendor_name': cfg.display_name,
+                    'model': m,
+                    'is_default': m == cfg.default_model,
+                    'priority': cfg.priority
+                })
+
+    # Deduplicate by model name, keep highest priority
+    seen = set()
+    deduped = []
+    for item in sorted(available, key=lambda x: x['priority']):
+        if item['model'] not in seen:
+            seen.add(item['model'])
+            deduped.append(item)
+
+    return jsonify({'success': True, 'models': deduped})

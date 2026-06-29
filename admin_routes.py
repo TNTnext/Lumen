@@ -2,11 +2,11 @@
 from datetime import datetime, timezone, date, timedelta
 from flask import Blueprint, request, jsonify, g
 from sqlalchemy import func
-from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig
+from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig, VendorConfig
 from auth_utils import require_admin, get_effective_permission, _invalidate_perm_cache
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
-from ai_service import chat_completion
+from ai_service import chat_completion, test_vendor_connection
 from model_registry import get_vendor_list, get_all_models_flat, get_model_capabilities
 from config import Config
 
@@ -517,30 +517,48 @@ def update_system_config():
 @admin_bp.route('/api/admin/config/test-connection', methods=['POST'])
 @require_admin
 def test_deepseek_connection():
-    """Test DeepSeek API connection and record usage."""
+    """Test AI API connection and record usage. Supports vendor_config_id for vendor-specific testing."""
     data = request.get_json(silent=True) or {}
-    api_key = data.get('api_key', '')
-    base_url = data.get('base_url', 'https://api.deepseek.com')
 
-    if not api_key:
-        cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
-        api_key = cfg.value if cfg else Config.DEEPSEEK_API_KEY
+    # Check if testing a specific vendor config
+    vendor_config_id = data.get('vendor_config_id')
+    if vendor_config_id:
+        vendor_cfg = VendorConfig.query.get(vendor_config_id)
+        if not vendor_cfg:
+            return jsonify({'success': False, 'error': '厂商配置不存在'}), 404
+        api_key = vendor_cfg.api_key or data.get('api_key', '')
+        base_url = vendor_cfg.base_url or data.get('base_url', '')
+        vendor_id = vendor_cfg.vendor_id
+        # Get default model or first model from priorities
+        model = vendor_cfg.default_model
+        if not model and vendor_cfg.model_priorities:
+            import json
+            priorities = json.loads(vendor_cfg.model_priorities) if isinstance(vendor_cfg.model_priorities, str) else vendor_cfg.model_priorities
+            if priorities and isinstance(priorities[0], dict):
+                model = priorities[0].get('model')
+    else:
+        api_key = data.get('api_key', '')
+        base_url = data.get('base_url', 'https://api.deepseek.com')
 
-    if not base_url or base_url == 'https://api.deepseek.com':
-        cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
-        base_url = cfg.value if cfg else Config.DEEPSEEK_BASE_URL
+        if not api_key:
+            cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
+            api_key = cfg.value if cfg else Config.DEEPSEEK_API_KEY
+
+        if not base_url or base_url == 'https://api.deepseek.com':
+            cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
+            base_url = cfg.value if cfg else Config.DEEPSEEK_BASE_URL
+
+        # Get vendor from config
+        vendor_cfg = SystemConfig.query.filter_by(key='ai_vendor').first()
+        vendor_id = vendor_cfg.value if vendor_cfg else 'deepseek'
+
+        # Get a valid model for this vendor
+        from model_registry import get_vendor
+        vendor = get_vendor(vendor_id)
+        model = list(vendor['models'].keys())[0] if vendor and vendor.get('models') else 'deepseek-chat'
 
     if not api_key:
         return jsonify({'success': False, 'error': '请先配置 API Key'}), 400
-
-    # Get vendor from config
-    vendor_cfg = SystemConfig.query.filter_by(key='ai_vendor').first()
-    vendor_id = vendor_cfg.value if vendor_cfg else 'deepseek'
-
-    # Get a valid model for this vendor
-    from model_registry import get_vendor
-    vendor = get_vendor(vendor_id)
-    model = list(vendor['models'].keys())[0] if vendor and vendor.get('models') else 'deepseek-chat'
 
     result = chat_completion(
         vendor_id=vendor_id,
@@ -856,6 +874,152 @@ def reset_system():
 
     db.session.commit()
     return jsonify({'success': True, 'message': '系统已重置', 'results': results})
+
+
+# ─── Vendor Config Management ─────────────────────────────
+
+@admin_bp.route('/api/admin/vendor-configs', methods=['GET'])
+@require_admin
+def get_vendor_configs():
+    """Get all vendor configurations with model priorities."""
+    configs = VendorConfig.query.order_by(VendorConfig.priority).all()
+    return jsonify({
+        'success': True,
+        'configs': [c.to_dict() for c in configs],
+        'count': len(configs)
+    })
+
+
+@admin_bp.route('/api/admin/vendor-configs', methods=['POST'])
+@require_admin
+def create_vendor_config():
+    """Add a new vendor configuration."""
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': '请提供配置数据'}), 400
+
+    vendor_id = data.get('vendor_id', '').strip()
+    if not vendor_id:
+        return jsonify({'error': '请选择厂商'}), 400
+
+    # Check vendor exists in registry
+    vendors = get_vendor_list()
+    vendor_info = next((v for v in vendors if v['id'] == vendor_id), None)
+    if not vendor_info:
+        return jsonify({'error': f'未知厂商: {vendor_id}'}), 400
+
+    # Check duplicate
+    existing = VendorConfig.query.filter_by(vendor_id=vendor_id).first()
+    if existing:
+        return jsonify({'error': f'厂商 {vendor_id} 已配置'}), 409
+
+    # Auto-assign priority
+    max_priority = db.session.query(db.func.max(VendorConfig.priority)).scalar() or 0
+
+    config = VendorConfig(
+        vendor_id=vendor_id,
+        display_name=data.get('display_name', vendor_info['name']),
+        api_key=data.get('api_key', ''),
+        base_url=data.get('base_url', vendor_info.get('base_url', '')),
+        default_model=data.get('default_model', ''),
+        model_priorities=json.dumps(data.get('model_priority', [])),
+        enabled=data.get('enabled', True),
+        priority=max_priority + 1
+    )
+    db.session.add(config)
+    db.session.commit()
+    return jsonify({'success': True, 'config': config.to_dict()}), 201
+
+
+@admin_bp.route('/api/admin/vendor-configs/<int:config_id>', methods=['PUT'])
+@require_admin
+def update_vendor_config(config_id):
+    """Update a vendor configuration."""
+    config = VendorConfig.query.get_or_404(config_id)
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': '请提供配置数据'}), 400
+
+    if 'display_name' in data:
+        config.display_name = data['display_name']
+    if 'api_key' in data:
+        config.api_key = data['api_key']
+    if 'base_url' in data:
+        config.base_url = data['base_url']
+    if 'default_model' in data:
+        config.default_model = data['default_model']
+    if 'model_priority' in data:
+        config.model_priorities = json.dumps(data['model_priority'])
+    if 'enabled' in data:
+        config.enabled = data['enabled']
+    if 'priority' in data:
+        config.priority = data['priority']
+
+    db.session.commit()
+    return jsonify({'success': True, 'config': config.to_dict()})
+
+
+@admin_bp.route('/api/admin/vendor-configs/<int:config_id>', methods=['DELETE'])
+@require_admin
+def delete_vendor_config(config_id):
+    """Delete a vendor configuration."""
+    config = VendorConfig.query.get_or_404(config_id)
+    db.session.delete(config)
+    db.session.commit()
+    return jsonify({'success': True, 'message': '厂商配置已删除'})
+
+
+@admin_bp.route('/api/admin/vendor-configs/reorder', methods=['PUT'])
+@require_admin
+def reorder_vendor_configs():
+    """Reorder vendor configs (batch update priorities)."""
+    data = request.get_json(silent=True)
+    if not data or 'order' not in data:
+        return jsonify({'error': '请提供排序数据'}), 400
+
+    order = data['order']  # list of config IDs in desired order
+    for idx, config_id in enumerate(order):
+        config = VendorConfig.query.get(config_id)
+        if config:
+            config.priority = idx + 1
+
+    db.session.commit()
+    return jsonify({'success': True, 'message': '排序已更新'})
+
+
+@admin_bp.route('/api/admin/vendor-configs/<int:config_id>/test', methods=['POST'])
+@require_admin
+def test_vendor_config(config_id):
+    """Test connection for a specific vendor config."""
+    config = VendorConfig.query.get_or_404(config_id)
+    data = request.get_json(silent=True) or {}
+    model = data.get('model', config.default_model)
+
+    if not config.api_key:
+        return jsonify({'success': False, 'error': '请先配置 API Key'}), 400
+
+    result = test_vendor_connection(config.vendor_id, config.api_key, config.base_url, model)
+    return jsonify(result)
+
+
+@admin_bp.route('/api/admin/vendor-configs/<int:config_id>/models', methods=['GET'])
+@require_admin
+def get_vendor_config_models(config_id):
+    """Get available models for a vendor config."""
+    config = VendorConfig.query.get_or_404(config_id)
+    vendors = get_vendor_list()
+    vendor_info = next((v for v in vendors if v['id'] == config.vendor_id), None)
+    if not vendor_info:
+        return jsonify({'error': '厂商信息未找到'}), 404
+
+    model_priority = json.loads(config.model_priorities) if config.model_priorities else []
+    return jsonify({
+        'success': True,
+        'vendor_id': config.vendor_id,
+        'models': vendor_info.get('models', []),
+        'model_priority': model_priority,
+        'default_model': config.default_model
+    })
 
 
 @admin_bp.route('/api/admin/config/open-registration', methods=['PUT'])

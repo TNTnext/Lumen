@@ -59,6 +59,18 @@ const i18n = {
     onboarding_submit: '完成配置，进入管理后台',
     onboarding_done: '配置完成', onboarding_failed: '配置失败',
     need_admin: '需要管理员权限',
+    // Vendor management
+    nav_vendors: '厂商管理', vendor_title: '厂商管理',
+    vendor_enable: '启用', vendor_disable: '禁用',
+    vendor_add: '添加厂商', vendor_save: '保存', vendor_cancel: '取消',
+    vendor_delete: '删除', vendor_delete_confirm: '确定要删除此厂商吗？',
+    vendor_display_name: '显示名称', vendor_api_key: 'API Key',
+    vendor_base_url: 'Base URL', vendor_default_model: '默认模型',
+    vendor_priority: '优先级', vendor_model_priority: '模型优先级',
+    vendor_test_connection: '测试连接', vendor_testing: '测试中...',
+    vendor_test_success: '连接成功', vendor_test_failed: '连接失败',
+    vendor_no_models: '暂未配置模型优先级',
+    vendor_drag_hint: '拖拽调整模型优先级',
   },
   en: {
     nav_dashboard: 'Dashboard', nav_conversations: 'Conversations', nav_users: 'Users',
@@ -119,6 +131,18 @@ const i18n = {
     onboarding_submit: 'Complete Setup & Enter Admin',
     onboarding_done: 'Setup complete', onboarding_failed: 'Setup failed',
     need_admin: 'Admin privileges required',
+    // Vendor management
+    nav_vendors: 'Vendors', vendor_title: 'Vendor Management',
+    vendor_enable: 'Enable', vendor_disable: 'Disable',
+    vendor_add: 'Add Vendor', vendor_save: 'Save', vendor_cancel: 'Cancel',
+    vendor_delete: 'Delete', vendor_delete_confirm: 'Are you sure you want to delete this vendor?',
+    vendor_display_name: 'Display Name', vendor_api_key: 'API Key',
+    vendor_base_url: 'Base URL', vendor_default_model: 'Default Model',
+    vendor_priority: 'Priority', vendor_model_priority: 'Model Priority',
+    vendor_test_connection: 'Test Connection', vendor_testing: 'Testing...',
+    vendor_test_success: 'Connection successful', vendor_test_failed: 'Connection failed',
+    vendor_no_models: 'No models configured',
+    vendor_drag_hint: 'Drag to reorder model priority',
   }
 };
 
@@ -203,6 +227,7 @@ const navItems = [
   { id: 'users', labelKey: 'nav_users', icon: 'users' },
   { id: 'permissions', labelKey: 'nav_permissions', icon: 'shield' },
   { id: 'api-keys', labelKey: 'nav_api_keys', icon: 'key' },
+  { id: 'vendors', labelKey: 'nav_vendors', icon: 'cpu' },
   { id: 'endpoints', labelKey: 'nav_endpoints', icon: 'toggle-right' },
   { id: 'settings', labelKey: 'nav_settings', icon: 'settings' },
 ];
@@ -1081,6 +1106,320 @@ async function resetSystem() {
   const res = await api('/api/admin/reset', { method: 'POST', body: { scope: 'all', keep_admin: true } });
   if (res && res.success) toast(t('settings_reset_done'), 'success');
   else toast(res?.error || t('settings_reset_failed'), 'error');
+}
+
+// ─── Vendor Management ─────────────────────────────────────
+async function renderVendors() {
+  const container = document.getElementById('page-container');
+  const res = await api('/api/admin/vendor-configs');
+  const configs = res?.configs || [];
+  const vendorsRes = await api('/api/admin/vendors');
+  const allVendors = vendorsRes?.vendors || [];
+
+  container.innerHTML = `
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight">${t('vendor_title')}</h1>
+        <p class="text-xs text-text-secondary mt-1">${lang === 'zh' ? '管理 AI 厂商配置与模型优先级' : 'Manage AI vendor configurations and model priority'}</p>
+      </div>
+      <button onclick="showAddVendor()" class="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors flex items-center gap-1.5">
+        <i data-lucide="plus" class="w-4 h-4"></i>${t('vendor_add')}
+      </button>
+    </div>
+    <div id="vendor-list" class="space-y-3">
+      ${configs.length === 0 ? `<div class="text-center text-text-secondary text-sm py-12">${lang === 'zh' ? '暂未配置厂商' : 'No vendors configured'}</div>` : ''}
+    </div>
+  `;
+  lucide.createIcons();
+  renderVendorList(configs, allVendors);
+}
+
+function renderVendorList(configs, allVendors) {
+  const list = document.getElementById('vendor-list');
+  list.innerHTML = configs.map((cfg, idx) => {
+    const vendorInfo = allVendors.find(v => v.id === cfg.vendor_id);
+    const models = cfg.model_priorities || [];
+    const hasApiKey = cfg.api_key && cfg.api_key.trim() !== '';
+    return `
+      <div class="bg-surface rounded-xl border ${cfg.enabled ? 'border-border' : 'border-border opacity-60'} p-4 transition-all" id="vendor-card-${cfg.id}">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full ${cfg.enabled ? 'bg-success' : 'bg-border'}"></div>
+            <div>
+              <h3 class="text-sm font-semibold">${esc(cfg.display_name)}</h3>
+              <p class="text-xs text-text-secondary">${cfg.vendor_id}${cfg.default_model ? ' · ' + esc(cfg.default_model) : ''}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs text-text-secondary px-1.5">#${cfg.priority}</span>
+            <button onclick="toggleVendor(${cfg.id}, ${!cfg.enabled})" class="px-2 py-1 rounded-md text-xs font-medium transition-colors ${cfg.enabled ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-border/50 text-text-secondary hover:bg-border'}">
+              ${cfg.enabled ? t('vendor_enable') : t('vendor_disable')}
+            </button>
+            <button onclick="editVendor(${cfg.id})" class="p-1.5 rounded-md hover:bg-sidebar-hover text-text-secondary hover:text-text transition-colors" title="${lang === 'zh' ? '编辑' : 'Edit'}">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+            </button>
+            ${cfg.vendor_id !== 'deepseek' ? `<button onclick="deleteVendor(${cfg.id}, '${esc(cfg.display_name)}')" class="p-1.5 rounded-md hover:bg-danger/10 text-text-secondary hover:text-danger transition-colors" title="${t('vendor_delete')}">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>` : ''}
+          </div>
+        </div>
+        <!-- Model Priority -->
+        <div class="bg-bg rounded-lg p-3 border border-border/50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium text-text-secondary">${t('vendor_model_priority')}</span>
+            <button onclick="editVendor(${cfg.id})" class="text-xs text-accent hover:underline">${lang === 'zh' ? '编辑' : 'Edit'}</button>
+          </div>
+          ${models.length === 0 ? `<div class="text-xs text-text-secondary py-2 text-center">${t('vendor_no_models')}</div>` :
+            `<div class="flex flex-wrap gap-1.5">
+              ${models.map((m, mi) => `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sidebar-hover text-xs ${mi === 0 ? 'ring-1 ring-accent/30 font-medium' : ''}">
+                <span class="w-3.5 h-3.5 rounded-full bg-accent/10 text-accent text-[10px] flex items-center justify-center font-medium">${mi + 1}</span>
+                ${esc(m.model)}
+              </span>`).join('')}
+            </div>`
+          }
+        </div>
+        <!-- Status line -->
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-xs text-text-secondary">${hasApiKey ? (cfg.api_key.substring(0,4) + '***') : (lang === 'zh' ? '未配置 API Key' : 'No API Key')}</span>
+          <button onclick="testVendorConnection(${cfg.id})" class="text-xs text-accent hover:underline flex items-center gap-1" id="test-btn-${cfg.id}">
+            <i data-lucide="zap" class="w-3 h-3"></i>${t('vendor_test_connection')}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  lucide.createIcons();
+}
+
+function showAddVendor() {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black/30 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-surface rounded-2xl border border-border p-6 w-full max-w-md shadow-2xl mx-4">
+      <h2 class="text-lg font-semibold mb-4">${t('vendor_add')}</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_display_name')}</label>
+          <input id="new-display-name" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="My Vendor">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">Vendor ID</label>
+          <input id="new-vendor-id" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="my-vendor">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_api_key')}</label>
+          <input id="new-api-key" type="password" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="sk-...">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_base_url')}</label>
+          <input id="new-base-url" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="https://api.example.com">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_default_model')}</label>
+          <input id="new-default-model" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="gpt-4o">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-sidebar-hover transition-colors">${t('vendor_cancel')}</button>
+        <button onclick="saveNewVendor()" class="px-4 py-2 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">${t('vendor_save')}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function saveNewVendor() {
+  const displayName = document.getElementById('new-display-name').value.trim();
+  const vendorId = document.getElementById('new-vendor-id').value.trim();
+  const apiKey = document.getElementById('new-api-key').value.trim();
+  const baseUrl = document.getElementById('new-base-url').value.trim();
+  const defaultModel = document.getElementById('new-default-model').value.trim();
+  if (!displayName || !vendorId) { toast(lang === 'zh' ? '请填写显示名称和 Vendor ID' : 'Display name and Vendor ID required', 'error'); return; }
+  const res = await api('/api/admin/vendor-configs', {
+    method: 'POST',
+    body: { vendor_id: vendorId, display_name: displayName, api_key: apiKey, base_url: baseUrl, default_model: defaultModel }
+  });
+  if (res && res.success) {
+    document.querySelector('.fixed').remove();
+    toast(lang === 'zh' ? '厂商已添加' : 'Vendor added', 'success');
+    renderVendors();
+  } else {
+    toast(res?.error || t('save_failed'), 'error');
+  }
+}
+
+async function editVendor(id) {
+  const res = await api('/api/admin/vendor-configs');
+  const cfg = res?.configs?.find(c => c.id === id);
+  if (!cfg) return;
+  const models = cfg.model_priorities || [];
+
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black/30 flex items-center justify-center z-50 overflow-y-auto py-8';
+  modal.innerHTML = `
+    <div class="bg-surface rounded-2xl border border-border p-6 w-full max-w-lg shadow-2xl mx-4">
+      <h2 class="text-lg font-semibold mb-4">${lang === 'zh' ? '编辑' : 'Edit'} ${esc(cfg.display_name)}</h2>
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+            <input type="checkbox" id="edit-enabled" ${cfg.enabled ? 'checked' : ''} class="rounded">
+            ${lang === 'zh' ? '启用' : 'Enabled'}
+          </label>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_display_name')}</label>
+          <input id="edit-display-name" value="${esc(cfg.display_name)}" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_api_key')}</label>
+          <input id="edit-api-key" type="password" value="${esc(cfg.api_key || '')}" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="sk-...">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_base_url')}</label>
+          <input id="edit-base-url" value="${esc(cfg.base_url || '')}" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_default_model')}</label>
+          <input id="edit-default-model" value="${esc(cfg.default_model || '')}" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary mb-2 block">${t('vendor_model_priority')} <span class="text-text-secondary/50">(${t('vendor_drag_hint')})</span></label>
+          <div id="model-priority-list" class="space-y-1.5 max-h-64 overflow-y-auto">
+            ${models.map((m, i) => `
+              <div class="flex items-center gap-2 bg-bg border border-border rounded-lg px-3 py-2" draggable="true" data-index="${i}">
+                <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-text-secondary/50 cursor-grab"></i>
+                <span class="text-xs font-medium w-5 h-5 rounded-full bg-accent/10 text-accent flex items-center justify-center">${i + 1}</span>
+                <input value="${esc(m.model)}" class="flex-1 bg-transparent text-sm border-none focus:outline-none" data-model-input="${i}">
+                <button onclick="this.closest('.flex').remove()" class="p-0.5 text-text-secondary/50 hover:text-danger transition-colors">
+                  <i data-lucide="x" class="w-3 h-3"></i>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          <button onclick="addModelRow()" class="mt-2 text-xs text-accent hover:underline flex items-center gap-1">
+            <i data-lucide="plus" class="w-3 h-3"></i>${lang === 'zh' ? '添加模型' : 'Add Model'}
+          </button>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-sidebar-hover transition-colors">${t('vendor_cancel')}</button>
+        <button onclick="saveVendorEdit(${id})" class="px-4 py-2 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">${t('vendor_save')}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  lucide.createIcons();
+  // Drag & drop
+  initModelDragDrop();
+}
+
+function initModelDragDrop() {
+  const list = document.getElementById('model-priority-list');
+  if (!list) return;
+  let dragged = null;
+  list.querySelectorAll('[draggable]').forEach(el => {
+    el.addEventListener('dragstart', e => { dragged = el; el.classList.add('opacity-50'); });
+    el.addEventListener('dragend', e => { el.classList.remove('opacity-50'); dragged = null; });
+    el.addEventListener('dragover', e => { e.preventDefault(); });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragged && dragged !== el) {
+        const items = [...list.children];
+        const from = items.indexOf(dragged);
+        const to = items.indexOf(el);
+        if (from < to) list.insertBefore(dragged, el.nextSibling);
+        else list.insertBefore(dragged, el);
+        updateModelNumbers();
+      }
+    });
+  });
+}
+
+function updateModelNumbers() {
+  const list = document.getElementById('model-priority-list');
+  if (!list) return;
+  [...list.children].forEach((el, i) => {
+    const span = el.querySelector('.rounded-full');
+    if (span) span.textContent = i + 1;
+  });
+}
+
+function addModelRow() {
+  const list = document.getElementById('model-priority-list');
+  if (!list) return;
+  const div = document.createElement('div');
+  div.className = 'flex items-center gap-2 bg-bg border border-border rounded-lg px-3 py-2';
+  div.draggable = true;
+  div.innerHTML = `
+    <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-text-secondary/50 cursor-grab"></i>
+    <span class="text-xs font-medium w-5 h-5 rounded-full bg-accent/10 text-accent flex items-center justify-center">${list.children.length + 1}</span>
+    <input value="" class="flex-1 bg-transparent text-sm border-none focus:outline-none" placeholder="${lang === 'zh' ? '模型 ID' : 'Model ID'}">
+    <button onclick="this.closest('.flex').remove();updateModelNumbers();" class="p-0.5 text-text-secondary/50 hover:text-danger transition-colors">
+      <i data-lucide="x" class="w-3 h-3"></i>
+    </button>
+  `;
+  list.appendChild(div);
+  lucide.createIcons();
+  initModelDragDrop();
+}
+
+async function saveVendorEdit(id) {
+  const enabled = document.getElementById('edit-enabled').checked;
+  const displayName = document.getElementById('edit-display-name').value.trim();
+  const apiKey = document.getElementById('edit-api-key').value.trim();
+  const baseUrl = document.getElementById('edit-base-url').value.trim();
+  const defaultModel = document.getElementById('edit-default-model').value.trim();
+  // Collect model priorities
+  const modelInputs = document.querySelectorAll('#model-priority-list input[data-model-input]');
+  const existingModels = [...modelInputs].map(inp => inp.value.trim()).filter(Boolean);
+  // Also get any manually added model inputs
+  const extraInputs = document.querySelectorAll('#model-priority-list input:not([data-model-input])');
+  const extraModels = [...extraInputs].map(inp => inp.value.trim()).filter(Boolean);
+  const allModels = [...existingModels, ...extraModels];
+  const modelPriorities = allModels.map((m, i) => ({ model: m, priority: i + 1 }));
+
+  const res = await api(`/api/admin/vendor-configs/${id}`, {
+    method: 'PUT',
+    body: { enabled, display_name: displayName, api_key: apiKey, base_url: baseUrl, default_model: defaultModel, model_priorities: modelPriorities }
+  });
+  if (res && res.success) {
+    document.querySelector('.fixed').remove();
+    toast(t('saved'), 'success');
+    renderVendors();
+  } else {
+    toast(res?.error || t('save_failed'), 'error');
+  }
+}
+
+async function toggleVendor(id, enabled) {
+  const res = await api(`/api/admin/vendor-configs/${id}`, { method: 'PUT', body: { enabled } });
+  if (res && res.success) {
+    toast(enabled ? t('enabled') : t('disabled'), 'success');
+    renderVendors();
+  } else {
+    toast(res?.error || t('save_failed'), 'error');
+  }
+}
+
+async function deleteVendor(id, name) {
+  if (!confirm(t('vendor_delete_confirm') + ` (${name})`)) return;
+  const res = await api(`/api/admin/vendor-configs/${id}`, { method: 'DELETE' });
+  if (res && res.success) { toast(t('deleted'), 'success'); renderVendors(); }
+  else toast(res?.error || t('save_failed'), 'error');
+}
+
+async function testVendorConnection(id) {
+  const btn = document.getElementById(`test-btn-${id}`);
+  if (!btn) return;
+  btn.innerHTML = `<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>${t('vendor_testing')}`;
+  lucide.createIcons();
+  const res = await api(`/api/admin/config/test-connection`, { method: 'POST', body: { vendor_config_id: id } });
+  if (res && res.success) {
+    toast(t('vendor_test_success'), 'success');
+  } else {
+    toast((res?.error || t('vendor_test_failed')), 'error');
+  }
+  renderVendors();
 }
 
 // ─── Helpers ──────────────────────────────────────────────
