@@ -13,7 +13,7 @@
 
 ## 概述
 
-Lumen 是一款自托管的 AI 网关与对话管理平台。内置接入 **9 家大模型厂商**（DeepSeek、OpenAI、Anthropic、Kimi、GLM 等），也支持添加任意 OpenAI 兼容的自定义端点。多用户体系、细粒度权限、接口独立开关、Apple 风格管理后台——一行 `python app.py` 全部搞定。
+Lumen 是一款自托管的 AI 网关与对话管理平台。内置接入 **9 家大模型厂商**（DeepSeek、OpenAI、Anthropic、Kimi、GLM 等），也支持添加任意 OpenAI 兼容的自定义端点。多用户体系、细粒度权限、接口独立开关、简洁的管理后台——一行 `python app.py` 全部搞定。
 
 ### 为什么叫 Lumen
 

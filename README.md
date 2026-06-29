@@ -13,7 +13,7 @@
 
 ## Overview
 
-Lumen is a self-hosted AI gateway and conversation platform. Connect to **9 built-in providers** (DeepSeek, OpenAI, Anthropic, Kimi, GLM, and more) or bring your own OpenAI-compatible endpoint. Multi-user access, granular permissions, endpoint toggles, and an Apple-inspired admin dashboard — all from a single `python app.py`.
+Lumen is a self-hosted AI gateway and conversation platform. Connect to **9 built-in providers** (DeepSeek, OpenAI, Anthropic, Kimi, GLM, and more) or bring your own OpenAI-compatible endpoint. Multi-user access, granular permissions, endpoint toggles, and an clean admin dashboard — all from a single `python app.py`.
 
 ### Why Lumen
 
