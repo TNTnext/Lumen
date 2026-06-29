@@ -318,8 +318,34 @@ python app.py</pre>
               <tr><td class="py-1 font-mono">conversation_id</td><td class="py-1 text-on-surface-variant">int</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
               <tr><td class="py-1 font-mono">model</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
               <tr><td class="py-1 font-mono">stream</td><td class="py-1 text-on-surface-variant">bool</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">tools</td><td class="py-1 text-on-surface-variant">array</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">thinking</td><td class="py-1 text-on-surface-variant">bool</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">web_search</td><td class="py-1 text-on-surface-variant">bool</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">image_urls</td><td class="py-1 text-on-surface-variant">array</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">file_urls</td><td class="py-1 text-on-surface-variant">array</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">max_tokens</td><td class="py-1 text-on-surface-variant">int</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">temperature</td><td class="py-1 text-on-surface-variant">float</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">top_p</td><td class="py-1 text-on-surface-variant">float</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
             </tbody>
           </table>
+        </div>
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>请求示例</span><span data-lang-en>Request Example</span></p>
+          <pre class="bg-background rounded-lg p-3 text-xs font-mono overflow-x-auto">{
+  "content": "你好",
+  "model": "deepseek-chat",
+  "stream": false,
+  "tools": [{ "type": "function",
+    "function": { "name": "get_weather",
+      "parameters": { "city": "string" }
+    }
+  }],
+  "web_search": true,
+  "thinking": false,
+  "image_urls": ["https://..."],
+  "max_tokens": 4096,
+  "temperature": 0.7
+}</pre>
         </div>
         <div>
           <p class="text-xs font-medium mb-2"><span data-lang-zh>响应示例</span><span data-lang-en>Response</span></p>

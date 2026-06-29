@@ -70,13 +70,33 @@ def _anthropic_chat(vendor_id: str, model: str, messages: list,
     }
 
     # Convert OpenAI format messages to Anthropic format
-    system_msgs = [m['content'] for m in messages if m['role'] == 'system']
+    system_msgs = [m['content'] for m in messages if m['role'] == 'system' and isinstance(m['content'], str)]
     anthropic_msgs = []
     for m in messages:
         if m['role'] == 'system':
             continue
         role = 'assistant' if m['role'] == 'assistant' else 'user'
-        anthropic_msgs.append({'role': role, 'content': m['content']})
+        content = m['content']
+        # Convert multi-modal OpenAI content to Anthropic format
+        if isinstance(content, list):
+            anthropic_content = []
+            for part in content:
+                if part.get('type') == 'text':
+                    anthropic_content.append({'type': 'text', 'text': part['text']})
+                elif part.get('type') == 'image_url':
+                    image_url = part.get('image_url', {}).get('url', '')
+                    anthropic_content.append({
+                        'type': 'image',
+                        'source': {'type': 'url', 'url': image_url},
+                    })
+                elif part.get('type') == 'file_url':
+                    file_url = part.get('file_url', {}).get('url', '')
+                    anthropic_content.append({
+                        'type': 'document',
+                        'source': {'type': 'url', 'url': file_url},
+                    })
+            content = anthropic_content
+        anthropic_msgs.append({'role': role, 'content': content})
 
     body = {
         'model': model,
@@ -87,6 +107,29 @@ def _anthropic_chat(vendor_id: str, model: str, messages: list,
         body['system'] = '\n'.join(system_msgs)
     if kwargs.get('thinking'):
         body['thinking'] = {'type': 'enabled', 'budget_tokens': min(max_tokens // 2, 4096)}
+
+    # Convert OpenAI-format tools to Anthropic format
+    tools = kwargs.get('tools')
+    if tools:
+        anthropic_tools = []
+        for tool in tools:
+            if isinstance(tool, dict):
+                func = tool.get('function', tool)
+                anthropic_tools.append({
+                    'name': func.get('name', ''),
+                    'description': func.get('description', ''),
+                    'input_schema': func.get('parameters', {'type': 'object', 'properties': {}}),
+                })
+        if anthropic_tools:
+            body['tools'] = anthropic_tools
+
+    # Anthropic native web search
+    if kwargs.get('web_search'):
+        body.setdefault('tools', [])
+        body['tools'].append({
+            'type': 'web_search_20250305',
+            'name': 'web_search',
+        })
 
     resp = requests.post(url, headers=headers, json=body, timeout=120)
     if not resp.ok:

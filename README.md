@@ -29,9 +29,9 @@ Most AI chat frontends are either too simple (single-user, no permissions) or to
 | **Model Capabilities** | Streaming · Thinking/Reasoning · Vision · Tool Calling · File Upload · Web Search |
 | **User System** | Registration (toggleable) · JWT Auth · Role-based (admin/user) · Force password change |
 | **Permissions** | Two-tier: global defaults + per-user overrides. Daily limits, model allowlists, token caps, rate limits, export control |
-| **Multi-Vendor Fallback** | Configure multiple vendors · Custom model priorities · Auto-failover on error · Per-vendor API keys and base URLs |
+| **Multi-Vendor Fallback** | Configure multiple vendors · Custom model priorities · Auto-failover on error · Per-vendor API keys and base URLs · Cross-vendor model priority ordering |
 | **Admin Dashboard** | Real-time statistics · User CRUD · Conversation browser · Permission editor · Vendor management · Endpoint toggles · Bilingual (EN/ZH) · Responsive design · Auto language detection |
-| **Onboarding Wizard** | First-login guided setup: password, provider, API key, permissions, registration policy |
+| **Onboarding Wizard** | First-login guided setup: password, **multiple providers**, API keys, permissions, registration policy · Subtle skip button |
 | **Security** | bcrypt passwords · AES-encrypted API keys · SQL injection prevention · CORS · CSRF protection |
 | **Performance** | In-memory caching · Query batching · N+1 elimination · CDN preconnect |
 

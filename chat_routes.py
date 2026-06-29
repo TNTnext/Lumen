@@ -43,6 +43,34 @@ def _get_first_model(cfg):
     return names[0] if names else None
 
 
+def _build_message_content(text, image_urls=None, file_urls=None):
+    """Build message content, supporting multi-modal (text + images + files).
+
+    Returns:
+        str: plain text if no media
+        list: multi-modal content array if images/files present
+    """
+    if not image_urls and not file_urls:
+        return text
+
+    parts = []
+    if text:
+        parts.append({'type': 'text', 'text': text})
+
+    for url in (image_urls or []):
+        # Detect base64 vs URL
+        if url.startswith('data:') or url.startswith('http'):
+            parts.append({'type': 'image_url', 'image_url': {'url': url}})
+        else:
+            parts.append({'type': 'image_url', 'image_url': {'url': url}})
+
+    for url in (file_urls or []):
+        # Files are sent as URLs - the LLM needs to access them
+        parts.append({'type': 'file_url', 'file_url': {'url': url}})
+
+    return parts if parts else text
+
+
 def _build_fallback_chain(primary_config, resolved_model, all_configs):
     """Build a fallback chain: primary first, then cross-vendor priority if configured."""
     from models import SystemConfig
@@ -183,7 +211,9 @@ def send_message():
         return jsonify({'error': '请提供消息内容'}), 400
 
     content = data.get('content', '').strip()
-    if not content:
+    image_urls = data.get('image_urls', [])
+    file_urls = data.get('file_urls', [])
+    if not content and not image_urls and not file_urls:
         return jsonify({'error': '消息内容不能为空'}), 400
 
     conversation_id = data.get('conversation_id')
@@ -214,6 +244,11 @@ def send_message():
     # Build message history
     history = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at).all()
     messages = [{'role': m.role, 'content': m.content} for m in history]
+
+    # Build current user message content (supports multi-modal)
+    user_content = _build_message_content(content, image_urls, file_urls)
+    # Replace the last user message (just saved) with multi-modal version
+    messages[-1]['content'] = user_content
 
     # Resolve model with fallback
     primary_config, resolved_model, resolve_error = _resolve_model(user, model)

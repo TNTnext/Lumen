@@ -334,19 +334,16 @@ async function renderOnboarding() {
   const vendors = vendorsRes?.vendors || [];
 
   container.innerHTML = `
-    <div class="max-w-2xl mx-auto">
+    <div class="max-w-2xl mx-auto relative">
       <div class="text-center mb-10">
         <h1 class="text-2xl font-semibold tracking-tight mb-2">${t('onboarding_welcome')}</h1>
         <p class="text-text-secondary text-sm">${t('onboarding_subtitle')}</p>
       </div>
-      <button onclick="skipOnboarding()" class="text-xs text-text-tertiary/40 hover:text-text-tertiary/70 transition-colors self-start" style="background:none;border:none;cursor:pointer;padding:0;">${t('onboarding_skip')}</button>
-      <div class="space-y-8">
+      <button onclick="skipOnboarding()" class="absolute top-0 right-0 text-xs text-text-tertiary/25 hover:text-text-tertiary/50 transition-colors duration-300" style="background:none;border:none;cursor:pointer;padding:0;">${t('onboarding_skip')}</button>
+      <div class="space-y-6">
         <!-- Step 1: Admin Account -->
-        <div class="bg-surface rounded-xl border border-border p-6">
-          <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">1</span>
-            ${t('onboarding_step1')}
-          </h2>
+        <div class="bg-surface rounded-xl border border-border/50 p-6">
+          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step1')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('onboarding_new_pw')}</label>
@@ -360,11 +357,8 @@ async function renderOnboarding() {
         </div>
 
         <!-- Step 2: AI Providers -->
-        <div class="bg-surface rounded-xl border border-border p-6">
-          <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">2</span>
-            ${t('onboarding_step2')}
-          </h2>
+        <div class="bg-surface rounded-xl border border-border/50 p-6">
+          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step2')}</h2>
           <div id="onb-vendors-container" class="space-y-3">
           </div>
           <button onclick="addOnboardingVendor()" class="mt-3 text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -373,11 +367,8 @@ async function renderOnboarding() {
         </div>
 
         <!-- Step 3: Permissions -->
-        <div class="bg-surface rounded-xl border border-border p-6">
-          <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">3</span>
-            ${t('onboarding_step3')}
-          </h2>
+        <div class="bg-surface rounded-xl border border-border/50 p-6">
+          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step3')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('perm_daily_chats')}</label>
@@ -395,11 +386,8 @@ async function renderOnboarding() {
         </div>
 
         <!-- Step 4: System Settings -->
-        <div class="bg-surface rounded-xl border border-border p-6">
-          <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">4</span>
-            ${t('onboarding_step4')}
-          </h2>
+        <div class="bg-surface rounded-xl border border-border/50 p-6">
+          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step4')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
               <input id="onb-reg-open" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
@@ -417,11 +405,8 @@ async function renderOnboarding() {
         </div>
 
         <!-- Step 5: Endpoint Toggles -->
-        <div class="bg-surface rounded-xl border border-border p-6">
-          <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">5</span>
-            ${t('onboarding_step5')}
-          </h2>
+        <div class="bg-surface rounded-xl border border-border/50 p-6">
+          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step5')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
               <input id="onb-ep-auth" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
