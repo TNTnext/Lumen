@@ -1544,7 +1544,7 @@ function updatePriorityNumbers() {
 async function saveModelPriority() {
   const list = document.getElementById('priority-list');
   const order = [...list.children].map(el => el.getAttribute('data-model-id'));
-  const res = await api('/api/admin/model-priority-order', 'PUT', { order });
+  const res = await api('/api/admin/model-priority-order', { method: 'PUT', body: { order } });
   if (res && res.success) toast(lang === 'zh' ? '优先级已保存' : 'Priority saved', 'success');
   else toast(lang === 'zh' ? '保存失败' : 'Save failed', 'error');
 }
