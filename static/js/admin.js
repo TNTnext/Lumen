@@ -180,7 +180,8 @@ async function skipOnboarding() {
 let onbVendorIdx = 0;
 function addOnboardingVendor(vendorId = '', apiKey = '', baseUrl = '', model = '') {
   const idx = onbVendorIdx++;
-  const vendorOpts = vendors.map(v => `<option value="${v.id}" ${v.id === vendorId ? 'selected' : ''}>${v.name}</option>`).join('');
+  const vlist = window._onbVendors || [];
+  const vendorOpts = vlist.map(v => `<option value="${v.id}" ${v.id === vendorId ? 'selected' : ''}>${v.name}</option>`).join('');
   const div = document.createElement('div');
   div.id = `onb-vendor-row-${idx}`;
   div.className = 'flex flex-col gap-2 p-3 rounded-md border border-border bg-bg/50';
@@ -189,27 +190,28 @@ function addOnboardingVendor(vendorId = '', apiKey = '', baseUrl = '', model = '
       <select id="onb-vendor-${idx}" class="flex-1 px-2 py-1.5 rounded border border-border bg-bg text-sm focus:outline-none focus:ring-1 focus:ring-accent/20" onchange="onOnboardingVendorModelChange(${idx})">
         ${vendorOpts}
       </select>
-      <button onclick="document.getElementById('onb-vendor-row-${idx}').remove()" class="text-muted-foreground/40 hover:text-destructive transition-colors" style="background:none;border:none;cursor:pointer;padding:2px;" title="${lang === 'zh' ? '移除' : 'Remove'}">
+      <button onclick="document.getElementById('onb-vendor-row-${idx}').remove()" class="text-text-tertiary/40 hover:text-danger transition-colors" style="background:none;border:none;cursor:pointer;padding:2px;" title="${lang === 'zh' ? '移除' : 'Remove'}">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
       <input id="onb-apikey-${idx}" type="password" value="${escapeAttr(apiKey)}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent/20" placeholder="API Key">
       <input id="onb-baseurl-${idx}" type="text" value="${escapeAttr(baseUrl)}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent/20" placeholder="Base URL">
       <select id="onb-model-${idx}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm focus:outline-none focus:ring-1 focus:ring-accent/20"></select>
     </div>
   `;
   document.getElementById('onb-vendors-container').appendChild(div);
-  onOnboardingVendorModelChange(idx);
-  lucide.createIcons({ icons: { x: icons.X, plus: icons.Plus }, attrs: { class: 'icon' }, context: div });
+  onOnboardingVendorModelChange(idx, model);
+  lucide.createIcons();
 }
 
-function onOnboardingVendorModelChange(idx) {
+function onOnboardingVendorModelChange(idx, preselectedModel = '') {
   const vendorId = document.getElementById(`onb-vendor-${idx}`)?.value;
   const sel = document.getElementById(`onb-model-${idx}`);
   if (!sel) return;
-  const vendor = vendors.find(v => v.id === vendorId);
-  sel.innerHTML = (vendor?.models || []).map(m => `<option value="${m}">${m}</option>`).join('');
+  const vlist = window._onbVendors || [];
+  const vendor = vlist.find(v => v.id === vendorId);
+  sel.innerHTML = (vendor?.models || []).map(m => `<option value="${m.id}" ${m.id === preselectedModel ? 'selected' : ''}>${m.name}</option>`).join('');
 }
 
 function escapeAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -310,10 +312,6 @@ function renderNav() {
   const logoutBtn = document.querySelector('#sidebar button[onclick="doLogout()"] span');
   if (logoutBtn) logoutBtn.textContent = t('logout');
   lucide.createIcons();
-  // Init first vendor row in onboarding
-  if (state.needsOnboarding) {
-    addOnboardingVendor('deepseek', '', '', 'deepseek-chat');
-  }
 }
 
 function navigate(page) {
@@ -341,7 +339,7 @@ async function renderOnboarding() {
         <h1 class="text-2xl font-semibold tracking-tight mb-2">${t('onboarding_welcome')}</h1>
         <p class="text-text-secondary text-sm">${t('onboarding_subtitle')}</p>
       </div>
-      <button onclick="skipOnboarding()" class="text-xs text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors self-start" style="background:none;border:none;cursor:pointer;padding:0;">${t('onboarding_skip')}</button>
+      <button onclick="skipOnboarding()" class="text-xs text-text-tertiary/40 hover:text-text-tertiary/70 transition-colors self-start" style="background:none;border:none;cursor:pointer;padding:0;">${t('onboarding_skip')}</button>
       <div class="space-y-8">
         <!-- Step 1: Admin Account -->
         <div class="bg-surface rounded-xl border border-border p-6">
@@ -349,7 +347,7 @@ async function renderOnboarding() {
             <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">1</span>
             ${t('onboarding_step1')}
           </h2>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('onboarding_new_pw')}</label>
               <input id="onb-password" type="password" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="${t('onboarding_pw_hint')}">
@@ -380,7 +378,7 @@ async function renderOnboarding() {
             <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">3</span>
             ${t('onboarding_step3')}
           </h2>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('perm_daily_chats')}</label>
               <input id="onb-max-chats" type="number" value="100" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
@@ -402,7 +400,7 @@ async function renderOnboarding() {
             <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">4</span>
             ${t('onboarding_step4')}
           </h2>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
               <input id="onb-reg-open" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_reg_open')}</span>
@@ -411,7 +409,7 @@ async function renderOnboarding() {
               <input id="onb-admin-view" type="checkbox" class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_admin_view')}</span>
             </label>
-            <div>
+            <div class="sm:col-span-2">
               <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('onboarding_retention')}</label>
               <input id="onb-retention" type="number" value="90" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
             </div>
@@ -424,7 +422,7 @@ async function renderOnboarding() {
             <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">5</span>
             ${t('onboarding_step5')}
           </h2>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
               <input id="onb-ep-auth" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_ep_auth')}</span>
@@ -444,18 +442,8 @@ async function renderOnboarding() {
   `;
 
   window._onbVendors = vendors;
-  onOnboardingVendorChange();
+  addOnboardingVendor('deepseek', '', '', 'deepseek-chat');
   lucide.createIcons();
-}
-
-function onOnboardingVendorChange() {
-  const vendorId = document.getElementById('onb-vendor').value;
-  const vendor = (window._onbVendors || []).find(v => v.id === vendorId);
-  if (vendor) {
-    document.getElementById('onb-baseurl').value = vendor.base_url;
-    const modelSel = document.getElementById('onb-model');
-    modelSel.innerHTML = vendor.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-  }
 }
 
 async function submitOnboarding() {
@@ -830,7 +818,7 @@ async function renderPermissions() {
 
     <div class="bg-surface rounded-xl border border-border p-6 mb-6">
       <h2 class="text-sm font-semibold mb-4">${t('perm_global')}</h2>
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('perm_daily_chats')}</label>
           <input id="gp-max-chats" type="number" value="${gp.max_daily_chats || 100}" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
