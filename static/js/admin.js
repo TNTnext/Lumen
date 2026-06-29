@@ -196,8 +196,8 @@ function addOnboardingVendor(vendorId = '', apiKey = '', baseUrl = '', model = '
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
       <input id="onb-apikey-${idx}" type="password" value="${escapeAttr(apiKey)}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent/20" placeholder="API Key">
-      <input id="onb-baseurl-${idx}" type="text" value="${escapeAttr(baseUrl)}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent/20" placeholder="Base URL">
-      <select id="onb-model-${idx}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm focus:outline-none focus:ring-1 focus:ring-accent/20"></select>
+      <input id="onb-baseurl-${idx}" type="text" value="${escapeAttr(baseUrl)}" class="px-3 py-2 rounded-xl border border-border/60 bg-bg text-sm font-mono transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent placeholder:text-text-tertiary/50" placeholder="Base URL">
+      <select id="onb-model-${idx}" class="px-3 py-2 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"></select>
     </div>
   `;
   document.getElementById('onb-vendors-container').appendChild(div);
@@ -302,16 +302,16 @@ function renderNav() {
   const nav = document.getElementById('sidebar-nav');
   nav.innerHTML = navItems.map(item => `
     <button onclick="navigate('${item.id}')" data-nav="${item.id}"
-      class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors
-      ${state.page === item.id ? 'bg-sidebar-active text-text font-medium' : 'text-text-secondary hover:bg-sidebar-hover'}">
+      class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] nav-item
+      ${state.page === item.id ? 'active' : 'text-text-secondary'}">
       <i data-lucide="${item.icon}" class="w-4 h-4"></i>
       <span>${t(item.labelKey)}</span>
     </button>
   `).join('');
-  // Update logout button
   const logoutBtn = document.querySelector('#sidebar button[onclick="doLogout()"] span');
   if (logoutBtn) logoutBtn.textContent = t('logout');
   lucide.createIcons();
+}
 }
 
 function navigate(page) {
@@ -319,10 +319,13 @@ function navigate(page) {
   state.page = page;
   renderNav();
   const container = document.getElementById('page-container');
+  container.classList.remove('animate-fade-in-up');
+  void container.offsetWidth;
+  container.classList.add('animate-fade-in-up');
   container.innerHTML = '';
   const fn = window['render' + page.charAt(0).toUpperCase() + page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
   if (fn) fn();
-  closeSidebar(); // Close mobile sidebar on navigation
+  closeSidebar();
   container.scrollTop = 0;
 }
 
@@ -342,24 +345,24 @@ async function renderOnboarding() {
       <button onclick="skipOnboarding()" class="absolute top-0 right-0 text-xs text-text-tertiary/25 hover:text-text-tertiary/50 transition-colors duration-300" style="background:none;border:none;cursor:pointer;padding:0;">${t('onboarding_skip')}</button>
       <div class="space-y-6">
         <!-- Step 1: Admin Account -->
-        <div class="bg-surface rounded-xl border border-border/50 p-6">
-          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step1')}</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-surface rounded-2xl border border-border/50 p-6 card-lift stagger-1">
+          <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step1')}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('onboarding_new_pw')}</label>
-              <input id="onb-password" type="password" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="${t('onboarding_pw_hint')}">
+              <label class="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">${t('onboarding_new_pw')}</label>
+              <input id="onb-password" type="password" class="w-full px-4 py-2.5 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent placeholder:text-text-tertiary/50" placeholder="${t('onboarding_pw_hint')}">
             </div>
             <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('onboarding_email')}</label>
-              <input id="onb-email" type="email" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="admin@example.com">
+              <label class="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">${t('onboarding_email')}</label>
+              <input id="onb-email" type="email" class="w-full px-4 py-2.5 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent placeholder:text-text-tertiary/50" placeholder="admin@example.com">
             </div>
           </div>
         </div>
 
         <!-- Step 2: AI Providers -->
-        <div class="bg-surface rounded-xl border border-border/50 p-6">
-          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step2')}</h2>
-          <div id="onb-vendors-container" class="space-y-3">
+        <div class="bg-surface rounded-2xl border border-border/50 p-6 card-lift stagger-2">
+          <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step2')}</h2>
+          <div id="onb-vendors-container" class="space-y-4">
           </div>
           <button onclick="addOnboardingVendor()" class="mt-3 text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1" style="background:none;border:none;cursor:pointer;padding:0;">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${lang === 'zh' ? '添加厂商' : 'Add Provider'}
@@ -367,59 +370,59 @@ async function renderOnboarding() {
         </div>
 
         <!-- Step 3: Permissions -->
-        <div class="bg-surface rounded-xl border border-border/50 p-6">
-          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step3')}</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-surface rounded-2xl border border-border/50 p-6 card-lift stagger-3">
+          <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step3')}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('perm_daily_chats')}</label>
-              <input id="onb-max-chats" type="number" value="100" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+              <label class="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">${t('perm_daily_chats')}</label>
+              <input id="onb-max-chats" type="number" value="100" class="w-full px-4 py-2.5 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent">
             </div>
             <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('perm_max_tokens')}</label>
-              <input id="onb-max-tokens" type="number" value="4096" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+              <label class="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">${t('perm_max_tokens')}</label>
+              <input id="onb-max-tokens" type="number" value="4096" class="w-full px-4 py-2.5 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent">
             </div>
             <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('perm_rate_limit')}</label>
-              <input id="onb-rate-limit" type="number" value="10" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+              <label class="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">${t('perm_rate_limit')}</label>
+              <input id="onb-rate-limit" type="number" value="10" class="w-full px-4 py-2.5 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent">
             </div>
           </div>
         </div>
 
         <!-- Step 4: System Settings -->
-        <div class="bg-surface rounded-xl border border-border/50 p-6">
-          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step4')}</h2>
+        <div class="bg-surface rounded-2xl border border-border/50 p-6 card-lift stagger-4">
+          <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step4')}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
+            <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
               <input id="onb-reg-open" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_reg_open')}</span>
             </label>
-            <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
+            <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
               <input id="onb-admin-view" type="checkbox" class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_admin_view')}</span>
             </label>
             <div class="sm:col-span-2">
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('onboarding_retention')}</label>
-              <input id="onb-retention" type="number" value="90" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
+              <label class="block text-[11px] font-medium text-text-secondary mb-1.5 uppercase tracking-wide">${t('onboarding_retention')}</label>
+              <input id="onb-retention" type="number" value="90" class="w-full px-4 py-2.5 rounded-xl border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent">
             </div>
           </div>
         </div>
 
         <!-- Step 5: Endpoint Toggles -->
-        <div class="bg-surface rounded-xl border border-border/50 p-6">
-          <h2 class="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">${t('onboarding_step5')}</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
+        <div class="bg-surface rounded-2xl border border-border/50 p-6 card-lift stagger-5">
+          <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-5">${t('onboarding_step5')}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
               <input id="onb-ep-auth" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_ep_auth')}</span>
             </label>
-            <label class="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-bg cursor-pointer hover:bg-surface-hover transition">
+            <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-bg cursor-pointer hover:bg-surface-hover transition-all duration-200">
               <input id="onb-ep-chat" type="checkbox" checked class="w-4 h-4 rounded accent-accent">
               <span class="text-sm">${t('onboarding_ep_chat')}</span>
             </label>
           </div>
         </div>
 
-        <button onclick="submitOnboarding()" class="w-full py-3 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">
+        <button onclick="submitOnboarding()" class="w-full py-3 rounded-2xl bg-text text-white text-sm font-semibold transition-all duration-300 hover:opacity-90 active:scale-[0.98]">
           ${t('onboarding_submit')}
         </button>
       </div>
@@ -484,34 +487,34 @@ async function renderDashboard() {
   const s = res.stats;
 
   document.getElementById('page-container').innerHTML = `
-    <h1 class="text-xl font-semibold tracking-tight mb-6">${t('dashboard_title')}</h1>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
+    <div class="stagger">
+    <h1 class="text-[22px] font-semibold tracking-tight mb-6">${t('dashboard_title')}</h1>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       ${statCard(t('total_users'), s.total_users, 'users')}
       ${statCard(t('active_today'), s.active_today, 'user-check')}
       ${statCard(t('total_convs'), s.total_conversations, 'message-square')}
       ${statCard(t('today_calls'), s.today_api_calls, 'zap')}
-    </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
       ${statCard(t('today_tokens'), s.today_tokens, 'hash')}
       ${statCard(t('month_tokens'), s.month_tokens, 'bar-chart-2')}
       ${statCard(t('new_users_week'), s.new_users_week, 'user-plus')}
       ${statCard(t('admin_count'), s.admin_count, 'shield')}
     </div>
 
-    <div class="bg-surface rounded-xl border border-border p-4 lg:p-6 mb-6">
-      <h2 class="text-sm font-semibold mb-4">${t('trend_7d')}</h2>
-      <div class="h-48 flex items-end gap-1 lg:gap-2" id="daily-trend-chart"></div>
+    <div class="bg-surface rounded-2xl border border-border/50 p-5 lg:p-6 mb-6 card-lift">
+      <h2 class="text-[13px] font-medium text-text-secondary mb-5">${t('trend_7d')}</h2>
+      <div class="h-48 flex items-end gap-1.5" id="daily-trend-chart"></div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-      <div class="bg-surface rounded-xl border border-border p-4 lg:p-6">
-        <h2 class="text-sm font-semibold mb-4">${t('model_dist')}</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-surface rounded-2xl border border-border/50 p-5 lg:p-6 card-lift">
+        <h2 class="text-[13px] font-medium text-text-secondary mb-5">${t('model_dist')}</h2>
         <div class="space-y-3" id="model-dist"></div>
       </div>
-      <div class="bg-surface rounded-xl border border-border p-4 lg:p-6">
-        <h2 class="text-sm font-semibold mb-4">${t('user_ranking')}</h2>
+      <div class="bg-surface rounded-2xl border border-border/50 p-5 lg:p-6 card-lift">
+        <h2 class="text-[13px] font-medium text-text-secondary mb-5">${t('user_ranking')}</h2>
         <div class="space-y-3" id="user-ranking"></div>
       </div>
+    </div>
     </div>
   `;
 
@@ -566,12 +569,12 @@ async function renderDashboard() {
 
 function statCard(label, value, icon) {
   return `
-    <div class="bg-surface rounded-xl border border-border p-4">
-      <div class="flex items-center gap-2 mb-1.5">
+    <div class="bg-surface rounded-2xl border border-border/50 p-4 card-lift">
+      <div class="flex items-center gap-2 mb-2">
         <i data-lucide="${icon}" class="w-4 h-4 text-text-tertiary"></i>
-        <span class="text-xs text-text-secondary">${label}</span>
+        <span class="text-[11px] text-text-secondary font-medium tracking-wide uppercase">${label}</span>
       </div>
-      <div class="text-2xl font-semibold tracking-tight">${value ?? 0}</div>
+      <div class="text-[28px] font-semibold tracking-tight leading-none">${(value ?? 0).toLocaleString()}</div>
     </div>`;
 }
 

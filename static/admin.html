@@ -13,77 +13,185 @@
       --color-bg: #f5f5f7;
       --color-surface: #ffffff;
       --color-surface-hover: #f0f0f2;
-      --color-border: #e5e5ea;
+      --color-border: #e8e8ed;
       --color-text: #1d1d1f;
       --color-text-secondary: #86868b;
       --color-text-tertiary: #aeaeb2;
       --color-accent: #0071e3;
-      --color-accent-hover: #0077ed;
+      --color-accent-hover: #0066cc;
       --color-danger: #ff3b30;
       --color-success: #34c759;
       --color-warning: #ff9500;
       --color-sidebar: #f5f5f7;
-      --color-sidebar-hover: #e8e8ed;
+      --color-sidebar-hover: #ebebf0;
       --color-sidebar-active: #e0e0e5;
       --radius-sm: 6px;
       --radius-md: 8px;
       --radius-lg: 12px;
       --radius-xl: 16px;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
-      --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+      --radius-2xl: 20px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.05);
+      --shadow-lg: 0 4px 16px rgba(0,0,0,0.06);
+      --shadow-xl: 0 8px 32px rgba(0,0,0,0.08);
       --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
       --font-mono: "SF Mono", "Menlo", "Monaco", monospace;
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    /* Page entrance */
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scale-in {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes slide-in-right {
+      from { opacity: 0; transform: translateX(16px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .animate-fade-in-up {
+      animation: fade-in-up 0.5s var(--ease-out-expo) both;
+    }
+    .animate-fade-in {
+      animation: fade-in 0.35s var(--ease-out-expo) both;
+    }
+    .animate-scale-in {
+      animation: scale-in 0.3s var(--ease-out-expo) both;
+    }
+    .animate-slide-in-right {
+      animation: slide-in-right 0.4s var(--ease-out-expo) both;
+    }
+
+    /* Staggered children */
+    .stagger > * {
+      animation: fade-in-up 0.45s var(--ease-out-expo) both;
+    }
+    .stagger > *:nth-child(1) { animation-delay: 0s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.06s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.12s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.18s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.24s; }
+    .stagger > *:nth-child(6) { animation-delay: 0.30s; }
+    .stagger > *:nth-child(7) { animation-delay: 0.36s; }
+    .stagger > *:nth-child(8) { animation-delay: 0.42s; }
+    .stagger > *:nth-child(9) { animation-delay: 0.48s; }
+    .stagger > *:nth-child(10) { animation-delay: 0.54s; }
+    .stagger > *:nth-child(11) { animation-delay: 0.60s; }
+    .stagger > *:nth-child(12) { animation-delay: 0.66s; }
+
+    /* Sidebar item */
+    .nav-item {
+      transition: background-color 0.15s var(--ease-in-out), color 0.15s var(--ease-in-out);
+    }
+    .nav-item:hover {
+      background-color: var(--color-sidebar-hover);
+    }
+    .nav-item.active {
+      background-color: var(--color-sidebar-active);
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    /* Card hover lift */
+    .card-lift {
+      transition: transform 0.25s var(--ease-out-expo), box-shadow 0.25s var(--ease-out-expo);
+    }
+    .card-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Table row */
+    .table-row {
+      transition: background-color 0.12s var(--ease-in-out);
+    }
+    .table-row:hover {
+      background-color: var(--color-surface-hover);
+    }
+
+    /* Button press */
+    .btn-press {
+      transition: transform 0.1s var(--ease-out-expo), opacity 0.1s var(--ease-out-expo);
+    }
+    .btn-press:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+    }
+
+    /* Input focus */
+    .input-apple {
+      transition: border-color 0.2s var(--ease-in-out), box-shadow 0.2s var(--ease-in-out);
+    }
+    .input-apple:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+      outline: none;
+    }
+
+    /* Toast animation */
+    .toast-enter {
+      opacity: 1 !important;
+      transform: translate(-50%, -4px) !important;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #aeaeb2; }
   </style>
 </head>
 <body class="bg-bg text-text font-sans antialiased">
-  <!-- Skip to content -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-md focus:text-sm">跳转到主内容</a>
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-lg focus:text-sm">跳转到主内容</a>
 
   <div id="app" class="flex h-screen overflow-hidden">
-    <!-- Mobile overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-40 hidden lg:hidden" onclick="closeSidebar()" aria-hidden="true"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity duration-200" onclick="closeSidebar()" aria-hidden="true"></div>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-56 bg-sidebar border-r border-border flex flex-col shrink-0 -translate-x-full lg:translate-x-0 transition-transform duration-200" role="navigation" aria-label="主导航">
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-56 bg-sidebar/95 backdrop-blur-xl border-r border-border flex flex-col shrink-0 -translate-x-full lg:translate-x-0 transition-transform duration-300 var(--ease-out-expo)" role="navigation" aria-label="主导航">
       <div class="px-5 py-5 flex items-center justify-between">
-        <span class="text-sm font-semibold tracking-tight text-text">Lumen</span>
+        <span class="text-[15px] font-semibold tracking-tight text-text">Lumen</span>
         <div class="flex items-center gap-2">
-          <button id="langToggle" onclick="toggleLang()" class="text-xs px-2 py-0.5 rounded border border-border text-text-secondary hover:bg-sidebar-hover transition-colors" aria-label="切换语言" title="Switch Language">EN</button>
-          <button onclick="closeSidebar()" class="lg:hidden text-text-secondary hover:text-text p-1" aria-label="关闭菜单">
+          <button id="langToggle" onclick="toggleLang()" class="text-[11px] font-medium px-2 py-0.5 rounded-md border border-border/80 text-text-secondary hover:bg-sidebar-hover hover:text-text transition-all duration-150 btn-press" aria-label="切换语言" title="Switch Language">EN</button>
+          <button onclick="closeSidebar()" class="lg:hidden text-text-secondary hover:text-text p-1 transition-colors duration-150" aria-label="关闭菜单">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
       </div>
       <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto" id="sidebar-nav" role="menubar" aria-label="导航菜单"></nav>
       <div class="px-3 py-3 border-t border-border">
-        <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-text-secondary">
+        <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-text-secondary">
           <i data-lucide="user" class="w-4 h-4" aria-hidden="true"></i>
           <span id="sidebar-user" class="truncate">admin</span>
         </div>
-        <button onclick="doLogout()" class="w-full flex items-center gap-2.5 px-2.5 py-2 mt-0.5 rounded-md text-sm text-text-secondary hover:bg-sidebar-hover transition-colors" aria-label="退出登录">
+        <button onclick="doLogout()" class="w-full flex items-center gap-2.5 px-2.5 py-2 mt-0.5 rounded-lg text-[13px] text-text-secondary hover:bg-sidebar-hover transition-colors duration-150 btn-press" aria-label="退出登录">
           <i data-lucide="log-out" class="w-4 h-4" aria-hidden="true"></i>
           <span data-lang-zh="退出登录" data-lang-en="Sign Out">退出登录</span>
         </button>
       </div>
     </aside>
 
-    <!-- Main -->
     <main class="flex-1 overflow-y-auto" id="main-content" role="main" aria-label="主内容区">
-      <!-- Mobile top bar -->
-      <div class="lg:hidden sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
-        <button onclick="openSidebar()" class="text-text-secondary hover:text-text p-1" aria-label="打开菜单">
+      <div class="lg:hidden sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3">
+        <button onclick="openSidebar()" class="text-text-secondary hover:text-text p-1 transition-colors duration-150" aria-label="打开菜单">
           <i data-lucide="menu" class="w-5 h-5"></i>
         </button>
-        <span class="text-sm font-semibold">Lumen</span>
+        <span class="text-[15px] font-semibold">Lumen</span>
       </div>
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8" id="page-container"></div>
     </main>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg opacity-0 transition-all duration-300 pointer-events-none z-[60]" role="status" aria-live="polite"></div>
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 -translate-y-1 px-5 py-2.5 rounded-xl text-[13px] font-medium shadow-xl opacity-0 transition-all duration-300 pointer-events-none z-[60] bg-text text-white" role="status" aria-live="polite"></div>
 
   <script src="/static/js/admin.js"></script>
 </body>
