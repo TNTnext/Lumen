@@ -25,21 +25,24 @@
   </style>
 </head>
 <body class="bg-bg text-text font-sans min-h-screen flex items-center justify-center p-4">
+  <!-- Language toggle -->
+  <button id="langBtn" onclick="toggleLang()" class="fixed top-4 right-4 text-[11px] font-medium px-2 py-0.5 rounded-md border border-border/80 text-text-secondary hover:bg-surface hover:text-text transition-all duration-150 active:scale-95 z-50">EN</button>
+
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
       <h1 class="text-xl font-semibold tracking-tight">Lumen</h1>
-      <p class="text-sm text-text-secondary mt-1">登录以继续</p>
+      <p id="subtitle" class="text-sm text-text-secondary mt-1">登录以继续</p>
     </div>
 
     <div class="bg-surface rounded-xl border border-border p-6">
       <form id="loginForm" class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-text-secondary mb-1.5">用户名</label>
+          <label id="lblUser" class="block text-xs font-medium text-text-secondary mb-1.5">用户名</label>
           <input type="text" id="username" placeholder="admin"
             class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-text-secondary mb-1.5">密码</label>
+          <label id="lblPwd" class="block text-xs font-medium text-text-secondary mb-1.5">密码</label>
           <div class="relative">
             <input type="password" id="password" placeholder="admin123"
               class="w-full px-3 py-2 pr-10 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" />
@@ -49,18 +52,65 @@
           </div>
         </div>
         <div id="errorMsg" class="text-sm text-danger hidden"></div>
-        <button type="submit"
+        <button type="submit" id="btnLogin"
           class="w-full py-2.5 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">
           登录
         </button>
       </form>
     </div>
 
-    <p class="text-center text-xs text-text-secondary mt-4">默认管理员: admin / admin123</p>
+    <p id="hint" class="text-center text-xs text-text-secondary mt-4">默认管理员: admin / admin123</p>
   </div>
 
   <script>
     lucide.createIcons();
+
+    // ─── i18n ───────────────────────────────────────────────
+    const texts = {
+      zh: {
+        subtitle: '登录以继续',
+        lblUser: '用户名',
+        lblPwd: '密码',
+        btnLogin: '登录',
+        hint: '默认管理员: admin / admin123',
+        fillBoth: '请输入用户名和密码',
+        loginFailed: '登录失败',
+        networkErr: '网络错误，请稍后重试',
+      },
+      en: {
+        subtitle: 'Sign in to continue',
+        lblUser: 'Username',
+        lblPwd: 'Password',
+        btnLogin: 'Sign In',
+        hint: 'Default admin: admin / admin123',
+        fillBoth: 'Please enter username and password',
+        loginFailed: 'Login failed',
+        networkErr: 'Network error, please try again',
+      }
+    };
+    let lang = (localStorage.getItem('lang') || 'zh');
+    function t(key) { return texts[lang][key] || key; }
+
+    function applyLang() {
+      document.getElementById('subtitle').textContent = t('subtitle');
+      document.getElementById('lblUser').textContent = t('lblUser');
+      document.getElementById('lblPwd').textContent = t('lblPwd');
+      document.getElementById('btnLogin').textContent = t('btnLogin');
+      document.getElementById('hint').textContent = t('hint');
+      document.getElementById('langBtn').textContent = lang === 'zh' ? 'EN' : '中文';
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      document.title = lang === 'zh' ? '登录' : 'Sign In';
+    }
+
+    function toggleLang() {
+      lang = lang === 'zh' ? 'en' : 'zh';
+      localStorage.setItem('lang', lang);
+      applyLang();
+    }
+
+    applyLang();
+
+    // ─── Password toggle ───────────────────────────────────
     const form = document.getElementById('loginForm');
     const errorMsg = document.getElementById('errorMsg');
     const togglePwd = document.getElementById('togglePwd');
@@ -79,7 +129,7 @@
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
       if (!username || !password) {
-        errorMsg.textContent = '请输入用户名和密码';
+        errorMsg.textContent = t('fillBoth');
         errorMsg.classList.remove('hidden');
         return;
       }
@@ -91,14 +141,14 @@
         });
         const data = await resp.json();
         if (!resp.ok || !data.success) {
-          errorMsg.textContent = data.error || '登录失败';
+          errorMsg.textContent = data.error || t('loginFailed');
           errorMsg.classList.remove('hidden');
           return;
         }
         localStorage.setItem('admin_token', data.token);
         window.location.href = '/admin';
       } catch (err) {
-        errorMsg.textContent = '网络错误，请稍后重试';
+        errorMsg.textContent = t('networkErr');
         errorMsg.classList.remove('hidden');
       }
     });
