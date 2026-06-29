@@ -1241,22 +1241,7 @@ function renderVendorList(configs, allVendors) {
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>` : ''}
           </div>
-        </div>
-        <!-- Model Priority -->
-        <div class="bg-bg rounded-lg p-3 border border-border/50">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-medium text-text-secondary">${t('vendor_model_priority')}</span>
-            <button onclick="editVendor(${cfg.id})" class="text-xs text-accent hover:underline">${lang === 'zh' ? '编辑' : 'Edit'}</button>
-          </div>
-          ${models.length === 0 ? `<div class="text-xs text-text-secondary py-2 text-center">${t('vendor_no_models')}</div>` :
-            `<div class="flex flex-wrap gap-1.5">
-              ${models.map((m, mi) => `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sidebar-hover text-xs ${mi === 0 ? 'ring-1 ring-accent/30 font-medium' : ''}">
-                <span class="w-3.5 h-3.5 rounded-full bg-accent/10 text-accent text-[10px] flex items-center justify-center font-medium">${mi + 1}</span>
-                ${esc(m.model)}
-              </span>`).join('')}
-            </div>`
-          }
-        </div>
+
         <!-- Status line -->
         <div class="flex items-center justify-between mt-2">
           <span class="text-xs text-text-secondary">${hasApiKey ? (cfg.api_key.substring(0,4) + '***') : (lang === 'zh' ? '未配置 API Key' : 'No API Key')}</span>
@@ -1506,7 +1491,7 @@ function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt
 function fmtDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
 // ─── 跨厂商模型优先级 ──────────────────────────────────────
-async function renderModelPriorityOrder(container) {
+async function renderModelPriority(container) {
   container = container || document.getElementById('page-container');
   const res = await api('/api/admin/model-priority-order');
   const saved = (res && res.order) ? res.order : [];
@@ -1559,7 +1544,7 @@ function updatePriorityNumbers() {
 async function saveModelPriority() {
   const list = document.getElementById('priority-list');
   const order = [...list.children].map(el => el.getAttribute('data-model-id'));
-  const res = await api('/api/admin/model-priority-order', { method: 'PUT', body: { order } });
+  const res = await api('/api/admin/model-priority-order', 'PUT', { order });
   if (res && res.success) toast(lang === 'zh' ? '优先级已保存' : 'Priority saved', 'success');
   else toast(lang === 'zh' ? '保存失败' : 'Save failed', 'error');
 }
