@@ -312,19 +312,22 @@ function renderNav() {
   if (logoutBtn) logoutBtn.textContent = t('logout');
   lucide.createIcons();
 }
-}
 
 function navigate(page) {
   if (page === 'api-keys') page = 'vendors';
   state.page = page;
   renderNav();
   const container = document.getElementById('page-container');
-  container.classList.remove('animate-fade-in-up');
-  void container.offsetWidth;
-  container.classList.add('animate-fade-in-up');
+  container.style.opacity = '0';
   container.innerHTML = '';
   const fn = window['render' + page.charAt(0).toUpperCase() + page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
   if (fn) fn();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      container.style.transition = 'opacity 0.2s ease-out';
+      container.style.opacity = '1';
+    });
+  });
   closeSidebar();
   container.scrollTop = 0;
 }
