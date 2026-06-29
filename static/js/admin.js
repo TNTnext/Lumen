@@ -50,6 +50,7 @@ const i18n = {
     settings_reset: '重置系统', settings_reset_confirm: '确认重置系统？此操作不可撤销！',
     settings_reset_done: '系统已重置', settings_reset_failed: '重置失败',
     onboarding_welcome: '欢迎使用 Lumen', onboarding_subtitle: '首次使用，请完成以下初始配置',
+    onboarding_skip: '跳过初始化',
     onboarding_step1: '管理员账户', onboarding_new_pw: '新密码', onboarding_pw_hint: '留空则不修改',
     onboarding_email: '邮箱', onboarding_step2: 'AI 模型厂商',
     onboarding_step3: '全局默认权限', onboarding_step4: '系统设置',
@@ -122,6 +123,7 @@ const i18n = {
     settings_reset: 'Reset System', settings_reset_confirm: 'Confirm system reset? This cannot be undone!',
     settings_reset_done: 'System reset', settings_reset_failed: 'Reset failed',
     onboarding_welcome: 'Welcome to Lumen', onboarding_subtitle: 'Please complete the initial setup',
+    onboarding_skip: 'Skip Setup',
     onboarding_step1: 'Admin Account', onboarding_new_pw: 'New Password', onboarding_pw_hint: 'Leave empty to keep current',
     onboarding_email: 'Email', onboarding_step2: 'AI Provider',
     onboarding_step3: 'Global Default Permissions', onboarding_step4: 'System Settings',
@@ -158,11 +160,59 @@ function toggleLang() {
     renderOnboarding();
     return;
   }
-  if (state.needsOnboarding) { renderOnboarding(); return; }
   renderNav();
   const fn = window['render' + state.page.charAt(0).toUpperCase() + state.page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
   if (fn) fn();
 }
+
+async function skipOnboarding() {
+  try {
+    await api('/api/admin/onboarding/complete', 'POST');
+    state.needsOnboarding = false;
+    state.page = 'dashboard';
+    renderNav();
+    loadDashboard();
+  } catch (e) {
+    showToast(t('onboarding_failed'), 'error');
+  }
+}
+
+let onbVendorIdx = 0;
+function addOnboardingVendor(vendorId = '', apiKey = '', baseUrl = '', model = '') {
+  const idx = onbVendorIdx++;
+  const vendorOpts = vendors.map(v => `<option value="${v.id}" ${v.id === vendorId ? 'selected' : ''}>${v.name}</option>`).join('');
+  const div = document.createElement('div');
+  div.id = `onb-vendor-row-${idx}`;
+  div.className = 'flex flex-col gap-2 p-3 rounded-md border border-border bg-bg/50';
+  div.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <select id="onb-vendor-${idx}" class="flex-1 px-2 py-1.5 rounded border border-border bg-bg text-sm focus:outline-none focus:ring-1 focus:ring-accent/20" onchange="onOnboardingVendorModelChange(${idx})">
+        ${vendorOpts}
+      </select>
+      <button onclick="document.getElementById('onb-vendor-row-${idx}').remove()" class="text-muted-foreground/40 hover:text-destructive transition-colors" style="background:none;border:none;cursor:pointer;padding:2px;" title="${lang === 'zh' ? '移除' : 'Remove'}">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <input id="onb-apikey-${idx}" type="password" value="${escapeAttr(apiKey)}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent/20" placeholder="API Key">
+      <input id="onb-baseurl-${idx}" type="text" value="${escapeAttr(baseUrl)}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm font-mono focus:outline-none focus:ring-1 focus:ring-accent/20" placeholder="Base URL">
+      <select id="onb-model-${idx}" class="px-2 py-1.5 rounded border border-border bg-bg text-sm focus:outline-none focus:ring-1 focus:ring-accent/20"></select>
+    </div>
+  `;
+  document.getElementById('onb-vendors-container').appendChild(div);
+  onOnboardingVendorModelChange(idx);
+  lucide.createIcons({ icons: { x: icons.X, plus: icons.Plus }, attrs: { class: 'icon' }, context: div });
+}
+
+function onOnboardingVendorModelChange(idx) {
+  const vendorId = document.getElementById(`onb-vendor-${idx}`)?.value;
+  const sel = document.getElementById(`onb-model-${idx}`);
+  if (!sel) return;
+  const vendor = vendors.find(v => v.id === vendorId);
+  sel.innerHTML = (vendor?.models || []).map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+function escapeAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 // ─── Sidebar Mobile ─────────────────────────────────────
 function openSidebar() {
@@ -260,6 +310,10 @@ function renderNav() {
   const logoutBtn = document.querySelector('#sidebar button[onclick="doLogout()"] span');
   if (logoutBtn) logoutBtn.textContent = t('logout');
   lucide.createIcons();
+  // Init first vendor row in onboarding
+  if (state.needsOnboarding) {
+    addOnboardingVendor('deepseek', '', '', 'deepseek-chat');
+  }
 }
 
 function navigate(page) {
@@ -287,6 +341,7 @@ async function renderOnboarding() {
         <h1 class="text-2xl font-semibold tracking-tight mb-2">${t('onboarding_welcome')}</h1>
         <p class="text-text-secondary text-sm">${t('onboarding_subtitle')}</p>
       </div>
+      <button onclick="skipOnboarding()" class="text-xs text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors self-start" style="background:none;border:none;cursor:pointer;padding:0;">${t('onboarding_skip')}</button>
       <div class="space-y-8">
         <!-- Step 1: Admin Account -->
         <div class="bg-surface rounded-xl border border-border p-6">
@@ -306,32 +361,17 @@ async function renderOnboarding() {
           </div>
         </div>
 
-        <!-- Step 2: AI Provider -->
+        <!-- Step 2: AI Providers -->
         <div class="bg-surface rounded-xl border border-border p-6">
           <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-medium">2</span>
             ${t('onboarding_step2')}
           </h2>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('apikey_vendor_label')}</label>
-              <select id="onb-vendor" onchange="onOnboardingVendorChange()" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition">
-                ${vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('apikey_key')}</label>
-              <input id="onb-apikey" type="password" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition font-mono" placeholder="sk-...">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('apikey_baseurl')}</label>
-              <input id="onb-baseurl" type="text" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition font-mono">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1.5">${t('apikey_model')}</label>
-              <select id="onb-model" class="w-full px-3 py-2 rounded-md border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition"></select>
-            </div>
+          <div id="onb-vendors-container" class="space-y-3">
           </div>
+          <button onclick="addOnboardingVendor()" class="mt-3 text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1" style="background:none;border:none;cursor:pointer;padding:0;">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> ${lang === 'zh' ? '添加厂商' : 'Add Provider'}
+          </button>
         </div>
 
         <!-- Step 3: Permissions -->
@@ -419,14 +459,27 @@ function onOnboardingVendorChange() {
 }
 
 async function submitOnboarding() {
-  const vendorId = document.getElementById('onb-vendor').value;
+  const vendorConfigs = [];
+  const rows = document.getElementById('onb-vendors-container').querySelectorAll('[id^="onb-vendor-row-"]');
+  rows.forEach(row => {
+    const idx = row.id.replace('onb-vendor-row-', '');
+    const vendorId = document.getElementById(`onb-vendor-${idx}`)?.value;
+    const apiKey = document.getElementById(`onb-apikey-${idx}`)?.value;
+    const baseUrl = document.getElementById(`onb-baseurl-${idx}`)?.value;
+    const model = document.getElementById(`onb-model-${idx}`)?.value;
+    if (vendorId) {
+      vendorConfigs.push({
+        vendor_id: vendorId,
+        api_key: apiKey || '',
+        base_url: baseUrl || '',
+        model: model || '',
+      });
+    }
+  });
   const body = {
     new_password: document.getElementById('onb-password').value || undefined,
     email: document.getElementById('onb-email').value || undefined,
-    vendor_id: vendorId,
-    api_key: document.getElementById('onb-apikey').value || undefined,
-    base_url: document.getElementById('onb-baseurl').value || undefined,
-    model: document.getElementById('onb-model').value || undefined,
+    vendor_configs: vendorConfigs,
     permissions: {
       max_daily_chats: parseInt(document.getElementById('onb-max-chats').value) || 100,
       max_tokens_per_request: parseInt(document.getElementById('onb-max-tokens').value) || 4096,

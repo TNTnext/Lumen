@@ -43,6 +43,45 @@ def _get_first_model(cfg):
     return names[0] if names else None
 
 
+def _build_fallback_chain(primary_config, resolved_model, all_configs):
+    """Build a fallback chain: primary first, then cross-vendor priority if configured."""
+    from models import SystemConfig
+
+    fallback_chain = []
+    if primary_config:
+        fallback_chain.append((primary_config, resolved_model))
+
+    # Check for cross-vendor model priority order
+    cross_priority_cfg = SystemConfig.query.filter_by(key='model_priority_order').first()
+    cross_priority = []
+    if cross_priority_cfg and cross_priority_cfg.value:
+        try:
+            cross_priority = json.loads(cross_priority_cfg.value)
+        except (json.JSONDecodeError, TypeError):
+            cross_priority = []
+
+    if cross_priority:
+        # Build chain by model order: for each model in priority, find first enabled vendor that has it
+        for priority_model in cross_priority:
+            for cfg in all_configs:
+                if cfg.id == (primary_config.id if primary_config else -1):
+                    continue
+                model_names = _extract_model_names(cfg.model_priorities)
+                if priority_model in model_names or priority_model == cfg.default_model:
+                    if (cfg, priority_model) not in fallback_chain:
+                        fallback_chain.append((cfg, priority_model))
+                    break
+    else:
+        # Default: vendor-by-vendor fallback
+        for cfg in all_configs:
+            if cfg.id != (primary_config.id if primary_config else -1):
+                fm = _get_first_model(cfg)
+                if fm and (cfg, fm) not in fallback_chain:
+                    fallback_chain.append((cfg, fm))
+
+    return fallback_chain
+
+
 def _resolve_model(user, requested_model=None):
     """
     Resolve which model to use.
@@ -153,6 +192,9 @@ def send_message():
     max_tokens = data.get('max_tokens')
     temperature = data.get('temperature')
     top_p = data.get('top_p')
+    tools = data.get('tools')
+    thinking = data.get('thinking')
+    web_search = data.get('web_search')
 
     # Get or create conversation
     if conversation_id:
@@ -181,15 +223,8 @@ def send_message():
     # Get all active configs for fallback
     all_configs = _get_active_vendor_configs()
 
-    # Build fallback chain: primary first, then others by priority
-    fallback_chain = []
-    if primary_config:
-        fallback_chain.append((primary_config, resolved_model))
-    for cfg in all_configs:
-        if cfg.id != (primary_config.id if primary_config else -1):
-            fm = _get_first_model(cfg)
-            if fm:
-                fallback_chain.append((cfg, fm))
+    # Build fallback chain: primary first, then cross-vendor or vendor-by-vendor
+    fallback_chain = _build_fallback_chain(primary_config, resolved_model, all_configs)
 
     # Extra kwargs
     extra_kwargs = {}
@@ -199,6 +234,12 @@ def send_message():
         extra_kwargs['temperature'] = temperature
     if top_p is not None:
         extra_kwargs['top_p'] = top_p
+    if tools:
+        extra_kwargs['tools'] = tools
+    if thinking is not None:
+        extra_kwargs['thinking'] = thinking
+    if web_search is not None:
+        extra_kwargs['web_search'] = web_search
 
     if stream:
         return _handle_stream(conv, user_msg, messages, fallback_chain, extra_kwargs)

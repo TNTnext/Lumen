@@ -760,19 +760,50 @@ def complete_onboarding():
     if new_email:
         u.email = new_email
 
-    # AI vendor config
-    vendor_id = data.get('vendor_id')
-    if vendor_id:
-        _upsert_config('ai_vendor', vendor_id)
-    api_key = data.get('api_key')
-    if api_key:
-        _upsert_config('deepseek_api_key', api_key, encrypt=True)
-    base_url = data.get('base_url')
-    if base_url:
-        _upsert_config('deepseek_base_url', base_url)
-    model = data.get('model')
-    if model:
-        _upsert_config('deepseek_model', model)
+    # AI vendor configs - support both old single-vendor and new multi-vendor
+    vendor_configs = data.get('vendor_configs', [])
+    if vendor_configs:
+        # Multi-vendor configs: [{vendor_id, api_key, base_url, model}, ...]
+        from models import VendorConfig
+        # First, disable all existing vendor configs
+        VendorConfig.query.update({'enabled': False})
+        for vc in vendor_configs:
+            vid = vc.get('vendor_id')
+            if not vid:
+                continue
+            existing = VendorConfig.query.filter_by(vendor_id=vid).first()
+            if existing:
+                if vc.get('api_key'):
+                    existing.api_key = vc['api_key']
+                if vc.get('base_url'):
+                    existing.base_url = vc['base_url']
+                if vc.get('model'):
+                    existing.default_model = vc['model']
+                existing.enabled = True
+            else:
+                db.session.add(VendorConfig(
+                    vendor_id=vid,
+                    display_name=vid,
+                    api_key=vc.get('api_key', ''),
+                    base_url=vc.get('base_url', ''),
+                    default_model=vc.get('model', ''),
+                    enabled=True,
+                    priority=1
+                ))
+    else:
+        # Backward compat: single vendor (old format)
+        vendor_id = data.get('vendor_id')
+        if vendor_id:
+            _upsert_config('ai_vendor', vendor_id)
+        api_key = data.get('api_key')
+        if api_key:
+            _upsert_config('deepseek_api_key', api_key, encrypt=True)
+        base_url = data.get('base_url')
+        if base_url:
+            _upsert_config('deepseek_base_url', base_url)
+        model = data.get('model')
+        if model:
+            _upsert_config('deepseek_model', model)
 
     # Global permissions
     perms = data.get('permissions', {})
@@ -996,6 +1027,31 @@ def reorder_vendor_configs():
 
     db.session.commit()
     return jsonify({'success': True, 'message': '排序已更新'})
+
+
+@admin_bp.route('/api/admin/model-priority-order', methods=['GET', 'PUT'])
+@require_admin
+def model_priority_order():
+    """Cross-vendor model priority order for fallback chain."""
+    if request.method == 'GET':
+        cfg = SystemConfig.query.filter_by(key='model_priority_order').first()
+        if cfg and cfg.value:
+            try:
+                import json
+                return jsonify({'success': True, 'order': json.loads(cfg.value)})
+            except Exception:
+                return jsonify({'success': True, 'order': []})
+        return jsonify({'success': True, 'order': []})
+
+    # PUT
+    data = request.get_json(silent=True)
+    if not data or 'order' not in data:
+        return jsonify({'error': '请提供模型优先级列表'}), 400
+
+    import json
+    _upsert_config('model_priority_order', json.dumps(data['order'], ensure_ascii=False))
+    db.session.commit()
+    return jsonify({'success': True, 'message': '模型优先级已更新'})
 
 
 @admin_bp.route('/api/admin/vendor-configs/<int:config_id>/test', methods=['POST'])
