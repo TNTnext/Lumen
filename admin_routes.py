@@ -529,6 +529,17 @@ def test_deepseek_connection():
         api_key = vendor_cfg.api_key or data.get('api_key', '')
         base_url = vendor_cfg.base_url or data.get('base_url', '')
         vendor_id = vendor_cfg.vendor_id
+        # Fallback to system config if vendor has no API key
+        if not api_key:
+            cfg = SystemConfig.query.filter_by(key=f'{vendor_id}_api_key').first()
+            if not cfg:
+                cfg = SystemConfig.query.filter_by(key='deepseek_api_key').first()
+            api_key = cfg.value if cfg else ''
+        if not base_url:
+            cfg = SystemConfig.query.filter_by(key=f'{vendor_id}_base_url').first()
+            if not cfg:
+                cfg = SystemConfig.query.filter_by(key='deepseek_base_url').first()
+            base_url = cfg.value if cfg else 'https://api.deepseek.com'
         # Get default model or first model from priorities
         model = vendor_cfg.default_model
         if not model and vendor_cfg.model_priorities:
