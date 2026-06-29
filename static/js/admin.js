@@ -1096,7 +1096,7 @@ async function renderEndpoints() {
               <span class="text-sm font-mono text-xs text-text-secondary mr-3">${ep.endpoint}</span>
               <span class="text-xs text-text-tertiary">${ep.description}</span>
             </div>
-            <button onclick="toggleEndpoint(${ep.id}, ${!ep.enabled})" class="relative w-9 h-5 rounded-full transition-all duration-200 active:scale-95 ${ep.enabled ? 'bg-accent' : 'bg-border'}">
+            <button data-ep-id="${ep.id}" data-ep-group="${key}" onclick="toggleEndpoint(${ep.id}, ${!ep.enabled})" class="relative w-9 h-5 rounded-full transition-all duration-200 active:scale-95 ${ep.enabled ? 'bg-accent' : 'bg-border'}">
               <span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${ep.enabled ? 'translate-x-4' : ''}"></span>
             </button>
           </div>
@@ -1109,23 +1109,58 @@ async function renderEndpoints() {
 
 async function toggleEndpoint(id, enabled) {
   const res = await api(`/api/admin/endpoints/${id}`, { method: 'PUT', body: { enabled } });
-  if (res && res.success) renderEndpoints();
+  if (!res || !res.success) return;
+  // In-place DOM update — preserves CSS transitions
+  const btn = document.querySelector(`[data-ep-id="${id}"]`);
+  if (!btn) return;
+  // Animate the background
+  btn.classList.toggle('bg-accent', enabled);
+  btn.classList.toggle('bg-border', !enabled);
+  // Update onclick to toggle to opposite state
+  btn.setAttribute('onclick', `toggleEndpoint(${id}, ${!enabled})`);
+  // Animate the dot
+  const dot = btn.querySelector('span');
+  if (dot) {
+    dot.classList.toggle('translate-x-4', enabled);
+  }
 }
 
 async function batchToggleGroup(group, enabled) {
   const res = await api('/api/admin/endpoints/batch', { method: 'PUT', body: { group, enabled } });
-  if (res && res.success) { toast(enabled ? t('ep_toggled_on') : t('ep_toggled_off'), 'success'); renderEndpoints(); }
+  if (!res || !res.success) return;
+  toast(enabled ? t('ep_toggled_on') : t('ep_toggled_off'), 'success');
+  // In-place DOM update for toggles in this group only
+  document.querySelectorAll(`[data-ep-group="${group}"]`).forEach(btn => {
+    const id = parseInt(btn.getAttribute('data-ep-id'));
+    if (!isNaN(id)) {
+      btn.classList.toggle('bg-accent', enabled);
+      btn.classList.toggle('bg-border', !enabled);
+      btn.setAttribute('onclick', `toggleEndpoint(${id}, ${!enabled})`);
+      const dot = btn.querySelector('span');
+      if (dot) dot.classList.toggle('translate-x-4', enabled);
+    }
+  });
 }
 
 async function batchToggleAll(enabled) {
-  // Batch toggle all groups (auth, chat, admin)
   let allOk = true;
   for (const group of ['auth', 'chat', 'admin']) {
     const res = await api('/api/admin/endpoints/batch', { method: 'PUT', body: { group, enabled } });
     if (!res || !res.success) allOk = false;
   }
-  if (allOk) { toast(enabled ? t('ep_toggled_on') : t('ep_toggled_off'), 'success'); renderEndpoints(); }
-  else toast(t('save_failed'), 'error');
+  if (!allOk) { toast(t('save_failed'), 'error'); return; }
+  toast(enabled ? t('ep_toggled_on') : t('ep_toggled_off'), 'success');
+  // In-place DOM update for ALL toggles
+  document.querySelectorAll(`[data-ep-id]`).forEach(btn => {
+    const id = parseInt(btn.getAttribute('data-ep-id'));
+    if (!isNaN(id)) {
+      btn.classList.toggle('bg-accent', enabled);
+      btn.classList.toggle('bg-border', !enabled);
+      btn.setAttribute('onclick', `toggleEndpoint(${id}, ${!enabled})`);
+      const dot = btn.querySelector('span');
+      if (dot) dot.classList.toggle('translate-x-4', enabled);
+    }
+  });
 }
 
 // ─── Settings ─────────────────────────────────────────────
