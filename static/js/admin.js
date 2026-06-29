@@ -452,9 +452,11 @@ async function renderDashboard() {
     const maxVal = Math.max(...s.daily_trend.map(d => d.count), 1);
     chart.innerHTML = s.daily_trend.map(d => {
       const h = Math.max((d.count / maxVal) * 100, 2);
-      return `<div class="flex-1 flex flex-col items-center gap-1">
+      return `<div class="flex-1 h-full flex flex-col items-center gap-1">
         <span class="text-xs text-text-tertiary">${d.count}</span>
-        <div class="w-full bg-accent rounded-t-sm transition-all" style="height:${h}%"></div>
+        <div class="flex-1 w-full flex flex-col justify-end">
+          <div class="w-full bg-accent rounded-t-sm transition-all" style="height:${h}%"></div>
+        </div>
         <span class="text-xs text-text-tertiary">${d.date.slice(5)}</span>
       </div>`;
     }).join('');
