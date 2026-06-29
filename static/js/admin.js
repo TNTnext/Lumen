@@ -1549,22 +1549,36 @@ function setupDragDrop() {
   }
 
   bindList(ordered, available, (d, t) => {
+    // Cross-list: dragged from available → move to ordered
+    if (d.parentElement !== ordered) {
+      moveToOrdered(d.getAttribute('data-model-id'));
+      return;
+    }
     // Reorder within ordered list
     const children = [...ordered.children];
     const from = children.indexOf(d);
     const to = children.indexOf(t);
-    if (from < to) t.after(d);
-    else t.before(d);
+    if (from !== -1 && to !== -1) {
+      if (from < to) t.after(d);
+      else t.before(d);
+    }
     updatePriorityNumbers();
     updateCounters();
   });
   bindList(available, ordered, (d, t) => {
+    // Cross-list: dragged from ordered → move to available
+    if (d.parentElement !== available) {
+      moveToAvailable(d.getAttribute('data-model-id'));
+      return;
+    }
     // Reorder within available list (cosmetic, just swap)
     const children = [...available.children];
     const from = children.indexOf(d);
     const to = children.indexOf(t);
-    if (from < to) t.after(d);
-    else t.before(d);
+    if (from !== -1 && to !== -1) {
+      if (from < to) t.after(d);
+      else t.before(d);
+    }
   });
 }
 
