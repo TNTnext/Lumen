@@ -322,11 +322,20 @@ function navigate(page) {
   container.innerHTML = '';
   const fn = window['render' + page.charAt(0).toUpperCase() + page.slice(1).replace(/-./g, x => x[1].toUpperCase())];
   if (fn) fn();
+  // Auto-enhance all pages with animations
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      container.style.transition = 'opacity 0.2s ease-out';
-      container.style.opacity = '1';
+    // Cards: lift on hover
+    container.querySelectorAll('.bg-surface.rounded-2xl, .bg-surface.rounded-xl').forEach((el, i) => {
+      el.classList.add('card-lift');
+      el.style.setProperty('--i', i);
+      el.style.animation = 'fadeInUp 0.4s var(--ease-out) both';
+      el.style.animationDelay = (i * 50) + 'ms';
     });
+    // Table rows: smooth hover
+    container.querySelectorAll('tbody tr').forEach(el => el.classList.add('table-row'));
+    // Fade in page
+    container.style.transition = 'opacity 0.25s ease-out';
+    container.style.opacity = '1';
   });
   closeSidebar();
   container.scrollTop = 0;
@@ -434,6 +443,15 @@ async function renderOnboarding() {
 
   window._onbVendors = vendors;
   addOnboardingVendor('deepseek', '', '', 'deepseek-chat');
+  // Auto-enhance: card animations
+  requestAnimationFrame(() => {
+    container.querySelectorAll('.bg-surface.rounded-2xl, .bg-surface.rounded-xl').forEach((el, i) => {
+      el.classList.add('card-lift');
+      el.style.animation = 'fadeInUp 0.4s var(--ease-out) both';
+      el.style.animationDelay = (i * 50) + 'ms';
+    });
+    container.querySelectorAll('tbody tr').forEach(el => el.classList.add('table-row'));
+  });
   lucide.createIcons();
 }
 
