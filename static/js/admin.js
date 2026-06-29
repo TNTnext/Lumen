@@ -1067,8 +1067,8 @@ async function renderEndpoints() {
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-semibold tracking-tight">${t('ep_title')}</h1>
       <div class="flex gap-2">
-        <button onclick="batchToggleAll(true)" class="px-3 py-1.5 rounded-md border border-border text-xs text-accent hover:bg-accent/10 transition-colors">${t('ep_all_on')}</button>
-        <button onclick="batchToggleAll(false)" class="px-3 py-1.5 rounded-md border border-border text-xs text-text-secondary hover:bg-surface-hover transition-colors">${t('ep_all_off')}</button>
+        <button onclick="batchToggleAll(true)" class="btn-press px-3 py-1.5 rounded-md border border-border text-xs text-accent hover:bg-accent/10 transition-all duration-200 active:scale-95">${t('ep_all_on')}</button>
+        <button onclick="batchToggleAll(false)" class="btn-press px-3 py-1.5 rounded-md border border-border text-xs text-text-secondary hover:bg-surface-hover transition-all duration-200 active:scale-95">${t('ep_all_off')}</button>
       </div>
     </div>
     <div class="space-y-4" id="endpoint-groups"></div>
@@ -1084,9 +1084,9 @@ async function renderEndpoints() {
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold">${groupNames[key] || key}</h2>
         <div class="flex items-center gap-1">
-          <button onclick="batchToggleGroup('${key}', true)" class="px-2 py-0.5 rounded text-xs text-accent hover:bg-accent/10 transition-colors">${t('ep_on')}</button>
+          <button onclick="batchToggleGroup('${key}', true)" class="btn-press px-2 py-0.5 rounded text-xs text-accent hover:bg-accent/10 transition-all duration-200 active:scale-95">${t('ep_on')}</button>
           <span class="text-border">|</span>
-          <button onclick="batchToggleGroup('${key}', false)" class="px-2 py-0.5 rounded text-xs text-text-secondary hover:bg-surface-hover transition-colors">${t('ep_off')}</button>
+          <button onclick="batchToggleGroup('${key}', false)" class="btn-press px-2 py-0.5 rounded text-xs text-text-secondary hover:bg-surface-hover transition-all duration-200 active:scale-95">${t('ep_off')}</button>
         </div>
       </div>
       <div class="space-y-1">
@@ -1096,8 +1096,8 @@ async function renderEndpoints() {
               <span class="text-sm font-mono text-xs text-text-secondary mr-3">${ep.endpoint}</span>
               <span class="text-xs text-text-tertiary">${ep.description}</span>
             </div>
-            <button onclick="toggleEndpoint(${ep.id}, ${!ep.enabled})" class="relative w-9 h-5 rounded-full transition-colors ${ep.enabled ? 'bg-accent' : 'bg-border'}">
-              <span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${ep.enabled ? 'translate-x-4' : ''}"></span>
+            <button onclick="toggleEndpoint(${ep.id}, ${!ep.enabled})" class="relative w-9 h-5 rounded-full transition-all duration-200 active:scale-95 ${ep.enabled ? 'bg-accent' : 'bg-border'}">
+              <span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${ep.enabled ? 'translate-x-4' : ''}"></span>
             </button>
           </div>
         `).join('')}
@@ -1241,6 +1241,7 @@ function renderVendorList(configs, allVendors) {
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>` : ''}
           </div>
+        </div>
 
         <!-- Status line -->
         <div class="flex items-center justify-between mt-2">
@@ -1495,11 +1496,15 @@ async function renderModelPriority(container) {
   container = container || document.getElementById('page-container');
   const res = await api('/api/admin/model-priority-order');
   const saved = (res && res.order) ? res.order : [];
+  // Filter by enabled vendors
+  const cfgRes = await api('/api/admin/vendor-configs');
+  const configs = cfgRes?.configs || [];
+  const enabledVendorIds = new Set(configs.filter(c => c.enabled).map(c => c.vendor_id));
   const vRes = await api('/api/admin/vendors');
   const vendors = (vRes && vRes.vendors) ? vRes.vendors : [];
-  // Build flat model list: { id, name, vendor }
+  // Build flat model list from enabled vendors only
   const allModels = [];
-  vendors.forEach(v => {
+  vendors.filter(v => enabledVendorIds.has(v.id)).forEach(v => {
     (v.models || []).forEach(m => {
       allModels.push({ id: m.id, name: m.name, vendor: v.name });
     });
@@ -1507,40 +1512,81 @@ async function renderModelPriority(container) {
   // Separate selected vs available
   const selected = saved.map(id => allModels.find(m => m.id === id)).filter(Boolean);
   const available = allModels.filter(m => !saved.includes(m.id));
-  container.innerHTML = '<div class="animate-fade-in-up"><div class="mb-8"><h1 class="text-2xl font-semibold text-text tracking-tight">' + t('nav_model_priority') + '</h1><p class="text-text-secondary text-sm mt-1">' + (lang === 'zh' ? '拖拽模型调整跨厂商故障转移的优先级顺序' : 'Drag models to adjust cross-vendor fallback priority') + '</p></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-surface rounded-2xl p-6 shadow-sm border border-border/30"><h2 class="text-sm font-semibold text-text mb-4 uppercase tracking-wider">' + (lang === 'zh' ? '已排序模型' : 'Ordered Models') + ' <span class="text-text-tertiary font-normal normal-case">(' + selected.length + ')</span></h2><div id="priority-list" class="space-y-2 min-h-[60px]">' + selected.map((m, i) => '<div class="flex items-center gap-3 bg-bg rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border border-border/20" draggable="true" data-model-id="' + m.id + '" data-idx="' + i + '"><span class="text-text-tertiary text-xs font-mono w-6">' + (i + 1) + '</span><span class="flex-1 text-sm font-medium text-text">' + m.name + '</span><span class="text-xs text-text-tertiary px-2 py-0.5 bg-surface rounded-md">' + m.vendor + '</span></div>').join('') + '</div><button onclick="saveModelPriority()" class="mt-4 w-full bg-text text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98]">' + (lang === 'zh' ? '保存排序' : 'Save Order') + '</button></div><div class="bg-surface rounded-2xl p-6 shadow-sm border border-border/30"><h2 class="text-sm font-semibold text-text mb-4 uppercase tracking-wider">' + (lang === 'zh' ? '可用模型' : 'Available Models') + ' <span class="text-text-tertiary font-normal normal-case">(' + available.length + ')</span></h2><div id="available-list" class="space-y-2 min-h-[60px]">' + available.map(m => '<div class="flex items-center gap-3 bg-bg rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border border-border/20" draggable="true" data-model-id="' + m.id + '"><span class="flex-1 text-sm font-medium text-text">' + m.name + '</span><span class="text-xs text-text-tertiary px-2 py-0.5 bg-surface rounded-md">' + m.vendor + '</span><button onclick="moveToOrdered(\'' + m.id + '\')" class="text-accent hover:text-accent-hover transition-colors text-xs font-medium">' + (lang === 'zh' ? '添加 ↑' : 'Add ↑') + '</button></div>').join('') + '</div></div></div></div>';
-  // Drag and drop
+  container.innerHTML = '<div class="animate-fade-in-up"><div class="mb-8"><h1 class="text-2xl font-semibold text-text tracking-tight">' + t('nav_model_priority') + '</h1><p class="text-text-secondary text-sm mt-1">' + (lang === 'zh' ? '拖拽或点击按钮调整跨厂商故障转移优先级，保存后生效' : 'Drag or click buttons to adjust cross-vendor fallback priority, save to apply') + '</p></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-surface rounded-2xl p-6 shadow-sm border border-border/30"><h2 class="text-sm font-semibold text-text mb-4 uppercase tracking-wider">' + (lang === 'zh' ? '已排序模型' : 'Ordered Models') + ' <span id="ordered-count" class="text-text-tertiary font-normal normal-case">(' + selected.length + ')</span></h2><div id="priority-list" class="space-y-2 min-h-[60px]">' + selected.map((m, i) => '<div class="flex items-center gap-3 bg-bg rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border border-border/20" draggable="true" data-model-id="' + m.id + '" data-idx="' + i + '"><span class="text-text-tertiary text-xs font-mono w-6">' + (i + 1) + '</span><span class="flex-1 text-sm font-medium text-text">' + m.name + '</span><span class="text-xs text-text-tertiary px-2 py-0.5 bg-surface rounded-md">' + m.vendor + '</span><button onclick="moveToAvailable(\'' + m.id + '\')" class="p-1 rounded-md text-text-tertiary/40 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0" title="' + (lang === 'zh' ? '移除' : 'Remove') + '"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></div>').join('') + '</div><button onclick="saveModelPriority()" class="mt-4 w-full bg-text text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98]">' + (lang === 'zh' ? '保存排序' : 'Save Order') + '</button></div><div class="bg-surface rounded-2xl p-6 shadow-sm border border-border/30"><h2 class="text-sm font-semibold text-text mb-4 uppercase tracking-wider">' + (lang === 'zh' ? '可用模型' : 'Available Models') + ' <span id="available-count" class="text-text-tertiary font-normal normal-case">(' + available.length + ')</span></h2><div id="available-list" class="space-y-2 min-h-[60px]">' + available.map(m => '<div class="flex items-center gap-3 bg-bg rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border border-border/20" draggable="true" data-model-id="' + m.id + '"><span class="flex-1 text-sm font-medium text-text">' + m.name + '</span><span class="text-xs text-text-tertiary px-2 py-0.5 bg-surface rounded-md">' + m.vendor + '</span><button onclick="moveToOrdered(\'' + m.id + '\')" class="text-accent hover:text-accent-hover transition-colors text-xs font-medium flex-shrink-0">' + (lang === 'zh' ? '添加 ↑' : 'Add ↑') + '</button></div>').join('') + '</div></div></div></div>';
   setupDragDrop();
   lucide.createIcons();
 }
+
 function setupDragDrop() {
-  const list = document.getElementById('priority-list');
-  if (!list) return;
+  const ordered = document.getElementById('priority-list');
+  const available = document.getElementById('available-list');
+  if (!ordered || !available) return;
   let dragged = null;
-  list.querySelectorAll('[draggable]').forEach(el => {
-    el.addEventListener('dragstart', e => { dragged = el; el.style.opacity = '0.5'; });
-    el.addEventListener('dragend', e => { el.style.opacity = '1'; dragged = null; });
-    el.addEventListener('dragover', e => { e.preventDefault(); });
-    el.addEventListener('drop', e => {
-      e.preventDefault();
-      if (!dragged || dragged === el) return;
-      const children = [...list.children];
-      const from = children.indexOf(dragged);
-      const to = children.indexOf(el);
-      if (from < to) el.after(dragged);
-      else el.before(dragged);
-      updatePriorityNumbers();
+
+  function bindList(list, targetList, onDrop) {
+    list.querySelectorAll('[draggable]').forEach(el => {
+      el.addEventListener('dragstart', e => { dragged = el; el.style.opacity = '0.5'; e.dataTransfer.effectAllowed = 'move'; });
+      el.addEventListener('dragend', e => { el.style.opacity = '1'; dragged = null; });
+      el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+      el.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); if (dragged && dragged !== el) onDrop(dragged, el); });
     });
+    // Also allow dropping on the list container itself (empty area)
+    list.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    list.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged) return;
+      // If dropped on the list container (not on a specific item), append to end
+      if (e.target === list || e.target.id === list.id) {
+        if (dragged.parentElement === list) return; // same list, already handled
+        onDropToList(dragged, list);
+      }
+    });
+  }
+
+  function onDropToList(item, targetList) {
+    if (targetList === ordered) moveToOrdered(item.getAttribute('data-model-id'));
+    else moveToAvailable(item.getAttribute('data-model-id'));
+  }
+
+  bindList(ordered, available, (d, t) => {
+    // Reorder within ordered list
+    const children = [...ordered.children];
+    const from = children.indexOf(d);
+    const to = children.indexOf(t);
+    if (from < to) t.after(d);
+    else t.before(d);
+    updatePriorityNumbers();
+    updateCounters();
+  });
+  bindList(available, ordered, (d, t) => {
+    // Reorder within available list (cosmetic, just swap)
+    const children = [...available.children];
+    const from = children.indexOf(d);
+    const to = children.indexOf(t);
+    if (from < to) t.after(d);
+    else t.before(d);
   });
 }
+
 function updatePriorityNumbers() {
   const list = document.getElementById('priority-list');
   if (!list) return;
   [...list.children].forEach((el, i) => {
-    const span = el.querySelector('span');
+    const span = el.querySelector('span.w-6');
     if (span) span.textContent = i + 1;
     el.setAttribute('data-idx', i);
   });
 }
+
+function updateCounters() {
+  const ordered = document.getElementById('priority-list');
+  const available = document.getElementById('available-list');
+  const oc = document.getElementById('ordered-count');
+  const ac = document.getElementById('available-count');
+  if (oc) oc.textContent = '(' + (ordered ? ordered.children.length : 0) + ')';
+  if (ac) ac.textContent = '(' + (available ? available.children.length : 0) + ')';
+}
+
 async function saveModelPriority() {
   const list = document.getElementById('priority-list');
   const order = [...list.children].map(el => el.getAttribute('data-model-id'));
@@ -1548,17 +1594,41 @@ async function saveModelPriority() {
   if (res && res.success) toast(lang === 'zh' ? '优先级已保存' : 'Priority saved', 'success');
   else toast(lang === 'zh' ? '保存失败' : 'Save failed', 'error');
 }
-async function moveToOrdered(modelId) {
+
+function moveToOrdered(modelId) {
   const list = document.getElementById('priority-list');
   const avail = document.getElementById('available-list');
   const item = avail.querySelector('[data-model-id="' + modelId + '"]');
   if (!item) return;
-  item.querySelector('button')?.remove();
+  item.querySelector('button')?.remove(); // Remove "Add" button
   const idx = list.children.length;
-  item.innerHTML = '<span class="text-text-tertiary text-xs font-mono w-6">' + (idx + 1) + '</span><span class="flex-1 text-sm font-medium text-text">' + item.querySelector('.text-text').textContent + '</span>' + (item.querySelector('.bg-surface')?.outerHTML || '');
+  // Rebuild inner HTML for ordered list format: number + name + vendor badge + remove btn
+  const nameEl = item.querySelector('.text-text');
+  const badgeEl = item.querySelector('.bg-surface');
+  item.innerHTML = '<span class="text-text-tertiary text-xs font-mono w-6">' + (idx + 1) + '</span><span class="flex-1 text-sm font-medium text-text">' + (nameEl ? nameEl.textContent : '') + '</span>' + (badgeEl ? badgeEl.outerHTML : '') + '<button onclick="moveToAvailable(\'' + modelId + '\')" class="p-1 rounded-md text-text-tertiary/40 hover:text-danger hover:bg-danger/10 transition-all flex-shrink-0" title="' + (lang === 'zh' ? '移除' : 'Remove') + '"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>';
   list.appendChild(item);
   setupDragDrop();
   updatePriorityNumbers();
+  updateCounters();
+  lucide.createIcons();
+}
+
+function moveToAvailable(modelId) {
+  const list = document.getElementById('priority-list');
+  const avail = document.getElementById('available-list');
+  const item = list.querySelector('[data-model-id="' + modelId + '"]');
+  if (!item) return;
+  // Remove the remove button and rebuild for available format
+  const lastBtn = item.querySelector('button');
+  if (lastBtn) lastBtn.remove();
+  const nameEl = item.querySelector('.text-text');
+  const badgeEl = item.querySelector('.bg-surface');
+  item.innerHTML = '<span class="flex-1 text-sm font-medium text-text">' + (nameEl ? nameEl.textContent : '') + '</span>' + (badgeEl ? badgeEl.outerHTML : '') + '<button onclick="moveToOrdered(\'' + modelId + '\')" class="text-accent hover:text-accent-hover transition-colors text-xs font-medium flex-shrink-0">' + (lang === 'zh' ? '添加 ↑' : 'Add ↑') + '</button>';
+  avail.appendChild(item);
+  setupDragDrop();
+  updatePriorityNumbers();
+  updateCounters();
+  lucide.createIcons();
 }
 // ─── Init ─────────────────────────────────────────────────
 checkAuth();
