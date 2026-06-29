@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lumen API 文档 / Lumen API Documentation</title>
+  <title>Lumen API 文档</title>
   <link rel="preconnect" href="https://lf-code-agent.coze.cn" />
   <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
   <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
@@ -45,10 +45,13 @@
     .method-delete { background: #FEE2E2; color: #EF4444; }
     .badge-required { background: #FEE2E2; color: #DC2626; }
     .badge-optional { background: #EAEDF3; color: #637089; }
-    .lang-zh, .lang-en { transition: opacity 0.2s; }
-    .lang-en { color: #637089; }
-    .lang-zh { color: #152033; }
-    .section-divider { border-top: 1px dashed var(--color-outline-variant); margin: 1.5rem 0; }
+    [data-lang-en] { display: none; }
+    html.lang-en [data-lang-zh] { display: none; }
+    html.lang-en [data-lang-en] { display: inline; }
+    html.lang-en [data-lang-en-block] { display: block; }
+    html.lang-en [data-lang-zh-block] { display: none; }
+    [data-lang-en-block] { display: none; }
+    [data-lang-zh-block] { display: block; }
     @media (max-width: 768px) {
       .sidebar { display: none; }
       .sidebar.open { display: flex; position: fixed; inset: 0; z-index: 50; }
@@ -65,55 +68,48 @@
 <!-- Sidebar -->
 <aside id="sidebar" class="sidebar fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-outline-variant flex flex-col z-40 overflow-y-auto">
   <div class="px-5 py-4 border-b border-outline-variant">
-    <div class="flex items-center gap-2.5">
+    <div class="flex items-center justify-between">
       <span class="font-semibold text-lg">Lumen</span>
+      <button id="langToggle" onclick="toggleLang()" class="px-2.5 py-1 rounded-md border border-outline text-xs font-medium hover:bg-surface-container transition-colors cursor-pointer">
+        <span data-lang-zh>EN</span>
+        <span data-lang-en>中</span>
+      </button>
     </div>
-    <p class="text-xs text-on-surface-variant mt-1">API 文档 v1.0 · 中英双语</p>
+    <p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>API 文档 v1.0</span><span data-lang-en>API Documentation v1.0</span></p>
   </div>
   <nav class="flex-1 px-3 py-4 space-y-0.5 text-sm" id="sidebarNav">
-    <!-- 导航-概览 -->
     <a href="#overview" class="sidebar-link active flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="book-open" class="w-4 h-4 shrink-0"></i> 概览 Overview
+      <i data-lucide="book-open" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>概览</span><span data-lang-en>Overview</span>
     </a>
-    <!-- 导航-快速开始 -->
     <a href="#quickstart" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="rocket" class="w-4 h-4 shrink-0"></i> 快速开始 Quickstart
+      <i data-lucide="rocket" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>快速开始</span><span data-lang-en>Quickstart</span>
     </a>
-    <!-- 导航-认证 -->
     <a href="#auth" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="shield" class="w-4 h-4 shrink-0"></i> 认证 Auth
+      <i data-lucide="shield" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>认证</span><span data-lang-en>Auth</span>
     </a>
-    <!-- 导航-对话 -->
     <a href="#chat" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="message-square" class="w-4 h-4 shrink-0"></i> 对话 Chat
+      <i data-lucide="message-square" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>对话</span><span data-lang-en>Chat</span>
     </a>
-    <!-- 导航-管理后台 -->
     <a href="#admin" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="settings" class="w-4 h-4 shrink-0"></i> 管理后台 Admin
+      <i data-lucide="settings" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>管理后台</span><span data-lang-en>Admin</span>
     </a>
-    <!-- 导航-权限 -->
     <a href="#permissions" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="key" class="w-4 h-4 shrink-0"></i> 权限 Permissions
+      <i data-lucide="key" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>权限</span><span data-lang-en>Permissions</span>
     </a>
-    <!-- 导航-接口开关 -->
     <a href="#endpoints" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="toggle-right" class="w-4 h-4 shrink-0"></i> 接口开关 Endpoints
+      <i data-lucide="toggle-right" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>接口开关</span><span data-lang-en>Endpoints</span>
     </a>
-    <!-- 导航-模型 -->
     <a href="#models" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="cpu" class="w-4 h-4 shrink-0"></i> 模型与厂商 Models
+      <i data-lucide="cpu" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>模型与厂商</span><span data-lang-en>Models & Vendors</span>
     </a>
-    <!-- 导航-系统配置 -->
     <a href="#config" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="sliders" class="w-4 h-4 shrink-0"></i> 系统配置 Config
+      <i data-lucide="sliders" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>系统配置</span><span data-lang-en>System Config</span>
     </a>
-    <!-- 导航-部署 -->
     <a href="#deploy" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="server" class="w-4 h-4 shrink-0"></i> 部署 Deploy
+      <i data-lucide="server" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>部署</span><span data-lang-en>Deploy</span>
     </a>
-    <!-- 导航-错误码 -->
     <a href="#errors" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
-      <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i> 错误码 Errors
+      <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>错误码</span><span data-lang-en>Error Codes</span>
     </a>
   </nav>
   <div class="px-5 py-3 border-t border-outline-variant text-xs text-on-surface-variant">
@@ -121,960 +117,516 @@
   </div>
 </aside>
 
-<!-- @main-content:start -->
 <main class="md:ml-64 min-h-screen">
 
-  <!-- ==================== Overview / 概览 ==================== -->
+  <!-- ==================== Overview ==================== -->
   <section id="overview" class="px-6 md:px-10 py-10 max-w-4xl">
-    <h1 class="text-3xl font-bold tracking-tight mb-2">Lumen API 文档</h1>
-    <p class="text-on-surface-variant text-sm mb-1">Lumen API Documentation</p>
-    <p class="text-on-surface-variant text-lg mb-8">自托管 AI 网关与对话管理平台 — 支持 9 家内置厂商与自定义 OpenAI 兼容端点</p>
-    <p class="text-on-surface-variant text-sm -mt-6 mb-8">Self-hosted AI gateway &amp; conversation platform — 9 built-in providers + custom OpenAI-compatible endpoints</p>
+    <h1 class="text-3xl font-bold tracking-tight mb-2"><span data-lang-zh>Lumen API 文档</span><span data-lang-en>Lumen API Documentation</span></h1>
+    <p class="text-on-surface-variant text-sm mb-6"><span data-lang-zh>自托管 AI 网关与对话管理平台</span><span data-lang-en>Self-hosted AI Gateway & Conversation Management Platform</span></p>
 
-    <!-- 特性卡片 -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-      <!-- 卡片-JWT认证 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-2"><i data-lucide="shield-check" class="w-5 h-5 text-success"></i><span class="font-semibold text-sm">JWT 认证</span></div>
-        <p class="text-xs text-on-surface-variant">所有 API 通过 Bearer Token 鉴权，支持过期与刷新</p>
-        <p class="text-xs text-on-surface-variant mt-1 lang-en">All APIs authenticated via Bearer Token with expiry &amp; refresh</p>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6 mb-6">
+      <h2 class="text-lg font-semibold mb-3"><span data-lang-zh>项目简介</span><span data-lang-en>Introduction</span></h2>
+      <p class="text-sm text-on-surface-variant leading-relaxed" data-lang-zh-block>
+        Lumen 是一个自托管的 AI 网关与对话管理平台，基于 Python Flask 构建。支持 9 家内置 AI 厂商（DeepSeek、OpenAI、Anthropic、Kimi、火山引擎、阿里云、xAI、智谱、Minimax）以及自定义 OpenAI 兼容端点。提供多用户系统、细粒度权限控制、接口开关管理和 Apple 风格管理后台。
+      </p>
+      <p class="text-sm text-on-surface-variant leading-relaxed" data-lang-en-block>
+        Lumen is a self-hosted AI gateway and conversation management platform built with Python Flask. It supports 9 built-in AI vendors (DeepSeek, OpenAI, Anthropic, Kimi, Volcano Engine, Alibaba Cloud, xAI, Zhipu, Minimax) plus custom OpenAI-compatible endpoints. Features include multi-user system, fine-grained permission control, endpoint toggle management, and an Apple-style admin dashboard.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="bg-surface rounded-lg border border-outline-variant p-4 text-center">
+        <div class="text-2xl font-bold text-primary">9</div>
+        <div class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>内置厂商</span><span data-lang-en>Built-in Vendors</span></div>
       </div>
-      <!-- 卡片-多用户隔离 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-2"><i data-lucide="users" class="w-5 h-5 text-primary"></i><span class="font-semibold text-sm">多用户隔离</span></div>
-        <p class="text-xs text-on-surface-variant">用户数据完全隔离，管理员可配置细粒度权限</p>
-        <p class="text-xs text-on-surface-variant mt-1 lang-en">Complete user data isolation with granular permission controls</p>
+      <div class="bg-surface rounded-lg border border-outline-variant p-4 text-center">
+        <div class="text-2xl font-bold text-primary">30+</div>
+        <div class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>预置模型</span><span data-lang-en>Preset Models</span></div>
       </div>
-      <!-- 卡片-多厂商支持 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-2"><i data-lucide="cpu" class="w-5 h-5 text-warning"></i><span class="font-semibold text-sm">多厂商支持</span></div>
-        <p class="text-xs text-on-surface-variant">9 家内置厂商 + 自定义 OpenAI 兼容端点，30+ 模型</p>
-        <p class="text-xs text-on-surface-variant mt-1 lang-en">9 built-in vendors + custom endpoints, 30+ models</p>
+      <div class="bg-surface rounded-lg border border-outline-variant p-4 text-center">
+        <div class="text-2xl font-bold text-primary">28</div>
+        <div class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>API 接口</span><span data-lang-en>API Endpoints</span></div>
+      </div>
+      <div class="bg-surface rounded-lg border border-outline-variant p-4 text-center">
+        <div class="text-2xl font-bold text-primary">MIT</div>
+        <div class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>开源协议</span><span data-lang-en>License</span></div>
       </div>
     </div>
 
-    <!-- 基础信息 -->
-    <div class="bg-surface rounded-xl shadow-card p-6">
-      <h2 class="font-semibold text-lg mb-1">基础信息</h2>
-      <p class="text-xs text-on-surface-variant mb-3 lang-en">Basic Information</p>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <h2 class="text-lg font-semibold mb-3"><span data-lang-zh>技术栈</span><span data-lang-en>Tech Stack</span></h2>
       <table class="w-full text-sm">
-        <tr class="border-b border-outline-variant/50">
-          <td class="py-2.5 pr-4 font-medium text-on-surface w-32">Base URL</td>
-          <td class="py-2.5 text-on-surface-variant"><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">{your_domain}/api</code></td>
-        </tr>
-        <tr class="border-b border-outline-variant/50">
-          <td class="py-2.5 pr-4 font-medium text-on-surface">认证方式 <span class="text-xs text-on-surface-variant">Auth</span></td>
-          <td class="py-2.5 text-on-surface-variant"><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">Authorization: Bearer &lt;token&gt;</code></td>
-        </tr>
-        <tr class="border-b border-outline-variant/50">
-          <td class="py-2.5 pr-4 font-medium text-on-surface">Content-Type</td>
-          <td class="py-2.5 text-on-surface-variant"><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">application/json</code></td>
-        </tr>
-        <tr>
-          <td class="py-2.5 pr-4 font-medium text-on-surface">默认管理员 <span class="text-xs text-on-surface-variant">Default Admin</span></td>
-          <td class="py-2.5 text-on-surface-variant"><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">admin</code> / <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">admin123</code> <span class="text-warning text-xs ml-1">首次登录需改密 / Must change on first login</span></td>
-        </tr>
+        <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>层级</span><span data-lang-en>Layer</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>技术</span><span data-lang-en>Technology</span></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-outline-variant"><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>后端框架</span><span data-lang-en>Backend</span></td><td class="py-2">Python 3.11+ / Flask / SQLAlchemy</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>认证</span><span data-lang-en>Auth</span></td><td class="py-2">Flask-JWT-Extended</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>数据库</span><span data-lang-en>Database</span></td><td class="py-2">SQLite（<span data-lang-zh>可切换</span><span data-lang-en>switchable to</span> PostgreSQL）</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>前端</span><span data-lang-en>Frontend</span></td><td class="py-2">HTML/CSS/JS + Tailwind CSS v4 + Lucide Icons</td></tr>
+          <tr><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>AI 服务</span><span data-lang-en>AI Service</span></td><td class="py-2"><span data-lang-zh>多厂商统一调用层</span><span data-lang-en>Multi-vendor unified API layer</span></td></tr>
+        </tbody>
       </table>
     </div>
   </section>
 
-  <!-- ==================== Quickstart / 快速开始 ==================== -->
+  <!-- ==================== Quickstart ==================== -->
   <section id="quickstart" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>快速开始</h2>
-    <p class="text-xs text-on-surface-variant mb-6 lang-en">Quick Start</p>
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>快速开始</span><span data-lang-en>Quickstart</span></h2>
 
-    <div class="space-y-6">
-      <!-- 安装与启动 -->
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">安装与启动</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Installation &amp; Launch</p>
-        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono text-on-surface overflow-x-auto"># 克隆项目 / Clone
-git clone https://github.com/your-org/lumen.git
+    <div class="bg-surface rounded-xl border border-outline-variant p-6 mb-6">
+      <h3 class="text-sm font-semibold mb-3"><span data-lang-zh>环境要求</span><span data-lang-en>Requirements</span></h3>
+      <ul class="list-disc list-inside text-sm text-on-surface-variant space-y-1">
+        <li>Python 3.11+</li>
+        <li>pip</li>
+      </ul>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-outline-variant p-6 mb-6">
+      <h3 class="text-sm font-semibold mb-3"><span data-lang-zh>安装与运行</span><span data-lang-en>Install & Run</span></h3>
+      <pre class="bg-background rounded-lg p-4 text-sm font-mono overflow-x-auto">git clone https://github.com/your-org/lumen.git
 cd lumen
-
-# 安装依赖 / Install dependencies
 pip install -r requirements.txt
-
-# 启动服务（默认端口 5000）/ Start server (default port 5000)
 python app.py</pre>
-      </div>
+      <p class="text-xs text-on-surface-variant mt-3"><span data-lang-zh>服务默认运行在</span><span data-lang-en>Server runs on</span> <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs">http://localhost:5000</code></p>
+    </div>
 
-      <!-- 第一个 API 请求 -->
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">第一个 API 请求</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Your First API Request</p>
-        <div class="space-y-4">
-          <div>
-            <p class="text-xs text-on-surface-variant mb-2">1. 登录获取 Token / Login to get Token</p>
-            <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono text-on-surface overflow-x-auto">curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'</pre>
-          </div>
-          <div>
-            <p class="text-xs text-on-surface-variant mb-2">2. 发送对话 / Send a message</p>
-            <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono text-on-surface overflow-x-auto">curl -X POST http://localhost:5000/api/chat/send \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer &lt;your_token&gt;" \
-  -d '{"message":"你好，请介绍一下你自己"}'</pre>
-          </div>
-        </div>
-      </div>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <h3 class="text-sm font-semibold mb-3"><span data-lang-zh>默认管理员</span><span data-lang-en>Default Admin</span></h3>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>字段</span><span data-lang-en>Field</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>值</span><span data-lang-en>Value</span></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-outline-variant"><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>用户名</span><span data-lang-en>Username</span></td><td class="py-2 font-mono text-sm">admin</td></tr>
+          <tr><td class="py-2 text-on-surface-variant text-xs"><span data-lang-zh>密码</span><span data-lang-en>Password</span></td><td class="py-2 font-mono text-sm">admin123</td></tr>
+        </tbody>
+      </table>
+      <p class="text-xs text-on-surface-variant mt-3"><span data-lang-zh>首次登录后需修改密码并完成新手引导。</span><span data-lang-en>You must change the password and complete onboarding after first login.</span></p>
     </div>
   </section>
 
-  <!-- ==================== Auth / 认证 ==================== -->
+  <!-- ==================== Auth ==================== -->
   <section id="auth" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>认证接口</h2>
-    <p class="text-xs text-on-surface-variant mb-1 lang-en">Authentication APIs</p>
-    <p class="text-on-surface-variant mb-6">所有认证接口均不需要 Token。除注册外，其余接口始终可用（不受接口开关影响）。</p>
-    <p class="text-xs text-on-surface-variant -mt-5 mb-6 lang-en">All auth endpoints do not require a Token. Except registration, all are always available (not affected by endpoint toggles).</p>
+    <h2 class="text-2xl font-bold tracking-tight mb-2"><span data-lang-zh>认证接口</span><span data-lang-en>Auth API</span></h2>
+    <p class="text-sm text-on-surface-variant mb-6"><span data-lang-zh>基础路径：</span><span data-lang-en>Base path: </span><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs">/api/auth</code></p>
 
-    <div class="space-y-5">
-      <!-- Register / 注册 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/auth/register</code>
+    <!-- POST /api/auth/register -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span>
+        <code class="text-sm font-mono">/api/auth/register</code>
+      </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>注册新用户</span><span data-lang-en>Register a new user</span></p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>请求参数</span><span data-lang-en>Request Body</span></p>
+          <table class="w-full text-xs">
+            <thead><tr class="border-b border-outline-variant"><th class="text-left py-1.5 text-on-surface-variant"><span data-lang-zh">参数</span><span data-lang-en>Param</span></th><th class="text-left py-1.5 text-on-surface-variant"><span data-lang-zh>类型</span><span data-lang-en>Type</span></th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="py-1 font-mono">username</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-required text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>必填</span><span data-lang-en>required</span></span></td></tr>
+              <tr><td class="py-1 font-mono">password</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-required text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>必填</span><span data-lang-en>required</span></span></td></tr>
+              <tr><td class="py-1 font-mono">email</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <p class="text-sm text-on-surface-variant mb-1">注册新用户。需管理员开启开放注册开关，否则返回 403。</p>
-        <p class="text-xs text-on-surface-variant mb-4 lang-en">Register a new user. Requires admin to enable open registration, otherwise returns 403.</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-surface-container rounded-lg p-3">
-            <div class="text-xs font-semibold text-on-surface-variant mb-2">请求体 <span class="lang-en">Request Body</span></div>
-            <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "username": "string",    <span class="badge-required text-[10px] px-1 rounded">必填 Required</span>
-  "password": "string",    <span class="badge-required text-[10px] px-1 rounded">必填 Required</span> 最少 6 位 / min 6 chars
-  "email": "string",       <span class="badge-optional text-[10px] px-1 rounded">可选 Optional</span>
-  "daily_limit": 100       <span class="badge-optional text-[10px] px-1 rounded">可选 Optional</span> null=继承全局 / inherit global
-}</pre>
-          </div>
-          <div class="bg-surface-container rounded-lg p-3">
-            <div class="text-xs font-semibold text-on-surface-variant mb-2">成功响应 <span class="text-success">200</span> <span class="lang-en">Success</span></div>
-            <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>响应示例</span><span data-lang-en>Response</span></p>
+          <pre class="bg-background rounded-lg p-3 text-xs font-mono overflow-x-auto">{
   "success": true,
-  "message": "注册成功",
-  "token": "eyJ...",
-  "user": { "id": 1, ... }
+  "message": "注册成功"
 }</pre>
-          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Login / 登录 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/auth/login</code>
+    <!-- POST /api/auth/login -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span>
+        <code class="text-sm font-mono">/api/auth/login</code>
+      </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>用户登录，返回 JWT Token</span><span data-lang-en>Login, returns JWT Token</span></p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>请求参数</span><span data-lang-en>Request Body</span></p>
+          <table class="w-full text-xs">
+            <thead><tr class="border-b border-outline-variant"><th class="text-left py-1.5 text-on-surface-variant"><span data-lang-zh">参数</span><span data-lang-en>Param</span></th><th class="text-left py-1.5 text-on-surface-variant"><span data-lang-zh>类型</span><span data-lang-en>Type</span></th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="py-1 font-mono">username</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-required text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>必填</span><span data-lang-en>required</span></span></td></tr>
+              <tr><td class="py-1 font-mono">password</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-required text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>必填</span><span data-lang-en>required</span></span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <p class="text-sm text-on-surface-variant mb-1">用户登录，返回 JWT Token（有效期 24 小时）。</p>
-        <p class="text-xs text-on-surface-variant mb-4 lang-en">User login, returns JWT Token (valid for 24 hours).</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-surface-container rounded-lg p-3">
-            <div class="text-xs font-semibold text-on-surface-variant mb-2">请求体 <span class="lang-en">Request Body</span></div>
-            <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "username": "admin",
-  "password": "admin123"
-}</pre>
-          </div>
-          <div class="bg-surface-container rounded-lg p-3">
-            <div class="text-xs font-semibold text-on-surface-variant mb-2">成功响应 <span class="text-success">200</span> <span class="lang-en">Success</span></div>
-            <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>响应示例</span><span data-lang-en>Response</span></p>
+          <pre class="bg-background rounded-lg p-3 text-xs font-mono overflow-x-auto">{
   "success": true,
-  "token": "eyJ...",
-  "user": { ... },
-  "must_change_password": true
-}</pre>
-          </div>
-        </div>
-      </div>
-
-      <!-- Me / 当前用户 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/auth/me</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取当前登录用户的详细信息。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Get current logged-in user details.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <div class="text-xs font-semibold text-on-surface-variant mb-2">Headers</div>
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">Authorization: Bearer &lt;token&gt;</pre>
-        </div>
-      </div>
-
-      <!-- Change Password / 修改密码 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/auth/change-password</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">修改当前用户密码。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Change current user's password.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <div class="text-xs font-semibold text-on-surface-variant mb-2">请求体 <span class="lang-en">Request Body</span></div>
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "old_password": "current_password",
-  "new_password": "new_strong_password"
+  "access_token": "eyJ...",
+  "user": { "id": 1, "username": "admin" }
 }</pre>
         </div>
       </div>
+    </div>
 
-      <!-- Logout / 登出 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/auth/logout</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">登出当前用户，使 Token 失效。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Logout current user, invalidate the Token.</p>
+    <!-- POST /api/auth/logout -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span>
+        <code class="text-sm font-mono">/api/auth/logout</code>
       </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>登出当前用户</span><span data-lang-en>Logout current user</span></p>
+      <p class="text-xs text-on-surface-variant"><span data-lang-zh>需要认证：</span><span data-lang-en>Auth required: </span><code class="bg-surface-container px-1 py-0.5 rounded">Bearer Token</code></p>
+    </div>
+
+    <!-- GET /api/auth/me -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span>
+        <code class="text-sm font-mono">/api/auth/me</code>
+      </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>获取当前用户信息</span><span data-lang-en>Get current user info</span></p>
+      <p class="text-xs text-on-surface-variant"><span data-lang-zh>需要认证：</span><span data-lang-en>Auth required: </span><code class="bg-surface-container px-1 py-0.5 rounded">Bearer Token</code></p>
+    </div>
+
+    <!-- POST /api/auth/change-password -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span>
+        <code class="text-sm font-mono">/api/auth/change-password</code>
+      </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>修改当前用户密码</span><span data-lang-en>Change current user password</span></p>
+      <p class="text-xs text-on-surface-variant"><span data-lang-zh>需要认证：</span><span data-lang-en>Auth required: </span><code class="bg-surface-container px-1 py-0.5 rounded">Bearer Token</code></p>
     </div>
   </section>
 
-  <!-- ==================== Chat / 对话 ==================== -->
+  <!-- ==================== Chat ==================== -->
   <section id="chat" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>对话接口</h2>
-    <p class="text-xs text-on-surface-variant mb-1 lang-en">Chat APIs</p>
-    <p class="text-on-surface-variant mb-6">核心 AI 对话功能，支持多轮上下文、流式输出、多模型切换。所有接口均需认证，受每日限额与权限控制。</p>
-    <p class="text-xs text-on-surface-variant -mt-5 mb-6 lang-en">Core AI chat features: multi-turn context, streaming, multi-model. All require auth, subject to daily limits &amp; permissions.</p>
+    <h2 class="text-2xl font-bold tracking-tight mb-2"><span data-lang-zh>对话接口</span><span data-lang-en>Chat API</span></h2>
+    <p class="text-sm text-on-surface-variant mb-6"><span data-lang-zh>基础路径：</span><span data-lang-en>Base path: </span><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs">/api/chat</code></p>
 
-    <div class="space-y-5">
-      <!-- Send / 发送消息 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/chat/send</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
+    <!-- POST /api/chat/send -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span>
+        <code class="text-sm font-mono">/api/chat/send</code>
+      </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>发送消息（支持多轮对话和流式输出）</span><span data-lang-en>Send message (multi-turn + streaming)</span></p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>请求参数</span><span data-lang-en>Request Body</span></p>
+          <table class="w-full text-xs">
+            <thead><tr class="border-b border-outline-variant"><th class="text-left py-1.5 text-on-surface-variant"><span data-lang-zh">参数</span><span data-lang-en>Param</span></th><th class="text-left py-1.5 text-on-surface-variant"><span data-lang-zh>类型</span><span data-lang-en>Type</span></th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="py-1 font-mono">content</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-required text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>必填</span><span data-lang-en>required</span></span></td></tr>
+              <tr><td class="py-1 font-mono">conversation_id</td><td class="py-1 text-on-surface-variant">int</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">model</td><td class="py-1 text-on-surface-variant">string</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+              <tr><td class="py-1 font-mono">stream</td><td class="py-1 text-on-surface-variant">bool</td><td><span class="badge-optional text-xs px-1.5 py-0.5 rounded"><span data-lang-zh>可选</span><span data-lang-en>optional</span></span></td></tr>
+            </tbody>
+          </table>
         </div>
-        <p class="text-sm text-on-surface-variant mb-1">发送消息并获取 AI 回复。自动加载对话历史构建多轮上下文。</p>
-        <p class="text-xs text-on-surface-variant mb-4 lang-en">Send a message and get AI reply. Automatically loads conversation history for multi-turn context.</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-surface-container rounded-lg p-3">
-            <div class="text-xs font-semibold text-on-surface-variant mb-2">请求体 <span class="lang-en">Request Body</span></div>
-            <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "message": "你好",           <span class="badge-required text-[10px] px-1 rounded">必填 Required</span>
-  "conversation_id": 1,        <span class="badge-optional text-[10px] px-1 rounded">可选 Optional</span> 继续已有对话 / continue
-  "model": "deepseek-chat",    <span class="badge-optional text-[10px] px-1 rounded">可选 Optional</span> 默认 / default deepseek-chat
-  "stream": false,             <span class="badge-optional text-[10px] px-1 rounded">可选 Optional</span> 是否流式输出 / streaming
-  "enable_thinking": false     <span class="badge-optional text-[10px] px-1 rounded">可选 Optional</span> 开启思考模式 / thinking mode
-}</pre>
-          </div>
-          <div class="bg-surface-container rounded-lg p-3">
-            <div class="text-xs font-semibold text-on-surface-variant mb-2">成功响应 <span class="text-success">200</span> <span class="lang-en">Success</span></div>
-            <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
+        <div>
+          <p class="text-xs font-medium mb-2"><span data-lang-zh>响应示例</span><span data-lang-en>Response</span></p>
+          <pre class="bg-background rounded-lg p-3 text-xs font-mono overflow-x-auto">{
   "success": true,
   "conversation_id": 1,
   "message": {
     "role": "assistant",
-    "content": "你好！我是..."
-  },
-  "tokens": {
-    "prompt": 120,
-    "completion": 45,
-    "total": 165
+    "content": "你好！..."
   }
 }</pre>
-          </div>
-        </div>
-        <div class="mt-4 bg-primary-container/30 rounded-lg p-3 text-xs text-on-surface-variant">
-          <strong class="text-on-surface">流式输出 / Streaming：</strong>设置 <code class="bg-surface-container-high px-1 rounded">"stream": true</code> 后，响应以 SSE 格式返回，Content-Type 为 <code class="bg-surface-container-high px-1 rounded">text/event-stream</code>，前端需使用 <code class="bg-surface-container-high px-1 rounded">EventSource</code> 或 <code class="bg-surface-container-high px-1 rounded">fetch + ReadableStream</code> 读取。
         </div>
       </div>
+    </div>
 
-      <!-- Conversations List / 对话列表 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/chat/conversations</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取当前用户的对话列表，按更新时间倒序，支持分页。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Get current user's conversation list, sorted by update time desc, with pagination.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <div class="text-xs font-semibold text-on-surface-variant mb-2">Query 参数 <span class="lang-en">Query Params</span></div>
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">?page=1&per_page=20</pre>
-        </div>
+    <!-- GET /api/chat/conversations -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span>
+        <code class="text-sm font-mono">/api/chat/conversations</code>
       </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>获取当前用户的对话列表（分页）</span><span data-lang-en>Get user conversations (paginated)</span></p>
+      <p class="text-xs text-on-surface-variant"><span data-lang-zh>需要认证：</span><span data-lang-en>Auth required: </span><code class="bg-surface-container px-1 py-0.5 rounded">Bearer Token</code></p>
+    </div>
 
-      <!-- Conversation Detail / 对话详情 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/chat/conversations/:id</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取指定对话的详细信息及全部消息记录。仅限操作自己的对话。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get conversation details and all messages. Only accessible for own conversations.</p>
+    <!-- GET /api/chat/conversations/<id> -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span>
+        <code class="text-sm font-mono">/api/chat/conversations/&lt;id&gt;</code>
       </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>获取对话详情及消息列表</span><span data-lang-en>Get conversation detail with messages</span></p>
+      <p class="text-xs text-on-surface-variant"><span data-lang-zh>需要认证：</span><span data-lang-en>Auth required: </span><code class="bg-surface-container px-1 py-0.5 rounded">Bearer Token</code></p>
+    </div>
 
-      <!-- Delete / 删除对话 -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-delete">DELETE</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/chat/conversations/:id</code>
-          <span class="badge-required text-[10px] px-1 rounded">需认证 Auth Required</span>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">删除指定对话及其所有消息。仅限操作自己的对话。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Delete a conversation and all its messages. Only for own conversations.</p>
+    <!-- DELETE /api/chat/conversations/<id> -->
+    <div class="bg-surface rounded-xl border border-outline-variant p-5 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="method-delete text-xs font-bold px-2 py-0.5 rounded">DELETE</span>
+        <code class="text-sm font-mono">/api/chat/conversations/&lt;id&gt;</code>
       </div>
+      <p class="text-xs text-on-surface-variant mb-3"><span data-lang-zh>删除指定对话</span><span data-lang-en>Delete a conversation</span></p>
+      <p class="text-xs text-on-surface-variant"><span data-lang-zh>需要认证：</span><span data-lang-en>Auth required: </span><code class="bg-surface-container px-1 py-0.5 rounded">Bearer Token</code></p>
     </div>
   </section>
 
-  <!-- ==================== Admin / 管理后台 ==================== -->
+  <!-- ==================== Admin ==================== -->
   <section id="admin" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>管理后台接口</h2>
-    <p class="text-xs text-on-surface-variant mb-1 lang-en">Admin APIs</p>
-    <p class="text-on-surface-variant mb-6">所有 <code class="bg-surface-container px-1 rounded text-xs">/api/admin/*</code> 接口均需管理员权限，且不受接口开关限制（始终可用）。</p>
-    <p class="text-xs text-on-surface-variant -mt-5 mb-6 lang-en">All <code class="bg-surface-container px-1 rounded text-xs">/api/admin/*</code> endpoints require admin role and are always available (not affected by endpoint toggles).</p>
-
-    <div class="space-y-5">
-      <!-- Dashboard -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/dashboard</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">数据看板。返回总用户数、今日活跃、7 日对话趋势、模型分布、时段分布等统计。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Dashboard stats: total users, today's active, 7-day chat trends, model distribution, hourly distribution.</p>
-      </div>
-
-      <!-- Users List -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/users</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">用户列表，支持搜索、状态筛选、分页。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">User list with search, status filter, and pagination.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <div class="text-xs font-semibold text-on-surface-variant mb-2">Query 参数 <span class="lang-en">Query Params</span></div>
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">?page=1&per_page=20&search=关键词&status=active|disabled</pre>
-        </div>
-      </div>
-
-      <!-- Update User -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/users/:id</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">更新用户信息。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Update user information.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "role": "admin|user",
-  "is_active": true|false,
-  "daily_limit": 100  // null = 继承全局 / inherit global
-}</pre>
-        </div>
-      </div>
-
-      <!-- Reset Password -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/users/:id/reset-password</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">重置用户密码为随机字符串并返回。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Reset user password to a random string and return it.</p>
-      </div>
-
-      <!-- User Conversations -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/users/:id/conversations</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">查看指定用户的对话列表（管理员功能）。</p>
-        <p class="text-xs text-on-surface-variant lang-en">View a specific user's conversation list (admin feature).</p>
-      </div>
-
-      <!-- All Conversations -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/conversations</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">全部对话概览（管理员功能）。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Overview of all conversations (admin feature).</p>
-      </div>
-
-      <!-- Conversation Detail (Admin) -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/conversations/:id</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">查看任意对话详情（需开启 admin_can_view_content 配置）。</p>
-        <p class="text-xs text-on-surface-variant lang-en">View any conversation details (requires admin_can_view_content enabled).</p>
-      </div>
-
-      <!-- System Reset -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/reset</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">系统重置 — 清空所有对话、消息、配置、用户（保留管理员），恢复出厂设置。</p>
-        <p class="text-xs text-on-surface-variant lang-en">System reset — clear all conversations, messages, configs, users (keep admin), restore factory settings.</p>
-      </div>
-
-      <!-- Vendors -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/vendors</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取所有厂商及模型列表（含能力标签：text/streaming/thinking/vision/tools/file_upload/web_search）。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get all vendors and models with capability tags.</p>
-      </div>
-
-      <!-- Onboarding Status -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/onboarding/status</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取新手引导状态。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get onboarding wizard status.</p>
-      </div>
-
-      <!-- Onboarding Complete -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/onboarding/complete</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">完成新手引导，一站式配置管理员密码、AI 厂商、全局权限、注册开关等。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Complete onboarding: configure admin password, AI vendor, global permissions, registration toggle, etc.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== Permissions / 权限系统 ==================== -->
-  <section id="permissions" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>权限系统</h2>
-    <p class="text-xs text-on-surface-variant mb-1 lang-en">Permission System</p>
-    <p class="text-on-surface-variant mb-6">Lumen 采用两级权限架构，灵活控制每个用户的能力边界。</p>
-    <p class="text-xs text-on-surface-variant -mt-5 mb-6 lang-en">Lumen uses a two-tier permission architecture for flexible per-user capability control.</p>
-
-    <div class="space-y-5">
-      <!-- 两级权限架构 -->
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">两级权限架构</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Two-Tier Permission Architecture</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div class="bg-surface-container rounded-lg p-4">
-            <div class="flex items-center gap-2 mb-2"><i data-lucide="globe" class="w-4 h-4 text-primary"></i><span class="font-semibold">全局默认权限</span></div>
-            <p class="text-on-surface-variant text-xs">定义所有新用户的初始能力。管理员在「权限设置」页面修改后，所有未设单独权限的用户立即生效。</p>
-            <p class="text-on-surface-variant text-xs mt-1 lang-en">Defines initial capabilities for all new users. Changes take effect immediately for users without custom permissions.</p>
-          </div>
-          <div class="bg-surface-container rounded-lg p-4">
-            <div class="flex items-center gap-2 mb-2"><i data-lucide="user-cog" class="w-4 h-4 text-primary"></i><span class="font-semibold">用户单独权限</span></div>
-            <p class="text-on-surface-variant text-xs">管理员可为特定用户设置自定义权限。设为「继承全局」则跟随全局默认值；设为「自定义」则覆盖全局。</p>
-            <p class="text-on-surface-variant text-xs mt-1 lang-en">Admins can set custom permissions for specific users. "Inherit" follows global defaults; "Custom" overrides them.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 权限项说明 -->
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">权限项说明</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Permission Items</p>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-outline-variant">
-                <th class="py-2.5 pr-4 text-left font-semibold">权限项 <span class="lang-en text-xs font-normal">Item</span></th>
-                <th class="py-2.5 pr-4 text-left font-semibold">类型 <span class="lang-en text-xs font-normal">Type</span></th>
-                <th class="py-2.5 pr-4 text-left font-semibold">默认值 <span class="lang-en text-xs font-normal">Default</span></th>
-                <th class="py-2.5 text-left font-semibold">说明 <span class="lang-en text-xs font-normal">Description</span></th>
-              </tr>
-            </thead>
-            <tbody class="text-on-surface-variant">
-              <!-- 权限项-max_daily_chats -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1.5 py-0.5 rounded font-mono">max_daily_chats</code></td>
-                <td class="py-2.5 pr-4">number</td>
-                <td class="py-2.5 pr-4">100</td>
-                <td class="py-2.5">每日对话次数上限 / Daily chat limit</td>
-              </tr>
-              <!-- 权限项-allowed_models -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1.5 py-0.5 rounded font-mono">allowed_models</code></td>
-                <td class="py-2.5 pr-4">string[]</td>
-                <td class="py-2.5 pr-4">deepseek-chat, deepseek-reasoner</td>
-                <td class="py-2.5">允许使用的模型 ID 列表 / Allowed model IDs</td>
-              </tr>
-              <!-- 权限项-max_tokens_per_request -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1.5 py-0.5 rounded font-mono">max_tokens_per_request</code></td>
-                <td class="py-2.5 pr-4">number</td>
-                <td class="py-2.5 pr-4">4096</td>
-                <td class="py-2.5">单次请求最大 Token 数 / Max tokens per request</td>
-              </tr>
-              <!-- 权限项-rate_limit_per_minute -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1.5 py-0.5 rounded font-mono">rate_limit_per_minute</code></td>
-                <td class="py-2.5 pr-4">number</td>
-                <td class="py-2.5 pr-4">10</td>
-                <td class="py-2.5">每分钟请求频率限制 / Rate limit per minute</td>
-              </tr>
-              <!-- 权限项-allow_export -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1.5 py-0.5 rounded font-mono">allow_export</code></td>
-                <td class="py-2.5 pr-4">boolean</td>
-                <td class="py-2.5 pr-4">false</td>
-                <td class="py-2.5">是否允许导出对话 / Allow conversation export</td>
-              </tr>
-              <!-- 权限项-allow_file_upload -->
-              <tr>
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1.5 py-0.5 rounded font-mono">allow_file_upload</code></td>
-                <td class="py-2.5 pr-4">boolean</td>
-                <td class="py-2.5 pr-4">false</td>
-                <td class="py-2.5">是否允许上传文件 / Allow file upload</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 用户每日限额 -->
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">用户每日限额</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">User Daily Limit</p>
-        <p class="text-sm text-on-surface-variant">每个用户可设置独立的 <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">daily_limit</code> 字段。设为 <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">null</code> 表示使用全局 <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">max_daily_chats</code>；设为具体数值则覆盖全局。</p>
-        <p class="text-xs text-on-surface-variant mt-1 lang-en">Each user can have an independent <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">daily_limit</code>. Set to <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">null</code> to inherit global <code class="bg-surface-container px-1.5 py-0.5 rounded text-xs font-mono">max_daily_chats</code>; set a specific number to override.</p>
-      </div>
-
-      <!-- Permissions API endpoints -->
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/permissions/global</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取全局默认权限配置。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get global default permission configuration.</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/permissions/global</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">更新全局默认权限。变更后所有未设单独权限的用户立即生效。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Update global default permissions. Takes effect immediately for all users without custom permissions.</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/permissions/user/:id</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取用户单独权限配置及有效权限合并结果。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get user's custom permission config and effective merged permissions.</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/permissions/user/:id</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">更新用户单独权限。设置 <code class="bg-surface-container px-1 rounded text-xs">use_custom: false</code> 恢复继承全局。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Update user's custom permissions. Set <code class="bg-surface-container px-1 rounded text-xs">use_custom: false</code> to revert to global inheritance.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== Endpoints / 接口开关 ==================== -->
-  <section id="endpoints" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>接口开关</h2>
-    <p class="text-xs text-on-surface-variant mb-1 lang-en">Endpoint Toggles</p>
-    <p class="text-on-surface-variant mb-6">管理员可精细控制每个接口的启用/禁用状态。被禁用的接口返回 403。管理后台接口（<code class="bg-surface-container px-1 rounded text-xs">/api/admin/*</code>）始终可用，不受开关影响。</p>
-    <p class="text-xs text-on-surface-variant -mt-5 mb-6 lang-en">Admins can finely control each endpoint's enabled/disabled state. Disabled endpoints return 403. Admin endpoints (<code class="bg-surface-container px-1 rounded text-xs">/api/admin/*</code>) are always available.</p>
-
-    <div class="bg-surface rounded-xl shadow-card p-6 mb-5">
-      <h3 class="font-semibold mb-1">分组说明</h3>
-      <p class="text-xs text-on-surface-variant mb-3 lang-en">Groups</p>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        <div class="bg-surface-container rounded-lg p-3">
-          <span class="font-semibold">认证 (auth)</span>
-          <p class="text-xs text-on-surface-variant mt-1">注册、登录、登出、个人信息、改密</p>
-          <p class="text-xs text-on-surface-variant mt-0.5 lang-en">Register, Login, Logout, Profile, Change Password</p>
-        </div>
-        <div class="bg-surface-container rounded-lg p-3">
-          <span class="font-semibold">对话 (chat)</span>
-          <p class="text-xs text-on-surface-variant mt-1">发送消息、对话列表、对话详情、删除对话</p>
-          <p class="text-xs text-on-surface-variant mt-0.5 lang-en">Send, List, Detail, Delete conversations</p>
-        </div>
-        <div class="bg-surface-container rounded-lg p-3">
-          <span class="font-semibold">管理后台 (admin)</span>
-          <p class="text-xs text-on-surface-variant mt-1">始终可用，不受开关控制</p>
-          <p class="text-xs text-on-surface-variant mt-0.5 lang-en">Always available, not affected by toggles</p>
-        </div>
-      </div>
-    </div>
+    <h2 class="text-2xl font-bold tracking-tight mb-2"><span data-lang-zh>管理后台接口</span><span data-lang-en>Admin API</span></h2>
+    <p class="text-sm text-on-surface-variant mb-6"><span data-lang-zh>基础路径：</span><span data-lang-en>Base path: </span><code class="bg-surface-container px-1.5 py-0.5 rounded text-xs">/api/admin</code> &nbsp;<span class="text-xs text-on-surface-variant"><span data-lang-zh>（需要管理员权限）</span><span data-lang-en>(Admin required)</span></span></p>
 
     <div class="space-y-4">
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/endpoints</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取所有接口开关列表（按分组）。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get all endpoint toggles (grouped).</p>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/dashboard</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>数据看板统计（用户数、活跃度、Token 用量等）</span><span data-lang-en>Dashboard stats (users, activity, token usage)</span></p>
       </div>
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/endpoints/:id</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">切换单个接口的启用/禁用状态。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Toggle a single endpoint's enabled/disabled state.</p>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/users</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>用户列表（分页）</span><span data-lang-en>User list (paginated)</span></p>
       </div>
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/endpoints/batch</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">批量切换接口开关。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Batch toggle endpoint states.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "endpoint_ids": [1, 2, 3],
-  "enabled": true
-}</pre>
-        </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/users/&lt;id&gt;</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>更新用户信息（角色、邮箱、启用状态等）</span><span data-lang-en>Update user (role, email, active status)</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span><code class="text-sm font-mono">/api/admin/users/&lt;id&gt;/reset-password</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>重置用户密码</span><span data-lang-en>Reset user password</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/users/&lt;id&gt;/conversations</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>查看指定用户的对话列表</span><span data-lang-en>View user conversations</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/conversations</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>全部对话概览</span><span data-lang-en>All conversations overview</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/conversations/&lt;id&gt;</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>对话详情（含消息列表）</span><span data-lang-en>Conversation detail with messages</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/permissions/global</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>获取全局权限配置</span><span data-lang-en>Get global permissions</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/permissions/global</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>更新全局权限配置</span><span data-lang-en>Update global permissions</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/permissions/user/&lt;id&gt;</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>获取用户单独权限</span><span data-lang-en>Get user-specific permissions</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/permissions/user/&lt;id&gt;</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>更新用户单独权限</span><span data-lang-en>Update user-specific permissions</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/config</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>获取系统配置</span><span data-lang-en>Get system config</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/config</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>更新系统配置</span><span data-lang-en>Update system config</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span><code class="text-sm font-mono">/api/admin/config/test-connection</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>测试 AI API 连接</span><span data-lang-en>Test AI API connection</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/config/api-key</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>获取 API Key 及用量统计</span><span data-lang-en>Get API key & usage stats</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/config/open-registration</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>获取开放注册状态</span><span data-lang-en>Get open registration status</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/config/open-registration</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>设置开放注册状态</span><span data-lang-en>Set open registration status</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span><code class="text-sm font-mono">/api/admin/reset</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>系统重置（清空对话/配置/用户）</span><span data-lang-en>System reset (clear conversations/config/users)</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/endpoints</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>接口开关列表（分组）</span><span data-lang-en>Endpoint toggle list (grouped)</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/endpoints/&lt;id&gt;</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>切换单个接口开关</span><span data-lang-en>Toggle single endpoint</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-put text-xs font-bold px-2 py-0.5 rounded">PUT</span><code class="text-sm font-mono">/api/admin/endpoints/batch</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>批量切换接口开关</span><span data-lang-en>Batch toggle endpoints</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/vendors</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>厂商与模型列表</span><span data-lang-en>Vendor & model list</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/onboarding/status</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>新手引导状态</span><span data-lang-en>Onboarding status</span></p>
+      </div>
+      <div class="bg-surface rounded-xl border border-outline-variant p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span><code class="text-sm font-mono">/api/admin/onboarding/complete</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>完成新手引导配置</span><span data-lang-en>Complete onboarding setup</span></p>
       </div>
     </div>
   </section>
 
-  <!-- ==================== Models & Vendors / 模型与厂商 ==================== -->
+  <!-- ==================== Permissions ==================== -->
+  <section id="permissions" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>权限系统</span><span data-lang-en>Permissions</span></h2>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+        Lumen 采用两级权限控制：全局默认权限 + 用户单独权限。用户单独权限可设为"继承全局"或"自定义覆盖"。权限项包括：每日对话次数、可用模型、单次最大 Token、导出开关、文件上传、频率限制。
+      </p>
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+        Lumen uses a two-tier permission system: global defaults + user-specific overrides. User permissions can be set to "inherit global" or "custom override". Permission items include: daily chat limit, allowed models, max tokens per request, export toggle, file upload, rate limiting.
+      </p>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>权限项</span><span data-lang-en>Permission</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">max_daily_chats</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>每日最大对话次数</span><span data-lang-en>Max daily conversations</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">allowed_models</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>允许使用的模型列表</span><span data-lang-en>Allowed model list</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">max_tokens_per_request</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>单次请求最大 Token 数</span><span data-lang-en>Max tokens per request</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">allow_export</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>是否允许导出对话</span><span data-lang-en>Allow conversation export</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">allow_file_upload</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>是否允许文件上传</span><span data-lang-en>Allow file upload</span></td></tr>
+          <tr><td class="py-2 font-mono text-xs">rate_limit_per_minute</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>每分钟请求频率限制</span><span data-lang-en>Rate limit per minute</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ==================== Endpoints ==================== -->
+  <section id="endpoints" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>接口开关</span><span data-lang-en>Endpoint Toggles</span></h2>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+        系统支持按分组或单个接口控制 API 的启用/禁用。关闭的接口返回 403。管理后台接口（/api/admin/*）始终可用，不受开关影响。分为 3 个分组：认证(auth)、对话(chat)、管理后台(admin)。
+      </p>
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+        The system supports enabling/disabling APIs by group or individual endpoint. Disabled endpoints return 403. Admin endpoints (/api/admin/*) are always available regardless of toggle state. 3 groups: auth, chat, admin.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== Models ==================== -->
   <section id="models" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>模型与厂商</h2>
-    <p class="text-xs text-on-surface-variant mb-1 lang-en">Models &amp; Vendors</p>
-    <p class="text-on-surface-variant mb-6">Lumen 内置 9 家 AI 厂商共 30+ 模型，每个模型标注了能力标签。同时支持自定义 OpenAI 兼容端点接入任意第三方模型。</p>
-    <p class="text-xs text-on-surface-variant -mt-5 mb-6 lang-en">Lumen has 9 built-in AI vendors with 30+ models, each tagged with capabilities. Also supports custom OpenAI-compatible endpoints for any third-party model.</p>
-
-    <div class="bg-surface rounded-xl shadow-card p-6 mb-5">
-      <h3 class="font-semibold mb-1">内置厂商一览</h3>
-      <p class="text-xs text-on-surface-variant mb-3 lang-en">Built-in Vendors</p>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-outline-variant">
-              <th class="py-2.5 pr-4 text-left font-semibold">厂商 <span class="lang-en text-xs font-normal">Vendor</span></th>
-              <th class="py-2.5 pr-4 text-left font-semibold">ID</th>
-              <th class="py-2.5 pr-4 text-left font-semibold">模型数 <span class="lang-en text-xs font-normal">Models</span></th>
-              <th class="py-2.5 text-left font-semibold">Base URL</th>
-            </tr>
-          </thead>
-          <tbody class="text-on-surface-variant">
-            <!-- 厂商-DeepSeek -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">DeepSeek</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">deepseek</code></td><td class="py-2.5 pr-4">4</td><td class="py-2.5 text-xs">https://api.deepseek.com</td></tr>
-            <!-- 厂商-OpenAI -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">OpenAI</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">openai</code></td><td class="py-2.5 pr-4">6</td><td class="py-2.5 text-xs">https://api.openai.com</td></tr>
-            <!-- 厂商-Anthropic -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">Anthropic</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">anthropic</code></td><td class="py-2.5 pr-4">3</td><td class="py-2.5 text-xs">https://api.anthropic.com</td></tr>
-            <!-- 厂商-Kimi -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">Kimi (Moonshot)</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">kimi</code></td><td class="py-2.5 pr-4">5</td><td class="py-2.5 text-xs">https://api.moonshot.cn</td></tr>
-            <!-- 厂商-火山引擎 -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">火山引擎</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">volcano</code></td><td class="py-2.5 pr-4">5</td><td class="py-2.5 text-xs">https://ark.cn-beijing.volces.com/api/v3</td></tr>
-            <!-- 厂商-阿里云 -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">阿里云</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">alibaba</code></td><td class="py-2.5 pr-4">5</td><td class="py-2.5 text-xs">https://dashscope.aliyuncs.com/compatible-mode/v1</td></tr>
-            <!-- 厂商-xAI -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">xAI</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">xai</code></td><td class="py-2.5 pr-4">2</td><td class="py-2.5 text-xs">https://api.x.ai</td></tr>
-            <!-- 厂商-GLM -->
-            <tr class="border-b border-outline-variant/50"><td class="py-2.5 pr-4 font-medium text-on-surface">智谱 (GLM)</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">glm</code></td><td class="py-2.5 pr-4">4</td><td class="py-2.5 text-xs">https://open.bigmodel.cn/api/paas/v4</td></tr>
-            <!-- 厂商-Minimax -->
-            <tr><td class="py-2.5 pr-4 font-medium text-on-surface">Minimax</td><td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">minimax</code></td><td class="py-2.5 pr-4">3</td><td class="py-2.5 text-xs">https://api.minimax.chat/v1</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="bg-surface rounded-xl shadow-card p-6 mb-5">
-      <h3 class="font-semibold mb-1">能力标签说明</h3>
-      <p class="text-xs text-on-surface-variant mb-3 lang-en">Capability Tags</p>
-      <div class="flex flex-wrap gap-2 text-xs">
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">text</span>
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">streaming</span>
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">thinking</span>
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">vision</span>
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">tools</span>
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">file_upload</span>
-        <span class="bg-surface-container px-2 py-1 rounded font-mono">web_search</span>
-      </div>
-      <p class="text-xs text-on-surface-variant mt-2">每个模型的能力标签可在 <code class="bg-surface-container px-1 rounded">/api/admin/vendors</code> 接口的 <code class="bg-surface-container px-1 rounded">capabilities</code> 字段中查看。</p>
-      <p class="text-xs text-on-surface-variant mt-1 lang-en">Each model's capability tags can be viewed in the <code class="bg-surface-container px-1 rounded">capabilities</code> field of the <code class="bg-surface-container px-1 rounded">/api/admin/vendors</code> endpoint.</p>
-    </div>
-
-    <div class="bg-surface rounded-xl shadow-card p-6">
-      <h3 class="font-semibold mb-1">自定义厂商</h3>
-      <p class="text-xs text-on-surface-variant mb-3 lang-en">Custom Vendors</p>
-      <p class="text-sm text-on-surface-variant">在管理后台「系统设置」中选择「自定义 (OpenAI 兼容)」厂商，填入任意兼容 OpenAI Chat Completions API 的 Base URL 和 API Key，即可接入第三方模型。支持 Ollama、vLLM、LocalAI 等本地部署方案。</p>
-      <p class="text-xs text-on-surface-variant mt-1 lang-en">In the admin panel "System Settings", select "Custom (OpenAI Compatible)" vendor, enter any OpenAI Chat Completions API-compatible Base URL and API Key to connect third-party models. Supports Ollama, vLLM, LocalAI, and other local deployment solutions.</p>
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>模型与厂商</span><span data-lang-en>Models & Vendors</span></h2>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <p class="text-sm text-on-surface-variant mb-4" data-lang-zh-block>
+        Lumen 内置 9 家 AI 厂商，30+ 预置模型，覆盖文本生成、视觉理解、深度思考、工具调用、文件上传、联网搜索等能力。也支持添加自定义 OpenAI 兼容端点。
+      </p>
+      <p class="text-sm text-on-surface-variant mb-4" data-lang-en-block>
+        Lumen has 9 built-in AI vendors with 30+ preset models, covering text generation, vision, deep thinking, tool calling, file upload, web search, and more. Custom OpenAI-compatible endpoints are also supported.
+      </p>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>厂商</span><span data-lang-en>Vendor</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>模型数</span><span data-lang-en>Models</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>代表模型</span><span data-lang-en>Key Models</span></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium">DeepSeek</td><td class="py-2 text-on-surface-variant">4</td><td class="py-2 text-xs text-on-surface-variant">V3.2, V4 Flash, V4 Pro</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium">OpenAI</td><td class="py-2 text-on-surface-variant">6</td><td class="py-2 text-xs text-on-surface-variant">GPT-4o, GPT-4.1, o3, o4-mini</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium">Anthropic</td><td class="py-2 text-on-surface-variant">3</td><td class="py-2 text-xs text-on-surface-variant">Claude Sonnet 4, Opus 4, 3.5 Haiku</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium">Kimi</td><td class="py-2 text-on-surface-variant">5</td><td class="py-2 text-xs text-on-surface-variant">K2.5, K2, Moonshot v1</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium"><span data-lang-zh>火山引擎</span><span data-lang-en>Volcano</span></td><td class="py-2 text-on-surface-variant">5</td><td class="py-2 text-xs text-on-surface-variant">Seed 2.1 Pro/Turbo, 2.0 Lite</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium"><span data-lang-zh>阿里云</span><span data-lang-en>Alibaba</span></td><td class="py-2 text-on-surface-variant">5</td><td class="py-2 text-xs text-on-surface-variant">Qwen3 Max, 3.6 Plus, Coder Plus</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium">xAI</td><td class="py-2 text-on-surface-variant">2</td><td class="py-2 text-xs text-on-surface-variant">Grok 4.3, Grok Build 0.1</td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-medium"><span data-lang-zh>智谱</span><span data-lang-en>Zhipu</span></td><td class="py-2 text-on-surface-variant">4</td><td class="py-2 text-xs text-on-surface-variant">GLM-5.1, GLM-5, GLM-4.7</td></tr>
+          <tr><td class="py-2 font-medium">Minimax</td><td class="py-2 text-on-surface-variant">3</td><td class="py-2 text-xs text-on-surface-variant">M2.7, M2.5, ABAB 6.5s</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
-  <!-- ==================== Config / 系统配置 ==================== -->
+  <!-- ==================== Config ==================== -->
   <section id="config" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>系统配置</h2>
-    <p class="text-xs text-on-surface-variant mb-6 lang-en">System Configuration</p>
-
-    <div class="space-y-5">
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/config</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取系统配置。API Key 等敏感字段返回掩码（如 <code class="bg-surface-container px-1 rounded text-xs">sk-****xxxx</code>）。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get system config. Sensitive fields like API Key return masked values (e.g. <code class="bg-surface-container px-1 rounded text-xs">sk-****xxxx</code>).</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/config</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">更新系统配置。支持批量更新多个配置项。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Update system config. Supports batch updating multiple config items.</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/config/api-key</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取真实 API Key（管理员专用），同时返回用量统计。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get real API Key (admin only), with usage statistics.</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-post">POST</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/config/test-connection</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">测试 AI API 连接。发送一条简短测试消息并返回延迟与 Token 消耗。</p>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Test AI API connection. Sends a short test message and returns latency &amp; token consumption.</p>
-        <div class="bg-surface-container rounded-lg p-3">
-          <pre class="text-xs font-mono text-on-surface overflow-x-auto">{
-  "vendor_id": "deepseek",
-  "api_key": "sk-...",
-  "base_url": "https://api.deepseek.com",
-  "model": "deepseek-chat"
-}</pre>
-        </div>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-get">GET</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/config/open-registration</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">获取开放注册开关状态。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Get open registration toggle status.</p>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-5">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-xs font-bold px-2 py-0.5 rounded method-put">PUT</span>
-          <code class="text-sm font-mono text-primary font-medium">/api/admin/config/open-registration</code>
-        </div>
-        <p class="text-sm text-on-surface-variant mb-1">切换开放注册开关。</p>
-        <p class="text-xs text-on-surface-variant lang-en">Toggle open registration on/off.</p>
-      </div>
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>系统配置</span><span data-lang-en>System Config</span></h2>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+        系统配置以 key-value 形式存储，支持加密字段（如 API Key）。可配置项包括：AI 厂商/API Key/模型、开放注册、管理员查看对话权限、对话保留天数等。
+      </p>
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+        System config is stored as key-value pairs, with encryption support for sensitive fields (e.g., API Key). Configurable items include: AI vendor/API key/model, open registration, admin view content permission, conversation retention days, etc.
+      </p>
     </div>
   </section>
 
-  <!-- ==================== Deploy / 部署 ==================== -->
+  <!-- ==================== Deploy ==================== -->
   <section id="deploy" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>部署</h2>
-    <p class="text-xs text-on-surface-variant mb-6 lang-en">Deployment</p>
-
-    <div class="space-y-5">
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">环境变量</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Environment Variables</p>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-outline-variant">
-                <th class="py-2.5 pr-4 text-left font-semibold">变量名 <span class="lang-en text-xs font-normal">Variable</span></th>
-                <th class="py-2.5 pr-4 text-left font-semibold">默认值 <span class="lang-en text-xs font-normal">Default</span></th>
-                <th class="py-2.5 text-left font-semibold">说明 <span class="lang-en text-xs font-normal">Description</span></th>
-              </tr>
-            </thead>
-            <tbody class="text-on-surface-variant">
-              <!-- 环境变量-SECRET_KEY -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">SECRET_KEY</code></td>
-                <td class="py-2.5 pr-4">自动生成 / Auto</td>
-                <td class="py-2.5">Flask 密钥，用于 JWT 签名 / Flask secret for JWT signing</td>
-              </tr>
-              <!-- 环境变量-JWT_SECRET_KEY -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">JWT_SECRET_KEY</code></td>
-                <td class="py-2.5 pr-4">自动生成 / Auto</td>
-                <td class="py-2.5">JWT 专用密钥 / JWT dedicated secret</td>
-              </tr>
-              <!-- 环境变量-DATABASE_URL -->
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">DATABASE_URL</code></td>
-                <td class="py-2.5 pr-4">sqlite:///app.db</td>
-                <td class="py-2.5">数据库连接串（支持 PostgreSQL）/ Database URL (supports PostgreSQL)</td>
-              </tr>
-              <!-- 环境变量-DEPLOY_RUN_PORT -->
-              <tr>
-                <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">DEPLOY_RUN_PORT</code></td>
-                <td class="py-2.5 pr-4">5000</td>
-                <td class="py-2.5">服务监听端口 / Server listen port</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">生产环境建议</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Production Recommendations</p>
-        <ul class="space-y-2 text-sm text-on-surface-variant list-disc pl-5">
-          <li>使用 <strong>PostgreSQL</strong> 替代 SQLite，设置 <code class="bg-surface-container px-1 rounded text-xs">DATABASE_URL</code> 环境变量 / Use PostgreSQL instead of SQLite</li>
-          <li>设置强随机 <code class="bg-surface-container px-1 rounded text-xs">SECRET_KEY</code> 和 <code class="bg-surface-container px-1 rounded text-xs">JWT_SECRET_KEY</code> / Set strong random secrets</li>
-          <li>前端使用 Nginx 反向代理，开启 HTTPS / Use Nginx reverse proxy with HTTPS</li>
-          <li>定期备份 <code class="bg-surface-container px-1 rounded text-xs">app.db</code>（SQLite）或配置数据库自动备份 / Regular database backups</li>
-          <li>生产环境建议使用 <code class="bg-surface-container px-1 rounded text-xs">gunicorn</code> 替代 Flask 开发服务器 / Use gunicorn instead of Flask dev server</li>
-        </ul>
-      </div>
-
-      <div class="bg-surface rounded-xl shadow-card p-6">
-        <h3 class="font-semibold mb-1">使用 Gunicorn 启动</h3>
-        <p class="text-xs text-on-surface-variant mb-3 lang-en">Launch with Gunicorn</p>
-        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono text-on-surface overflow-x-auto">pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app</pre>
-      </div>
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>部署</span><span data-lang-en>Deployment</span></h2>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+        推荐使用 Docker 部署，或直接通过 Python 运行。生产环境建议使用 PostgreSQL 替代 SQLite，并通过环境变量配置数据库连接、JWT 密钥等。
+      </p>
+      <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+        Docker deployment is recommended, or run directly with Python. For production, use PostgreSQL instead of SQLite and configure database connection and JWT secret via environment variables.
+      </p>
+      <h3 class="text-sm font-semibold mb-2"><span data-lang-zh>环境变量</span><span data-lang-en>Environment Variables</span></h3>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>变量</span><span data-lang-en>Variable</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">DATABASE_URL</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库连接字符串</span><span data-lang-en>Database connection string</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">JWT_SECRET_KEY</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>JWT 签名密钥</span><span data-lang-en>JWT signing secret</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">SECRET_KEY</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>Flask 密钥（加密用）</span><span data-lang-en>Flask secret (for encryption)</span></td></tr>
+          <tr><td class="py-2 font-mono text-xs">DEPLOY_RUN_PORT</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>服务监听端口（默认 5000）</span><span data-lang-en>Server port (default 5000)</span></td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
-  <!-- ==================== Errors / 错误码 ==================== -->
+  <!-- ==================== Errors ==================== -->
   <section id="errors" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
-    <h2 class="text-2xl font-bold mb-1 flex items-center gap-2"><span class="w-1.5 h-7 bg-primary rounded-full"></span>错误码</h2>
-    <p class="text-xs text-on-surface-variant mb-6 lang-en">Error Codes</p>
-
-    <div class="bg-surface rounded-xl shadow-card p-6">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-outline-variant">
-              <th class="py-2.5 pr-4 text-left font-semibold w-16">状态码 <span class="lang-en text-xs font-normal">Status</span></th>
-              <th class="py-2.5 pr-4 text-left font-semibold">错误码 <span class="lang-en text-xs font-normal">Code</span></th>
-              <th class="py-2.5 text-left font-semibold">说明 <span class="lang-en text-xs font-normal">Description</span></th>
-            </tr>
-          </thead>
-          <tbody class="text-on-surface-variant">
-            <!-- 错误码-400 -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">400</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">missing_fields</code></td>
-              <td class="py-2.5">缺少必填参数 / Missing required fields</td>
-            </tr>
-            <!-- 错误码-401 -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">401</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">unauthorized</code></td>
-              <td class="py-2.5">未提供 Token 或 Token 无效/过期 / Missing or invalid/expired token</td>
-            </tr>
-            <!-- 错误码-403-forbidden -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">403</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">forbidden</code></td>
-              <td class="py-2.5">无权限（非管理员访问管理接口 / 接口已关闭）/ No permission</td>
-            </tr>
-            <!-- 错误码-403-endpoint_disabled -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">403</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">endpoint_disabled</code></td>
-              <td class="py-2.5">该接口已被管理员关闭 / Endpoint disabled by admin</td>
-            </tr>
-            <!-- 错误码-403-registration_closed -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">403</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">registration_closed</code></td>
-              <td class="py-2.5">开放注册已关闭 / Registration is closed</td>
-            </tr>
-            <!-- 错误码-403-daily_limit_reached -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">403</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">daily_limit_reached</code></td>
-              <td class="py-2.5">已达每日对话上限 / Daily chat limit reached</td>
-            </tr>
-            <!-- 错误码-404 -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">404</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">not_found</code></td>
-              <td class="py-2.5">资源不存在 / Resource not found</td>
-            </tr>
-            <!-- 错误码-409 -->
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2.5 pr-4 font-mono text-error">409</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">conflict</code></td>
-              <td class="py-2.5">用户名或邮箱已存在 / Username or email already exists</td>
-            </tr>
-            <!-- 错误码-500 -->
-            <tr>
-              <td class="py-2.5 pr-4 font-mono text-error">500</td>
-              <td class="py-2.5 pr-4"><code class="text-xs bg-surface-container px-1 rounded">internal_error</code></td>
-              <td class="py-2.5">服务器内部错误 / Internal server error</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>错误码</span><span data-lang-en>Error Codes</span></h2>
+    <div class="bg-surface rounded-xl border border-outline-variant p-6">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>状态码</span><span data-lang-en>Status</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">200</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>请求成功</span><span data-lang-en>Success</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">400</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>请求参数错误</span><span data-lang-en>Bad request</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">401</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>未认证或 Token 过期</span><span data-lang-en>Unauthorized / token expired</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">403</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>无权限或接口已关闭</span><span data-lang-en>Forbidden / endpoint disabled</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">404</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>资源不存在</span><span data-lang-en>Not found</span></td></tr>
+          <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">429</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>请求频率超限</span><span data-lang-en>Rate limit exceeded</span></td></tr>
+          <tr><td class="py-2 font-mono text-xs">500</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>服务器内部错误</span><span data-lang-en>Internal server error</span></td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="px-6 md:px-10 py-8 max-w-4xl border-t border-outline-variant text-center text-xs text-on-surface-variant">
-    Lumen &middot; MIT License &middot; <a href="https://github.com/your-org/lumen" class="text-primary hover:underline">GitHub</a>
-  </footer>
 </main>
-<!-- @main-content:end -->
 
 <script>
-  lucide.createIcons();
+let currentLang = 'zh';
 
-  $(function() {
-    var $sidebar = $('#sidebar');
-    var $menuBtn = $('#menuBtn');
-    var $links = $('.sidebar-link');
-    var $sections = $('section[id]');
+function toggleLang() {
+  currentLang = currentLang === 'zh' ? 'en' : 'zh';
+  document.documentElement.className = currentLang === 'en' ? 'lang-en' : '';
+  document.title = currentLang === 'zh' ? 'Lumen API 文档' : 'Lumen API Documentation';
+  localStorage.setItem('docx-lang', currentLang);
+}
 
-    // Mobile toggle
-    $menuBtn.on('click', function() {
-      $sidebar.toggleClass('open');
-    });
+// Init
+(function() {
+  const saved = localStorage.getItem('docx-lang');
+  if (saved === 'en') {
+    currentLang = 'en';
+    document.documentElement.className = 'lang-en';
+    document.title = 'Lumen API Documentation';
+  }
+})();
 
-    // Close sidebar on link click (mobile)
-    $links.on('click', function() {
-      $sidebar.removeClass('open');
-    });
+// Mobile menu
+$('#menuBtn').on('click', function() { $('#sidebar').toggleClass('open'); });
+$('#sidebar a').on('click', function() { $('#sidebar').removeClass('open'); });
 
-    // Scroll spy - highlight active sidebar link
-    var observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          $links.removeClass('active');
-          $('.sidebar-link[href="#' + entry.target.id + '"]').addClass('active');
-        }
-      });
-    }, { rootMargin: '-20% 0px -70% 0px' });
-
-    $sections.each(function() {
-      observer.observe(this);
-    });
+// Scroll spy
+$(window).on('scroll', function() {
+  let current = '';
+  $('section[id]').each(function() {
+    if ($(this).offset().top - 100 <= $(window).scrollTop()) current = $(this).attr('id');
   });
+  $('#sidebarNav a').removeClass('active');
+  $('#sidebarNav a[href="#' + current + '"]').addClass('active');
+});
+
+lucide.createIcons();
 </script>
 </body>
 </html>
