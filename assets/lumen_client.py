@@ -150,7 +150,7 @@ class LumenClient:
         result = self._request("POST", "/api/auth/login", data, auth=False)
         
         if result.get("success"):
-            self._token = result.get("access_token")
+            self._token = result.get("token")
             user_data = result.get("user", {})
             self._user = User(
                 id=user_data.get("id"),
