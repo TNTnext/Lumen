@@ -61,7 +61,7 @@ const i18n = {
     onboarding_done: '配置完成', onboarding_failed: '配置失败',
     need_admin: '需要管理员权限',
     // Vendor management
-    nav_vendors: '厂商与密钥', vendor_title: '厂商与密钥',
+    nav_vendors: '厂商与密钥', nav_model_priority: '模型优先级', vendor_title: '厂商与密钥',
     vendor_enable: '启用', vendor_disable: '禁用',
     vendor_add: '添加厂商', vendor_save: '保存', vendor_cancel: '取消',
     vendor_delete: '删除', vendor_delete_confirm: '确定要删除此厂商吗？',
@@ -134,7 +134,7 @@ const i18n = {
     onboarding_done: 'Setup complete', onboarding_failed: 'Setup failed',
     need_admin: 'Admin privileges required',
     // Vendor management
-    nav_vendors: 'Vendors', vendor_title: 'Vendor Management',
+    nav_vendors: 'Vendors', nav_model_priority: 'Model Priority', vendor_title: 'Vendor Management',
     vendor_enable: 'Enable', vendor_disable: 'Disable',
     vendor_add: 'Add Vendor', vendor_save: 'Save', vendor_cancel: 'Cancel',
     vendor_delete: 'Delete', vendor_delete_confirm: 'Are you sure you want to delete this vendor?',
@@ -294,6 +294,7 @@ const navItems = [
   { id: 'users', labelKey: 'nav_users', icon: 'users' },
   { id: 'permissions', labelKey: 'nav_permissions', icon: 'shield' },
   { id: 'vendors', labelKey: 'nav_vendors', icon: 'cpu' },
+  { id: 'model-priority', labelKey: 'nav_model_priority', icon: 'layers' },
   { id: 'endpoints', labelKey: 'nav_endpoints', icon: 'toggle-right' },
   { id: 'settings', labelKey: 'nav_settings', icon: 'settings' },
 ];
@@ -313,7 +314,7 @@ function renderNav() {
   lucide.createIcons();
 }
 
-function navigate(page) {
+async function navigate(page) {
   if (page === 'api-keys') page = 'vendors';
   state.page = page;
   renderNav();
@@ -1504,5 +1505,75 @@ async function testVendorConnection(id) {
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
+// ─── 跨厂商模型优先级 ──────────────────────────────────────
+async function renderModelPriorityOrder(container) {
+  container = container || document.getElementById('page-container');
+  const res = await api('/api/admin/model-priority-order');
+  const saved = (res && res.order) ? res.order : [];
+  const vRes = await api('/api/admin/vendors');
+  const vendors = (vRes && vRes.vendors) ? vRes.vendors : [];
+  // Build flat model list: { id, name, vendor }
+  const allModels = [];
+  vendors.forEach(v => {
+    (v.models || []).forEach(m => {
+      allModels.push({ id: m.id, name: m.name, vendor: v.name });
+    });
+  });
+  // Separate selected vs available
+  const selected = saved.map(id => allModels.find(m => m.id === id)).filter(Boolean);
+  const available = allModels.filter(m => !saved.includes(m.id));
+  container.innerHTML = '<div class="animate-fade-in-up"><div class="mb-8"><h1 class="text-2xl font-semibold text-text tracking-tight">' + t('nav_model_priority') + '</h1><p class="text-text-secondary text-sm mt-1">' + (lang === 'zh' ? '拖拽模型调整跨厂商故障转移的优先级顺序' : 'Drag models to adjust cross-vendor fallback priority') + '</p></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-surface rounded-2xl p-6 shadow-sm border border-border/30"><h2 class="text-sm font-semibold text-text mb-4 uppercase tracking-wider">' + (lang === 'zh' ? '已排序模型' : 'Ordered Models') + ' <span class="text-text-tertiary font-normal normal-case">(' + selected.length + ')</span></h2><div id="priority-list" class="space-y-2 min-h-[60px]">' + selected.map((m, i) => '<div class="flex items-center gap-3 bg-bg rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border border-border/20" draggable="true" data-model-id="' + m.id + '" data-idx="' + i + '"><span class="text-text-tertiary text-xs font-mono w-6">' + (i + 1) + '</span><span class="flex-1 text-sm font-medium text-text">' + m.name + '</span><span class="text-xs text-text-tertiary px-2 py-0.5 bg-surface rounded-md">' + m.vendor + '</span></div>').join('') + '</div><button onclick="saveModelPriority()" class="mt-4 w-full bg-text text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98]">' + (lang === 'zh' ? '保存排序' : 'Save Order') + '</button></div><div class="bg-surface rounded-2xl p-6 shadow-sm border border-border/30"><h2 class="text-sm font-semibold text-text mb-4 uppercase tracking-wider">' + (lang === 'zh' ? '可用模型' : 'Available Models') + ' <span class="text-text-tertiary font-normal normal-case">(' + available.length + ')</span></h2><div id="available-list" class="space-y-2 min-h-[60px]">' + available.map(m => '<div class="flex items-center gap-3 bg-bg rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border border-border/20" draggable="true" data-model-id="' + m.id + '"><span class="flex-1 text-sm font-medium text-text">' + m.name + '</span><span class="text-xs text-text-tertiary px-2 py-0.5 bg-surface rounded-md">' + m.vendor + '</span><button onclick="moveToOrdered(\'' + m.id + '\')" class="text-accent hover:text-accent-hover transition-colors text-xs font-medium">' + (lang === 'zh' ? '添加 ↑' : 'Add ↑') + '</button></div>').join('') + '</div></div></div></div>';
+  // Drag and drop
+  setupDragDrop();
+  lucide.createIcons();
+}
+function setupDragDrop() {
+  const list = document.getElementById('priority-list');
+  if (!list) return;
+  let dragged = null;
+  list.querySelectorAll('[draggable]').forEach(el => {
+    el.addEventListener('dragstart', e => { dragged = el; el.style.opacity = '0.5'; });
+    el.addEventListener('dragend', e => { el.style.opacity = '1'; dragged = null; });
+    el.addEventListener('dragover', e => { e.preventDefault(); });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged || dragged === el) return;
+      const children = [...list.children];
+      const from = children.indexOf(dragged);
+      const to = children.indexOf(el);
+      if (from < to) el.after(dragged);
+      else el.before(dragged);
+      updatePriorityNumbers();
+    });
+  });
+}
+function updatePriorityNumbers() {
+  const list = document.getElementById('priority-list');
+  if (!list) return;
+  [...list.children].forEach((el, i) => {
+    const span = el.querySelector('span');
+    if (span) span.textContent = i + 1;
+    el.setAttribute('data-idx', i);
+  });
+}
+async function saveModelPriority() {
+  const list = document.getElementById('priority-list');
+  const order = [...list.children].map(el => el.getAttribute('data-model-id'));
+  const res = await api('/api/admin/model-priority-order', { method: 'PUT', body: { order } });
+  if (res && res.success) toast(lang === 'zh' ? '优先级已保存' : 'Priority saved', 'success');
+  else toast(lang === 'zh' ? '保存失败' : 'Save failed', 'error');
+}
+async function moveToOrdered(modelId) {
+  const list = document.getElementById('priority-list');
+  const avail = document.getElementById('available-list');
+  const item = avail.querySelector('[data-model-id="' + modelId + '"]');
+  if (!item) return;
+  item.querySelector('button')?.remove();
+  const idx = list.children.length;
+  item.innerHTML = '<span class="text-text-tertiary text-xs font-mono w-6">' + (idx + 1) + '</span><span class="flex-1 text-sm font-medium text-text">' + item.querySelector('.text-text').textContent + '</span>' + (item.querySelector('.bg-surface')?.outerHTML || '');
+  list.appendChild(item);
+  setupDragDrop();
+  updatePriorityNumbers();
+}
 // ─── Init ─────────────────────────────────────────────────
 checkAuth();
