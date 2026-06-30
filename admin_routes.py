@@ -765,18 +765,16 @@ def complete_onboarding():
     if vendor_configs:
         # Multi-vendor configs: [{vendor_id, api_key, base_url, model}, ...]
         from models import VendorConfig
-        # First, disable all existing vendor configs
-        VendorConfig.query.update({'enabled': False})
         for vc in vendor_configs:
             vid = vc.get('vendor_id')
             if not vid:
                 continue
             existing = VendorConfig.query.filter_by(vendor_id=vid).first()
             if existing:
-                if vc.get('api_key'):
-                    existing.api_key = vc['api_key']
-                if vc.get('base_url'):
-                    existing.base_url = vc['base_url']
+                if vc.get('api_key') and vc['api_key'].strip():
+                    existing.api_key = vc['api_key'].strip()
+                if vc.get('base_url') and vc['base_url'].strip():
+                    existing.base_url = vc['base_url'].strip()
                 if vc.get('model'):
                     existing.default_model = vc['model']
                 existing.enabled = True
@@ -784,8 +782,8 @@ def complete_onboarding():
                 db.session.add(VendorConfig(
                     vendor_id=vid,
                     display_name=vid,
-                    api_key=vc.get('api_key', ''),
-                    base_url=vc.get('base_url', ''),
+                    api_key=vc.get('api_key', '').strip(),
+                    base_url=vc.get('base_url', '').strip(),
                     default_model=vc.get('model', ''),
                     enabled=True,
                     priority=1
