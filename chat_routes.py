@@ -325,55 +325,71 @@ def _handle_stream(conv, user_msg, messages, fallback_chain, extra_kwargs):
         assistant_content = ''
         used_vendor = None
         used_model = None
+        is_error = False
 
-        for vendor_cfg, mdl in fallback_chain:
-            gen, error = _try_stream_chat_completion(vendor_cfg, mdl, messages, **extra_kwargs)
-            if error:
-                last_error = error
-                continue
+        try:
+            for vendor_cfg, mdl in fallback_chain:
+                gen, error = _try_stream_chat_completion(vendor_cfg, mdl, messages, **extra_kwargs)
+                if error:
+                    last_error = error
+                    continue
 
-            used_vendor = vendor_cfg.vendor_id
-            used_model = mdl
-            try:
-                for chunk in gen:
-                    if isinstance(chunk, dict):
-                        delta = chunk.get('content', '')
-                        if delta:
-                            assistant_content += delta
-                            yield f"data: {json.dumps({'content': delta})}\n\n"
-                        if chunk.get('done'):
-                            break
-                    else:
-                        assistant_content += str(chunk)
-                        yield f"data: {json.dumps({'content': str(chunk)})}\n\n"
-                break  # Success — don't try next vendor
-            except Exception as e:
-                logger.warning(f"Stream from {vendor_cfg.vendor_id}/{mdl} interrupted: {e}")
-                last_error = str(e)
-                continue
+                used_vendor = vendor_cfg.vendor_id
+                used_model = mdl
+                try:
+                    for chunk in gen:
+                        if isinstance(chunk, dict):
+                            delta = chunk.get('content', '')
+                            if delta:
+                                if delta.startswith('[Error:'):
+                                    is_error = True
+                                assistant_content += delta
+                                yield f"data: {json.dumps({'content': delta})}\n\n"
+                            if chunk.get('done'):
+                                break
+                        else:
+                            text = str(chunk)
+                            if text.startswith('[Error:'):
+                                is_error = True
+                            assistant_content += text
+                            yield f"data: {json.dumps({'content': text})}\n\n"
+                    break  # Success — don't try next vendor
+                except Exception as e:
+                    logger.warning(f"Stream from {vendor_cfg.vendor_id}/{mdl} interrupted: {e}")
+                    last_error = str(e)
+                    continue
 
-        if not assistant_content and last_error:
-            yield f"data: {json.dumps({'error': f'所有厂商均请求失败: {last_error}'})}\n\n"
+            if (not assistant_content or is_error) and last_error:
+                yield f"data: {json.dumps({'error': f'所有厂商均请求失败: {last_error}'})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
+            if is_error:
+                yield f"data: {json.dumps({'error': assistant_content})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
+            # Save assistant message
+            with db.session.begin():
+                assistant_msg = Message(
+                    conversation_id=conv.id,
+                    role='assistant',
+                    content=assistant_content,
+                    tokens=len(assistant_content) // 4  # rough estimate
+                )
+                db.session.add(assistant_msg)
+                conv.model = f"{used_vendor}/{used_model}" if used_vendor else conv.model
+                conv.total_tokens = (conv.total_tokens or 0) + len(assistant_content) // 4
+                conv.message_count = (conv.message_count or 0) + 2
+                if not conv.title or conv.title == messages[-1]['content'][:50]:
+                    conv.title = messages[-1]['content'][:50]
+
+            yield f"data: {json.dumps({'done': True, 'conversation_id': conv.id, 'vendor': used_vendor, 'model': used_model})}\n\n"
             yield "data: [DONE]\n\n"
-            return
-
-        # Save assistant message
-        with db.session.begin():
-            assistant_msg = Message(
-                conversation_id=conv.id,
-                role='assistant',
-                content=assistant_content,
-                tokens=len(assistant_content) // 4  # rough estimate
-            )
-            db.session.add(assistant_msg)
-            conv.model = f"{used_vendor}/{used_model}" if used_vendor else conv.model
-            conv.total_tokens = (conv.total_tokens or 0) + len(assistant_content) // 4
-            conv.message_count = (conv.message_count or 0) + 2
-            if not conv.title or conv.title == messages[-1]['content'][:50]:
-                conv.title = messages[-1]['content'][:50]
-
-        yield f"data: {json.dumps({'done': True, 'conversation_id': conv.id, 'vendor': used_vendor, 'model': used_model})}\n\n"
-        yield "data: [DONE]\n\n"
+        except Exception as e:
+            logger.error(f"Stream generator error: {e}")
+            yield f"data: {json.dumps({'error': f'服务器内部错误: {e}'})}\n\n"
+            yield "data: [DONE]\n\n"
 
     return Response(
         stream_with_context(generate()),

@@ -310,11 +310,12 @@ class LumenClient:
             
             try:
                 chunk = json.loads(line)
-                if chunk.get("success"):
-                    message = chunk.get("message", {})
-                    content = message.get("content", "")
-                    if content:
-                        yield content
+                if chunk.get("error"):
+                    raise LumenAPIError(chunk["error"])
+                if chunk.get("content"):
+                    yield chunk["content"]
+                if chunk.get("done"):
+                    break
             except json.JSONDecodeError:
                 continue
     
