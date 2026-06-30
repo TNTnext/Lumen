@@ -1278,9 +1278,12 @@ function renderVendorList(configs, allVendors) {
           </div>
         </div>
 
-        <!-- Status line -->
+        <!-- API Key + Base URL -->
         <div class="flex items-center justify-between mt-2">
-          <span class="text-xs text-text-secondary">${hasApiKey ? (cfg.api_key.substring(0,4) + '***') : (lang === 'zh' ? '未配置 API Key' : 'No API Key')}</span>
+          <span class="text-xs text-text-secondary flex items-center gap-3">
+            <span>${hasApiKey ? (cfg.api_key.substring(0,4) + '***') : (lang === 'zh' ? '未配置 API Key' : 'No API Key')}</span>
+            ${cfg.base_url ? '<span class="text-text-secondary/60 font-mono text-[10px] truncate max-w-[180px]">' + esc(cfg.base_url) + '</span>' : ''}
+          </span>
           <button onclick="testVendorConnection(${cfg.id})" class="text-xs text-accent hover:underline flex items-center gap-1" id="test-btn-${cfg.id}">
             <i data-lucide="zap" class="w-3 h-3"></i>${t('vendor_test_connection')}
           </button>
