@@ -148,6 +148,28 @@ Configure via:
 
 ---
 
+## Batch Operations
+
+The admin panel supports batch operations for efficient management:
+
+| Action | Endpoint | Description |
+|--------|----------|-------------|
+| `delete_users` | `POST /api/admin/batch` | Batch delete users (skips self) |
+| `delete_conversations` | `POST /api/admin/batch` | Batch delete conversations |
+| `toggle_endpoints` | `POST /api/admin/batch` | Batch enable/disable API endpoints |
+| `toggle_plugins` | `POST /api/admin/batch` | Batch enable/disable plugins |
+| `toggle_vendors` | `POST /api/admin/batch` | Batch enable/disable vendor configs |
+
+**Request format:** `{ "action": "delete_users", "ids": [1, 2, 3], "extra": { "enabled": true } }`
+
+**UI:** Each list page (Users, Conversations, Endpoints, Plugins, Vendors) includes checkboxes with a batch action bar for multi-select operations.
+
+### Delete User
+
+`DELETE /api/admin/users/:id` — Deletes a user and all associated data (conversations, messages, permissions). Cannot delete yourself. The admin panel's user list includes a delete button on each row and supports batch selection with checkbox + action bar.
+
+---
+
 ## Plugin System
 
 Lumen features a hot-pluggable plugin architecture with **10+ capabilities**:

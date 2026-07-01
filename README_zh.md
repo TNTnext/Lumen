@@ -148,6 +148,28 @@ Lumen 支持三种数据库后端：
 
 ---
 
+## 批量操作
+
+管理后台支持批量操作，提升管理效率：
+
+| 操作 | 接口 | 说明 |
+|------|------|------|
+| `delete_users` | `POST /api/admin/batch` | 批量删除用户（自动跳过自己） |
+| `delete_conversations` | `POST /api/admin/batch` | 批量删除对话 |
+| `toggle_endpoints` | `POST /api/admin/batch` | 批量启用/禁用 API 接口 |
+| `toggle_plugins` | `POST /api/admin/batch` | 批量启用/禁用插件 |
+| `toggle_vendors` | `POST /api/admin/batch` | 批量启用/禁用厂商配置 |
+
+**请求格式：** `{ "action": "delete_users", "ids": [1, 2, 3], "extra": { "enabled": true } }`
+
+**界面：** 用户列表、对话列表、接口开关、插件管理、厂商管理等页面均提供复选框和批量操作栏，支持多选后一键操作。
+
+### 删除用户
+
+`DELETE /api/admin/users/:id` — 删除用户及其所有关联数据（对话、消息、权限）。不能删除自己。管理后台用户列表每行提供删除按钮，并支持复选框多选 + 批量删除操作栏。
+
+---
+
 ## 插件系统
 
 Lumen 采用热插拔插件架构，支持 **10+ 项能力**：

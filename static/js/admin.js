@@ -22,6 +22,11 @@ const i18n = {
     add_user_title: '添加用户', add_user_username: '用户名', add_user_email: '邮箱',
     add_user_password: '密码', add_user_role: '角色', add_user_daily_limit: '日限额（留空为默认）',
     cancel: '取消', add: '添加', user_added: '用户已添加', add_failed: '添加失败',
+    delete: '删除', user_deleted: '用户已删除', confirm_delete_user: '确认删除用户 {user} 及其所有对话？此操作不可撤销。',
+    cannot_delete_admin: '不能删除管理员',
+    batch_delete: '批量删除', selected: '已选择',
+    confirm_batch_delete_users: '确认删除 {count} 个用户及其所有对话？此操作不可撤销。',
+    confirm_batch_delete_convs: '确认删除 {count} 个对话？此操作不可撤销。',
     edit_user_title: '编辑用户', save: '保存', saved: '已保存', save_failed: '保存失败',
     reset_pw_prompt: '输入新密码（至少6位）：', pw_reset: '密码已重置', reset_failed: '重置失败',
     enabled: '已启用', disabled: '已禁用', op_failed: '操作失败',
@@ -146,6 +151,11 @@ const i18n = {
     add_user_title: 'Add User', add_user_username: 'Username', add_user_email: 'Email',
     add_user_password: 'Password', add_user_role: 'Role', add_user_daily_limit: 'Daily limit (empty=default)',
     cancel: 'Cancel', add: 'Add', user_added: 'User added', add_failed: 'Add failed',
+    delete: 'Delete', user_deleted: 'User deleted', confirm_delete_user: 'Delete user {user} and all their conversations? This cannot be undone.',
+    cannot_delete_admin: 'Cannot delete admin',
+    batch_delete: 'Batch Delete', selected: 'selected',
+    confirm_batch_delete_users: 'Delete {count} users and all their conversations? This cannot be undone.',
+    confirm_batch_delete_convs: 'Delete {count} conversations? This cannot be undone.',
     edit_user_title: 'Edit User', save: 'Save', saved: 'Saved', save_failed: 'Save failed',
     reset_pw_prompt: 'Enter new password (min 6 chars):', pw_reset: 'Password reset', reset_failed: 'Reset failed',
     enabled: 'Enabled', disabled: 'Disabled', op_failed: 'Operation failed',
@@ -830,11 +840,21 @@ async function renderConversations() {
   const convs = res?.conversations || [];
 
   document.getElementById('page-container').innerHTML = `
-    <h1 class="text-xl font-semibold tracking-tight mb-6">${t('conv_title')}</h1>
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <h1 class="text-xl font-semibold tracking-tight">${t('conv_title')}</h1>
+        <span class="text-xs text-text-tertiary" id="conversations-batch-info"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-batch-delete-conversations" onclick="batchDeleteConversations()" class="px-3 py-2 rounded-md border border-danger text-danger text-sm font-medium transition-colors hover:bg-danger/10 hidden">${t('batch_delete')}</button>
+        <button id="btn-batch-cancel-conv" onclick="cancelBatchSelect('conversations')" class="px-3 py-2 rounded-md border border-border text-sm transition-colors hover:bg-surface-hover hidden">${t('cancel')}</button>
+      </div>
+    </div>
     <div class="bg-surface rounded-xl border border-border overflow-hidden overflow-x-auto">
       <table class="w-full text-sm min-w-[700px]" role="table" aria-label="${t('conv_title')}">
         <thead>
           <tr class="border-b border-border">
+            <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary w-8"><input type="checkbox" id="conversations-select-all" onchange="toggleSelectAll('conversations', this)" class="rounded"></th>
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('conv_id')}</th>
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('conv_user')}</th>
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('conv_title_col')}</th>
@@ -856,6 +876,7 @@ async function renderConversations() {
   } else {
     tbody.innerHTML = convs.map(c => `
       <tr class="border-b border-border hover:bg-surface-hover transition-colors">
+        <td class="px-4 py-3"><input type="checkbox" class="conversations-select rounded" value="${c.id}" onchange="onBatchSelect('conversations', this)"></td>
         <td class="px-4 py-3 text-xs font-mono text-text-tertiary">${c.id}</td>
         <td class="px-4 py-3">${esc(c.username || '-')}</td>
         <td class="px-4 py-3 max-w-48 truncate">${esc(c.title || t('conv_new'))}</td>
@@ -911,13 +932,21 @@ async function renderUsers() {
 
   document.getElementById('page-container').innerHTML = `
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-semibold tracking-tight">${t('user_title')}</h1>
-      <button onclick="showAddUser()" class="px-4 py-2 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">${t('user_add')}</button>
+      <div class="flex items-center gap-3">
+        <h1 class="text-xl font-semibold tracking-tight">${t('user_title')}</h1>
+        <span class="text-xs text-text-tertiary" id="user-batch-info"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-batch-delete-users" onclick="batchDeleteUsers()" class="px-3 py-2 rounded-md border border-danger text-danger text-sm font-medium transition-colors hover:bg-danger/10 hidden">${t('batch_delete')}</button>
+        <button id="btn-batch-cancel" onclick="cancelBatchSelect('users')" class="px-3 py-2 rounded-md border border-border text-sm transition-colors hover:bg-surface-hover hidden">${t('cancel')}</button>
+        <button onclick="showAddUser()" class="px-4 py-2 rounded-md bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors">${t('user_add')}</button>
+      </div>
     </div>
     <div class="bg-surface rounded-xl border border-border overflow-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border">
+            <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary w-8"><input type="checkbox" id="user-select-all" onchange="toggleSelectAll('users', this)" class="rounded"></th>
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('user_id')}</th>
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('user_username')}</th>
             <th class="text-left px-4 py-3 text-xs font-medium text-text-secondary">${t('user_email')}</th>
@@ -936,6 +965,7 @@ async function renderUsers() {
   const tbody = document.getElementById('user-table');
   tbody.innerHTML = users.map(u => `
     <tr class="border-b border-border hover:bg-surface-hover transition-colors">
+      <td class="px-4 py-3"><input type="checkbox" class="user-select rounded" value="${u.id}" onchange="onBatchSelect('users', this)" ${u.role==='admin'&&u.id===getCurrentUserId()?'disabled':''}></td>
       <td class="px-4 py-3 text-xs font-mono text-text-tertiary">${u.id}</td>
       <td class="px-4 py-3 font-medium">${esc(u.username)}</td>
       <td class="px-4 py-3 text-xs text-text-secondary">${esc(u.email || '-')}</td>
@@ -947,6 +977,7 @@ async function renderUsers() {
         <button onclick="editUser(${u.id},'${esc(u.username)}','${esc(u.email||'')}','${u.role}',${u.is_active},${u.daily_limit ?? 'null'})" class="text-accent hover:underline text-xs">${t('user_edit')}</button>
         <button onclick="resetUserPassword(${u.id})" class="text-warning hover:underline text-xs ml-2">${t('user_reset_pw')}</button>
         <button onclick="toggleUserActive(${u.id},${!u.is_active})" class="text-xs ml-2 hover:underline ${u.is_active ? 'text-danger' : 'text-success'}">${u.is_active ? t('user_disable') : t('user_enable')}</button>
+        <button onclick="deleteUser(${u.id},'${esc(u.username)}')" class="text-danger hover:underline text-xs ml-2" ${u.role==='admin'?'disabled title="'+t('cannot_delete_admin')+'"':''}>${t('delete')}</button>
       </td>
     </tr>
   `).join('');
@@ -1036,6 +1067,79 @@ async function toggleUserActive(id, active) {
   const res = await api(`/api/admin/users/${id}`, { method: 'PUT', body: { is_active: active } });
   if (res && res.success) { toast(active ? t('enabled') : t('disabled'), 'success'); renderUsers(); }
   else toast(res?.error || t('op_failed'), 'error');
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(t('confirm_delete_user').replace('{user}', username))) return;
+  const res = await api(`/api/admin/users/${id}`, { method: 'DELETE' });
+  if (res && res.success) { toast(t('user_deleted'), 'success'); renderUsers(); }
+  else toast(res?.error || t('delete_failed'), 'error');
+}
+
+// ─── Batch Operations ──────────────────────────────────────
+let _batchState = {};
+
+function getCurrentUserId() {
+  try {
+    const payload = JSON.parse(atob(localStorage.getItem('access_token')?.split('.')[1] || '{}'));
+    return payload.sub || 0;
+  } catch { return 0; }
+}
+
+function onBatchSelect(group, checkbox) {
+  if (!_batchState[group]) _batchState[group] = new Set();
+  if (checkbox.checked) _batchState[group].add(checkbox.value);
+  else _batchState[group].delete(checkbox.value);
+  updateBatchUI(group);
+}
+
+function toggleSelectAll(group, masterCheckbox) {
+  const checkboxes = document.querySelectorAll(`.${group}-select`);
+  if (!_batchState[group]) _batchState[group] = new Set();
+  checkboxes.forEach(cb => {
+    if (cb.disabled) return;
+    cb.checked = masterCheckbox.checked;
+    if (masterCheckbox.checked) _batchState[group].add(cb.value);
+    else _batchState[group].delete(cb.value);
+  });
+  updateBatchUI(group);
+}
+
+function cancelBatchSelect(group) {
+  if (_batchState[group]) _batchState[group].clear();
+  document.querySelectorAll(`.${group}-select`).forEach(cb => cb.checked = false);
+  document.getElementById(`${group}-select-all`).checked = false;
+  updateBatchUI(group);
+}
+
+function updateBatchUI(group) {
+  const count = _batchState[group]?.size || 0;
+  const infoEl = document.getElementById(`${group}-batch-info`);
+  const btnDelete = document.getElementById(`btn-batch-delete-${group}`);
+  const btnCancel = document.getElementById(`btn-batch-cancel`);
+
+  if (infoEl) infoEl.textContent = count > 0 ? `(${count} ${t('selected')})` : '';
+
+  if (btnDelete) btnDelete.classList.toggle('hidden', count === 0);
+  if (btnCancel) btnCancel.classList.toggle('hidden', count === 0);
+}
+
+async function batchDeleteUsers() {
+  const ids = [...(_batchState['users'] || [])];
+  if (!ids.length) return;
+  if (!confirm(t('confirm_batch_delete_users').replace('{count}', ids.length))) return;
+  const res = await api('/api/admin/batch', { method: 'POST', body: { action: 'delete_users', ids } });
+  if (res && res.success) { toast(res.message, 'success'); cancelBatchSelect('users'); renderUsers(); }
+  else toast(res?.error || t('delete_failed'), 'error');
+}
+
+async function batchDeleteConversations() {
+  const ids = [...(_batchState['conversations'] || [])];
+  if (!ids.length) return;
+  if (!confirm(t('confirm_batch_delete_convs').replace('{count}', ids.length))) return;
+  const res = await api('/api/admin/batch', { method: 'POST', body: { action: 'delete_conversations', ids } });
+  if (res && res.success) { toast(res.message, 'success'); cancelBatchSelect('conversations'); renderConversations(); }
+  else toast(res?.error || t('delete_failed'), 'error');
 }
 
 // ─── Permissions ──────────────────────────────────────────

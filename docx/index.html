@@ -504,6 +504,14 @@ python app.py</pre>
         <p class="text-xs text-on-surface-variant"><span data-lang-zh>批量切换接口开关</span><span data-lang-en>Batch toggle endpoints</span></p>
       </div>
       <div class="bg-surface rounded-2xl border border-outline-variant/50 p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-delete text-xs font-bold px-2 py-0.5 rounded" style="background:#dc2626;color:#fff">DELETE</span><code class="text-sm font-mono">/api/admin/users/&lt;id&gt;</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>删除用户（含对话/消息/权限），不能删除自己</span><span data-lang-en>Delete user (with conversations/messages/permissions), cannot delete self</span></p>
+      </div>
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-4">
+        <div class="flex items-center gap-2 mb-1"><span class="method-post text-xs font-bold px-2 py-0.5 rounded">POST</span><code class="text-sm font-mono">/api/admin/batch</code></div>
+        <p class="text-xs text-on-surface-variant"><span data-lang-zh>批量操作（delete_users / delete_conversations / toggle_endpoints / toggle_plugins / toggle_vendors），请求体: {"action":"...", "ids":[...], "extra":{}}</span><span data-lang-en>Batch operations (delete_users / delete_conversations / toggle_endpoints / toggle_plugins / toggle_vendors), body: {"action":"...", "ids":[...], "extra":{}}</span></p>
+      </div>
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-4">
         <div class="flex items-center gap-2 mb-1"><span class="method-get text-xs font-bold px-2 py-0.5 rounded">GET</span><code class="text-sm font-mono">/api/admin/vendors</code></div>
         <p class="text-xs text-on-surface-variant"><span data-lang-zh>厂商与模型列表</span><span data-lang-en>Vendor & model list</span></p>
       </div>

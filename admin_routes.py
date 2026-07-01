@@ -2,7 +2,7 @@
 from datetime import datetime, timezone, date, timedelta
 from flask import Blueprint, request, jsonify, g
 from sqlalchemy import func
-from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig, VendorConfig, ThemeConfig
+from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig, VendorConfig, ThemeConfig, EndpointToggle
 from auth_utils import require_admin, get_effective_permission, _invalidate_perm_cache
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
@@ -289,6 +289,35 @@ def update_user(user_id: int):
     db.session.commit()
     _invalidate_perm_cache()
     return jsonify({'success': True, 'user': user.to_admin_dict()})
+
+
+@admin_bp.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@require_admin
+def delete_user(user_id: int):
+    """Delete a user and all their data (conversations, messages, permissions)."""
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+
+    current_admin_id = int(get_jwt_identity())
+    if user.id == current_admin_id:
+        return jsonify({'error': '不能删除自己'}), 400
+
+    # Delete user's messages via conversations
+    conv_ids = [c.id for c in Conversation.query.filter_by(user_id=user_id).all()]
+    if conv_ids:
+        Message.query.filter(Message.conversation_id.in_(conv_ids)).delete(synchronize_session='fetch')
+        Conversation.query.filter(Conversation.user_id == user_id).delete(synchronize_session='fetch')
+
+    # Delete user's permissions
+    UserPermission.query.filter_by(user_id=user_id).delete()
+
+    # Delete the user
+    db.session.delete(user)
+    db.session.commit()
+    _invalidate_perm_cache()
+
+    return jsonify({'success': True, 'message': '用户已删除'})
 
 
 @admin_bp.route('/api/admin/users/<int:user_id>/reset-password', methods=['POST'])
@@ -615,6 +644,107 @@ def get_open_registration():
     cfg = SystemConfig.query.filter_by(key='open_registration').first()
     is_open = cfg.value == 'true' if cfg else Config.OPEN_REGISTRATION
     return jsonify({'success': True, 'open_registration': is_open})
+
+
+# ── Batch Operations ──
+
+@admin_bp.route('/api/admin/batch', methods=['POST'])
+@require_admin
+def batch_operations():
+    """
+    Batch operations API. Body: { "action": "...", "ids": [...] }
+    Supported actions:
+      - delete_users: delete users by ID
+      - delete_conversations: delete conversations by ID
+      - toggle_endpoints: enable/disable endpoints by ID
+      - toggle_plugins: enable/disable plugins by name
+      - toggle_vendors: enable/disable vendor configs by ID
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': '请提供操作数据'}), 400
+
+    action = data.get('action', '')
+    ids = data.get('ids', [])
+    extra = data.get('extra', {})  # extra params like 'enabled' for toggle
+
+    if not ids:
+        return jsonify({'error': '请选择要操作的项目'}), 400
+
+    if action == 'delete_users':
+        current_admin_id = int(get_jwt_identity())
+        deleted = 0
+        for uid in ids:
+            if int(uid) == current_admin_id:
+                continue  # skip self
+            user = db.session.get(User, int(uid))
+            if not user:
+                continue
+            # Delete user's data
+            conv_ids = [c.id for c in Conversation.query.filter_by(user_id=int(uid)).all()]
+            if conv_ids:
+                Message.query.filter(Message.conversation_id.in_(conv_ids)).delete(synchronize_session='fetch')
+                Conversation.query.filter(Conversation.user_id == int(uid)).delete(synchronize_session='fetch')
+            UserPermission.query.filter_by(user_id=int(uid)).delete()
+            db.session.delete(user)
+            deleted += 1
+        db.session.commit()
+        _invalidate_perm_cache()
+        return jsonify({'success': True, 'deleted': deleted, 'message': f'已删除 {deleted} 个用户'})
+
+    elif action == 'delete_conversations':
+        deleted = 0
+        for cid in ids:
+            conv = db.session.get(Conversation, int(cid))
+            if not conv:
+                continue
+            Message.query.filter_by(conversation_id=int(cid)).delete()
+            db.session.delete(conv)
+            deleted += 1
+        db.session.commit()
+        return jsonify({'success': True, 'deleted': deleted, 'message': f'已删除 {deleted} 个对话'})
+
+    elif action == 'toggle_endpoints':
+        enabled = extra.get('enabled', True)
+        updated = 0
+        for eid in ids:
+            ep = db.session.get(EndpointToggle, int(eid))
+            if ep:
+                ep.enabled = enabled
+                updated += 1
+        db.session.commit()
+        status = '启用' if enabled else '禁用'
+        return jsonify({'success': True, 'updated': updated, 'message': f'已{status} {updated} 个接口'})
+
+    elif action == 'toggle_plugins':
+        enabled = extra.get('enabled', True)
+        updated = 0
+        for pname in ids:
+            from plugins import _plugin_registry
+            plugin = _plugin_registry.get(pname)
+            if plugin:
+                plugin.meta['enabled'] = enabled
+                if enabled:
+                    plugin.on_enable()
+                else:
+                    plugin.on_disable()
+                updated += 1
+        return jsonify({'success': True, 'updated': updated, 'message': f'已操作 {updated} 个插件'})
+
+    elif action == 'toggle_vendors':
+        enabled = extra.get('enabled', True)
+        updated = 0
+        for vid in ids:
+            vc = db.session.get(VendorConfig, int(vid))
+            if vc:
+                vc.enabled = enabled
+                updated += 1
+        db.session.commit()
+        status = '启用' if enabled else '禁用'
+        return jsonify({'success': True, 'updated': updated, 'message': f'已{status} {updated} 个厂商'})
+
+    else:
+        return jsonify({'error': f'未知操作: {action}'}), 400
 
 
 # ─── Theme Management ─────────────────────────────────────

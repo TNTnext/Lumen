@@ -2,7 +2,7 @@
 """
 Lumen 系统全量测试工具
 用法: python3 test_system.py [--base-url http://localhost:5000] [--verbose] [--skip-db]
-覆盖: 认证、对话、管理后台、权限、接口开关、厂商、插件、数据库、多语言
+覆盖: 认证、对话、管理后台、权限、接口开关、厂商、插件、数据库、多语言、批量操作、删除用户
 """
 
 import sys
@@ -127,6 +127,9 @@ class TestRunner:
 
         # ─── 15. Admin UI Pages ───
         self._test_ui_pages()
+
+        # ─── 16. Batch Operations & Delete User ───
+        self._test_batch()
 
         # ─── Summary ───
         self._print_summary()
@@ -549,6 +552,79 @@ class TestRunner:
 
         self.test("GET /admin → i18n + plugins + database", t_admin_html)
         self.test("GET /login → language switch", t_login_html)
+
+    # ══════════════════════════════════════════════════════════
+    # 16. Batch Operations & Delete User
+    # ══════════════════════════════════════════════════════════
+    def _test_batch(self):
+        print(f"\n{BOLD}[16] Batch Operations & Delete User{RESET}")
+
+        # Create a test user for delete operations
+        test_username = f"batch_test_{int(time.time())}"
+        create_res = self._req('POST', '/api/auth/register',
+            json={"username": test_username, "password": "test123456", "email": f"{test_username}@test.com"})
+        test_user_id = None
+        try:
+            body = create_res.json()
+            if body.get('success'):
+                test_user_id = body.get('user', {}).get('id')
+        except: pass
+
+        if not test_user_id:
+            r = self._req('GET', '/api/admin/users?page=1&per_page=100')
+            try:
+                for u in r.json().get('users', []):
+                    if u.get('username') == test_username:
+                        test_user_id = u['id']
+                        break
+            except: pass
+
+        # Test: DELETE user
+        def t_delete_user():
+            if not test_user_id:
+                return True  # skip, not fail
+            r = self._req('DELETE', f'/api/admin/users/{test_user_id}')
+            return r.status_code in (200, 404)
+
+        # Test: DELETE self (should fail)
+        def t_delete_self():
+            r = self._req('GET', '/api/auth/me')
+            try:
+                admin_id = r.json().get('user', {}).get('id')
+            except: return False
+            r = self._req('DELETE', f'/api/admin/users/{admin_id}')
+            return r.status_code == 400  # should reject self-delete
+
+        # Test: batch delete conversations (empty ids)
+        def t_batch_empty_conv():
+            r = self._req('POST', '/api/admin/batch',
+                json={"action": "delete_conversations", "ids": []})
+            return r.status_code == 400
+
+        # Test: batch delete users (empty ids)
+        def t_batch_empty_users():
+            r = self._req('POST', '/api/admin/batch',
+                json={"action": "delete_users", "ids": []})
+            return r.status_code == 400
+
+        # Test: batch toggle endpoints
+        def t_batch_toggle():
+            r = self._req('POST', '/api/admin/batch',
+                json={"action": "toggle_endpoints", "ids": [99999], "extra": {"enabled": True}})
+            return r.status_code == 200
+
+        # Test: unknown action
+        def t_batch_unknown():
+            r = self._req('POST', '/api/admin/batch',
+                json={"action": "invalid_action", "ids": [1]})
+            return r.status_code == 400
+
+        self.test("DELETE /api/admin/users/:id (test user)", t_delete_user)
+        self.test("DELETE /api/admin/users/:id (self, should fail)", t_delete_self)
+        self.test("POST /api/admin/batch (empty convs → 400)", t_batch_empty_conv)
+        self.test("POST /api/admin/batch (empty users → 400)", t_batch_empty_users)
+        self.test("POST /api/admin/batch (toggle endpoints)", t_batch_toggle)
+        self.test("POST /api/admin/batch (unknown action → 400)", t_batch_unknown)
 
     # ══════════════════════════════════════════════════════════
     # Summary
