@@ -342,9 +342,10 @@ class ThemeConfig(db.Model):
         lines = [':root {']
         color_map = {
             'bg': '--color-bg', 'surface': '--color-surface', 'surfaceHover': '--color-surface-hover',
+            'card': '--color-card', 'muted': '--color-muted', 'surfaceContainer': '--color-surface-container',
             'border': '--color-border', 'text': '--color-text', 'textSecondary': '--color-text-secondary',
             'textTertiary': '--color-text-tertiary', 'accent': '--color-accent', 'accentHover': '--color-accent-hover',
-            'danger': '--color-danger', 'success': '--color-success', 'warning': '--color-warning',
+            'danger': '--color-danger', 'error': '--color-error', 'success': '--color-success', 'warning': '--color-warning',
             'sidebar': '--color-sidebar', 'sidebarHover': '--color-sidebar-hover', 'sidebarActive': '--color-sidebar-active',
         }
         for key, var in color_map.items():

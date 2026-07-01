@@ -91,7 +91,7 @@ const i18n = {
     theme_activated: '主题已激活',
     theme_saved: '主题已保存', theme_deleted: '主题已删除',
     theme_bg: '页面背景', theme_surface: '卡片背景',
-    theme_surface_hover: '卡片悬停', theme_border: '边框',
+    theme_surface_hover: '卡片悬停', theme_card: '卡片底色', theme_muted: '输入框背景', theme_border: '边框',
     theme_text: '主文字', theme_text_secondary: '次要文字',
     theme_text_tertiary: '辅助文字', theme_accent: '强调色',
     theme_accent_hover: '强调悬停', theme_danger: '危险色',
@@ -104,7 +104,7 @@ const i18n = {
 	    theme_warning: '警告色', theme_sidebar: '侧边栏背景', theme_sidebar_hover: '侧边栏悬停',
 	    theme_sidebar_active: '侧边栏激活', theme_confirm_delete: '确认删除主题',
 	    theme_create_first: '还没有主题，点击右上角创建第一个主题',
-	    theme_cannot_delete_active: '无法删除已激活的主题', theme_surface_hover: '表面悬停色',
+	    theme_cannot_delete_active: '无法删除已激活的主题',
     nav_plugins: '插件管理',
     plugin_title: '插件管理', plugin_enable: '启用', plugin_disable: '禁用',
     plugin_enabled: '已启用', plugin_disabled: '已禁用', plugin_desc: '热插拔插件系统，支持优先级和工具扩展',
@@ -213,7 +213,7 @@ const i18n = {
     theme_activated: 'Theme activated', theme_saved: 'Theme saved',
     theme_deleted: 'Theme deleted',
     theme_bg: 'Page Background', theme_surface: 'Card Background',
-    theme_surface_hover: 'Card Hover', theme_border: 'Border',
+    theme_surface_hover: 'Card Hover', theme_card: 'Card Base', theme_muted: 'Input BG', theme_border: 'Border',
     theme_text: 'Primary Text', theme_text_secondary: 'Secondary Text',
     theme_text_tertiary: 'Tertiary Text', theme_accent: 'Accent',
     theme_accent_hover: 'Accent Hover', theme_danger: 'Danger',
@@ -226,7 +226,7 @@ const i18n = {
 	    theme_warning: 'Warning', theme_sidebar: 'Sidebar BG', theme_sidebar_hover: 'Sidebar Hover',
 	    theme_sidebar_active: 'Sidebar Active', theme_confirm_delete: 'Confirm delete theme',
 	    theme_create_first: 'No themes yet, click button above to create',
-	    theme_cannot_delete_active: 'Cannot delete active theme', theme_surface_hover: 'Surface Hover',
+	    theme_cannot_delete_active: 'Cannot delete active theme',
     nav_plugins: 'Plugins', plugin_title: 'Plugin Management', plugin_enable: 'Enable',
     plugin_disable: 'Disable', plugin_enabled: 'Enabled', plugin_disabled: 'Disabled',
     plugin_desc: 'Hot-pluggable plugin system with priority and tool extensions',
@@ -2194,6 +2194,7 @@ async function loadThemeEditor(id) {
 
   const colorFields = [
     ["bg","theme_bg","#f5f5f7"],["surface","theme_surface","#ffffff"],["surfaceHover","theme_surface_hover","#f0f0f2"],
+    ["card","theme_card","#ffffff"],["muted","theme_muted","#f0f0f2"],["surfaceContainer","theme_muted","#f0f0f2"],
     ["border","theme_border","#e8e8ed"],["text","theme_text","#1d1d1f"],["textSecondary","theme_text_secondary","#86868b"],
     ["textTertiary","theme_text_tertiary","#aeaeb2"],["accent","theme_accent","#0071e3"],["accentHover","theme_accent_hover","#0066cc"],
     ["danger","theme_danger","#ff3b30"],["success","theme_success","#34c759"],["warning","theme_warning","#ff9500"],
@@ -2201,6 +2202,7 @@ async function loadThemeEditor(id) {
   ];
   const darkColorFields = [
     ["bg","theme_bg","#1c1c1e"],["surface","theme_surface","#2c2c2e"],["surfaceHover","theme_surface_hover","#3a3a3c"],
+    ["card","theme_card","#2c2c2e"],["muted","theme_muted","#3a3a3c"],["surfaceContainer","theme_muted","#3a3a3c"],
     ["border","theme_border","#38383a"],["text","theme_text","#f5f5f7"],["textSecondary","theme_text_secondary","#98989d"],
     ["textTertiary","theme_text_tertiary","#636366"],["accent","theme_accent","#0a84ff"],["accentHover","theme_accent_hover","#409cff"],
     ["danger","theme_danger","#ff453a"],["success","theme_success","#30d158"],["warning","theme_warning","#ff9f0a"],
@@ -2323,7 +2325,7 @@ function updateThemePreview() {
 }
 
 function collectThemeData() {
-  const colorFields = ["bg","surface","surfaceHover","border","text","textSecondary","textTertiary","accent","accentHover","danger","success","warning","sidebar","sidebarHover","sidebarActive"];
+  const colorFields = ["bg","surface","surfaceHover","card","muted","surfaceContainer","border","text","textSecondary","textTertiary","accent","accentHover","danger","error","success","warning","sidebar","sidebarHover","sidebarActive"];
   const fontFields = ["heading","body","mono"];
   const shadowFields = ["sm","md","lg","xl"];
   const colors = {}, darkColors = {}, fonts = {}, shadows = {};
@@ -2393,9 +2395,10 @@ function applyCustomTheme(theme) {
   let css = ":root {\n";
   const map = {
     bg: "--color-bg", surface: "--color-surface", surfaceHover: "--color-surface-hover",
+    card: "--color-card", muted: "--color-muted", surfaceContainer: "--color-surface-container",
     border: "--color-border", text: "--color-text", textSecondary: "--color-text-secondary",
     textTertiary: "--color-text-tertiary", accent: "--color-accent", accentHover: "--color-accent-hover",
-    danger: "--color-danger", success: "--color-success", warning: "--color-warning",
+    danger: "--color-danger", error: "--color-error", success: "--color-success", warning: "--color-warning",
     sidebar: "--color-sidebar", sidebarHover: "--color-sidebar-hover", sidebarActive: "--color-sidebar-active",
   };
   Object.entries(map).forEach(([k, v]) => { if (c[k]) css += "  " + v + ": " + c[k] + ";\n"; });
