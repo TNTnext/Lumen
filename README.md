@@ -150,7 +150,7 @@ Configure via:
 
 ## Plugin System
 
-Lumen features a hot-pluggable plugin architecture:
+Lumen features a hot-pluggable plugin architecture with four capabilities:
 
 | Plugin | Tools | Description |
 |--------|-------|-------------|
@@ -158,10 +158,44 @@ Lumen features a hot-pluggable plugin architecture:
 | **Web Search** | `web_search`, `fetch_url` | Real-time web search and page content fetching |
 | **Translator** | `translate`, `summarize`, `extract_keywords`, `count_text` | Multi-language translation (ZH/EN/JA/KO/FR), text summarization, keyword extraction |
 
+### Plugin Capabilities
+
+- **AI Tools**: Register OpenAI function-calling tools via `get_tools()` / `execute_tool()`
+- **Hook Pipeline**: `pre_chat()` → modify messages before AI, `post_chat()` → modify responses, `on_error()` → graceful fallback
+- **Custom Pages**: `register_pages()` → inject custom admin pages with full HTML/CSS/JS
+- **Custom API Routes**: `register_api_routes()` → add custom Flask endpoints (`/api/plugins/<plugin>/...`)
 - **Hot-pluggable**: Enable/disable plugins without restart
-- **Priority-based**: Drag-to-reorder plugin execution order
+- **Priority-based**: 0-100 priority determines hook execution order
 - **Custom plugins**: Drop `.py` files into the `plugins/` directory with `PLUGIN_META` + `create_plugin()`
-- **Tool injection**: Plugin tools are automatically injected into chat model's function calling
+
+### Plugin APIs
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/admin/plugins/` | List all plugins with status |
+| PUT | `/api/admin/plugins/<name>/toggle` | Toggle plugin enabled/disabled |
+| PUT | `/api/admin/plugins/<name>/priority` | Set plugin priority |
+| GET/PUT | `/api/admin/plugins/<name>/config` | Get/update plugin config |
+| POST | `/api/admin/plugins/<name>/reload` | Hot reload a plugin |
+| PUT | `/api/admin/plugins/reorder` | Batch reorder plugin priorities |
+| GET | `/api/admin/plugins/tools` | List all enabled plugin tools |
+| GET | `/api/admin/plugins/pages` | List all plugin custom pages |
+| GET | `/api/admin/plugins/page/<name>/<id>` | Get plugin page HTML content |
+| GET | `/api/admin/plugins/routes` | List all plugin custom API routes |
+
+---
+
+## Theme System
+
+Lumen supports three theme modes, configurable from Settings:
+
+| Theme | Description |
+|-------|-------------|
+| **Light** | Clean, professional light interface (default) |
+| **Dark** | Eye-friendly dark mode for low-light environments |
+| **System** | Auto-follows OS preference, switches in real-time |
+
+Theme preference is persisted in `localStorage`. All CSS variables adapt automatically — no page reload needed.
 
 ---
 

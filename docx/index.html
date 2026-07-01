@@ -612,6 +612,115 @@ python app.py</pre>
         </div>
       </div>
 
+      <!-- Plugin Development Guide -->
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6 mt-6">
+        <h3 class="text-base font-semibold mb-4"><span data-lang-zh>插件开发指南</span><span data-lang-en>Plugin Development Guide</span></h3>
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+          Lumen 插件支持四大能力：AI 工具（Tool）、钩子管线（Hook）、自定义页面（Page）、自定义 API（Route）。每个插件是一个 <code class="text-xs font-mono">plugins/xxx.py</code> 文件。
+        </p>
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+          Lumen plugins support four capabilities: AI Tools, Hook Pipeline, Custom Pages, and Custom API Routes. Each plugin is a single <code class="text-xs font-mono">plugins/xxx.py</code> file.
+        </p>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>最小插件模板</span><span data-lang-en>Minimal Plugin Template</span></h4>
+        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono overflow-x-auto"><code>from plugins import LumenPlugin, PluginMeta, ToolDefinition, PageDefinition, ApiRouteDefinition
+
+PLUGIN_META = {
+    "name": "my_plugin",
+    "display_name": "My Plugin",
+    "version": "1.0.0",
+    "description": "A custom plugin",
+    "author": "Your Name",
+    "priority": 50,
+    "category": "tool",
+}
+
+def create_plugin(meta: PluginMeta) -> "MyPlugin":
+    return MyPlugin(meta)
+
+class MyPlugin(LumenPlugin):
+    # ── 1. AI 工具 ──
+    def get_tools(self):
+        return [
+            ToolDefinition(
+                name="my_tool",
+                description="Do something useful",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "input": {"type": "string", "description": "Input text"}
+                    },
+                    "required": ["input"]
+                }
+            )
+        ]
+
+    def execute_tool(self, tool_name, arguments, ctx):
+        if tool_name == "my_tool":
+            return {"result": f"Processed: {arguments['input']}"}
+        return {"error": "Unknown tool"}
+
+    # ── 2. 钩子 ──
+    def pre_chat(self, ctx):
+        ctx["content"] = "[PLUGIN] " + ctx.get("content", "")
+        return ctx
+
+    def post_chat(self, response, ctx):
+        return response + "\n\n---\n*Processed by MyPlugin*"
+
+    # ── 3. 自定义页面 ──
+    def register_pages(self):
+        return [
+            PageDefinition(
+                page_id="stats",
+                title="My Stats",
+                icon="bar-chart-3",
+                html_content='''&lt;div class="p-6"&gt;
+  &lt;h2 class="text-xl font-bold mb-4"&gt;Plugin Stats&lt;/h2&gt;
+  &lt;div class="grid grid-cols-3 gap-4"&gt;
+    &lt;div class="bg-muted rounded-xl p-4 text-center"&gt;
+      &lt;div class="text-2xl font-bold text-accent" id="stat-count"&gt;0&lt;/div&gt;
+      &lt;div class="text-xs text-text-secondary mt-1"&gt;Total&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;script&gt;document.getElementById('stat-count').textContent = '42';&lt;/script&gt;
+&lt;/div&gt;''',
+                js_handler="initMyPluginPage"
+            )
+        ]
+
+    # ── 4. 自定义 API ──
+    def register_api_routes(self):
+        from flask import jsonify
+        def hello():
+            return jsonify({"message": "Hello from MyPlugin!"})
+        return [
+            ApiRouteDefinition(method="GET", path="/hello", handler=hello, auth_required=False)
+        ]</code></pre>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>核心概念</span><span data-lang-en>Core Concepts</span></h4>
+        <table class="w-full text-sm mt-3">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>概念</span><span data-lang-en>Concept</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">PLUGIN_META</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>插件元数据字典，必须定义</span><span data-lang-en>Required metadata dict</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">create_plugin()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>工厂函数，返回插件实例</span><span data-lang-en>Factory function, returns plugin instance</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">get_tools()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh">返回 ToolDefinition 列表，注入 AI 对话</span><span data-lang-en>Return ToolDefinition list, injected into AI chat</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">register_pages()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>返回 PageDefinition 列表，显示在管理后台导航</span><span data-lang-en>Return PageDefinition list, shown in admin nav</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">register_api_routes()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>返回 ApiRouteDefinition 列表，注册到 Flask</span><span data-lang-en>Return ApiRouteDefinition list, registered to Flask</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">pre_chat(ctx)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>消息发送前钩子，可修改内容/工具</span><span data-lang-en>Pre-chat hook, can modify content/tools</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">post_chat(resp, ctx)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>AI 响应后钩子，可修改响应文本</span><span data-lang-en>Post-chat hook, can modify response</span></td></tr>
+            <tr><td class="py-2 text-xs font-mono">on_error(err, ctx)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>错误钩子，返回降级响应或 None</span><span data-lang-en>Error hook, return fallback or None</span></td></tr>
+          </tbody>
+        </table>
+
+        <p class="text-xs text-on-surface-variant mt-4" data-lang-zh-block>
+          文件放入 <code class="text-xs font-mono">plugins/</code> 目录后，通过管理后台"插件管理"页面热重载即可生效。优先级 0-100 决定钩子执行顺序，数字越大越先执行。
+        </p>
+        <p class="text-xs text-on-surface-variant mt-4" data-lang-en-block>
+          Place the file in <code class="text-xs font-mono">plugins/</code> directory, then hot-reload via the admin "Plugins" page. Priority 0-100 determines hook execution order; higher runs first.
+        </p>
+      </div>
+
     </div>
   </section>
 

@@ -74,6 +74,35 @@ def create_app():
     # ── Plugin system ──
     from plugin_routes import plugin_bp
     app.register_blueprint(plugin_bp)
+
+    def _register_plugin_routes(app):
+        """Register custom API routes from all enabled plugins."""
+        from plugins import get_registry
+        from auth_utils import require_admin
+        registry = get_registry()
+        for route_info in registry.get_all_api_routes():
+            try:
+                handler = route_info['handler']
+                path = route_info['path']
+                method = route_info['method']
+                admin_only = route_info['admin_only']
+                auth_required = route_info['auth_required']
+
+                # Wrap with auth
+                if admin_only:
+                    handler = require_admin(handler)
+                elif auth_required:
+                    from flask_jwt_extended import jwt_required
+                    handler = jwt_required()(handler)
+
+                # Register as Flask route under /api/plugins/<plugin_name>/...
+                full_path = f"/api/plugins/{route_info['plugin_name']}{path}"
+                app.add_url_rule(full_path, f"plugin_{route_info['plugin_name']}_{path.replace('/', '_')}", handler, methods=[method])
+                import logging
+                logging.getLogger(__name__).info(f"Registered plugin route: {method} {full_path}")
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to register plugin route: {e}")
     
     # Create tables and initialize data
     with app.app_context():
@@ -81,10 +110,13 @@ def create_app():
         _init_default_data()
         
         # Initialize plugin registry (after tables exist)
-        from plugins import init_plugins
+        from plugins import init_plugins, get_registry
         import os
         plugin_dir = os.path.join(os.path.dirname(__file__), 'plugins')
         init_plugins(plugin_dir)
+
+        # Register plugin custom API routes
+        _register_plugin_routes(app)
 
     # ── Frontend routes ──
     @app.route('/')

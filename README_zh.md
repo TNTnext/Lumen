@@ -150,7 +150,7 @@ Lumen 支持三种数据库后端：
 
 ## 插件系统
 
-Lumen 采用热插拔插件架构：
+Lumen 采用热插拔插件架构，支持四大能力：
 
 | 插件 | 工具 | 功能说明 |
 |------|------|---------|
@@ -158,10 +158,44 @@ Lumen 采用热插拔插件架构：
 | **网页搜索** | `web_search`、`fetch_url` | 实时网页搜索和页面内容获取 |
 | **翻译器** | `translate`、`summarize`、`extract_keywords`、`count_text` | 多语言翻译（中/英/日/韩/法）、文本摘要、关键词提取 |
 
+### 插件能力
+
+- **AI 工具**：通过 `get_tools()` / `execute_tool()` 注册 OpenAI function-calling 工具
+- **钩子管线**：`pre_chat()` → 消息前修改，`post_chat()` → 响应后处理，`on_error()` → 优雅降级
+- **自定义页面**：`register_pages()` → 注入自定义管理页面（支持完整 HTML/CSS/JS）
+- **自定义 API**：`register_api_routes()` → 注册自定义 Flask 端点（`/api/plugins/<插件名>/...`）
 - **热插拔**：无需重启即可启用/禁用插件
-- **优先级排序**：拖拽调整插件执行顺序
+- **优先级排序**：0-100 优先级决定钩子执行顺序
 - **自定义插件**：在 `plugins/` 目录下放入包含 `PLUGIN_META` + `create_plugin()` 的 `.py` 文件
-- **工具注入**：插件工具自动注入到对话模型的函数调用中
+
+### 插件 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/admin/plugins/` | 获取所有插件及状态 |
+| PUT | `/api/admin/plugins/<name>/toggle` | 切换插件启用/禁用 |
+| PUT | `/api/admin/plugins/<name>/priority` | 设置插件优先级 |
+| GET/PUT | `/api/admin/plugins/<name>/config` | 获取/更新插件配置 |
+| POST | `/api/admin/plugins/<name>/reload` | 热重载插件 |
+| PUT | `/api/admin/plugins/reorder` | 批量排序插件优先级 |
+| GET | `/api/admin/plugins/tools` | 列出所有已启用插件工具 |
+| GET | `/api/admin/plugins/pages` | 列出所有插件自定义页面 |
+| GET | `/api/admin/plugins/page/<name>/<id>` | 获取插件页面 HTML |
+| GET | `/api/admin/plugins/routes` | 列出所有插件自定义 API 路由 |
+
+---
+
+## 主题系统
+
+Lumen 支持三种主题模式，可在系统设置中切换：
+
+| 主题 | 说明 |
+|------|------|
+| **浅色** | 清爽专业的浅色界面（默认） |
+| **深色** | 护眼暗色模式，适合弱光环境 |
+| **系统** | 自动跟随系统偏好，实时切换 |
+
+主题偏好保存在 `localStorage` 中，所有 CSS 变量自动适配——无需刷新页面。
 
 ---
 

@@ -141,6 +141,43 @@ def list_tools():
     return jsonify({'tools': tools, 'count': len(tools)})
 
 
+@plugin_bp.route('/pages', methods=['GET'])
+@require_admin
+def list_pages():
+    """列出所有插件提供的自定义页面"""
+    registry = get_registry()
+    pages = registry.get_all_pages()
+    return jsonify({'pages': pages, 'count': len(pages)})
+
+
+@plugin_bp.route('/page/<plugin_name>/<page_id>', methods=['GET'])
+@require_admin
+def get_page_content(plugin_name, page_id):
+    """获取插件自定义页面的 HTML 内容"""
+    registry = get_registry()
+    content = registry.get_page_content(plugin_name, page_id)
+    if content is None:
+        return jsonify({'error': 'Page not found'}), 404
+    return content  # 直接返回 HTML
+
+
+@plugin_bp.route('/routes', methods=['GET'])
+@require_admin
+def list_api_routes():
+    """列出所有插件提供的自定义 API 路由"""
+    registry = get_registry()
+    routes = registry.get_all_api_routes()
+    # 不暴露 handler 函数对象
+    safe_routes = [{
+        'plugin_name': r['plugin_name'],
+        'method': r['method'],
+        'path': r['path'],
+        'auth_required': r['auth_required'],
+        'admin_only': r['admin_only'],
+    } for r in routes]
+    return jsonify({'routes': safe_routes, 'count': len(safe_routes)})
+
+
 # —— 辅助 ——
 
 def _upsert_db_config(name: str, enabled=None, priority=None, config=None):

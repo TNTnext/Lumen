@@ -70,6 +70,27 @@ class ToolDefinition:
         }
 
 
+@dataclass
+class PageDefinition:
+    """插件自定义页面定义"""
+    page_id: str                          # 唯一标识，如 "stats"
+    title: str                            # 页面标题
+    icon: str = "layout-dashboard"        # Lucide 图标名
+    category: str = "plugin"              # 导航分类
+    html_content: str = ""                # 页面 HTML 内容（支持内联 <style>/<script>）
+    js_handler: Optional[str] = None      # 全局 JS 函数名，页面渲染后调用
+
+
+@dataclass
+class ApiRouteDefinition:
+    """插件自定义 API 路由定义"""
+    method: str                           # GET/POST/PUT/DELETE
+    path: str                             # 路由路径，如 "/hello"
+    handler: Callable                     # Flask 视图函数
+    auth_required: bool = True            # 是否需要认证
+    admin_only: bool = True               # 是否需要管理员权限
+
+
 # ═══════════════════════════════════════════════
 # 插件基类
 # ═══════════════════════════════════════════════
@@ -132,6 +153,18 @@ class LumenPlugin(ABC):
         返回 {"result": ..., "error": ...}
         """
         return {"error": f"Tool '{tool_name}' not implemented"}
+
+    # —— 自定义页面 ——
+
+    def register_pages(self) -> List[PageDefinition]:
+        """返回插件自定义页面列表（显示在管理后台导航中）"""
+        return []
+
+    # —— 自定义 API ——
+
+    def register_api_routes(self) -> List[ApiRouteDefinition]:
+        """返回插件自定义 API 路由列表（注册到 Flask）"""
+        return []
 
     # —— 辅助 ——
 
@@ -335,6 +368,54 @@ class PluginRegistry:
                     tools.append(td)
                     seen.add(name)
         return tools
+
+    def get_all_pages(self) -> List[Dict[str, Any]]:
+        """收集所有已启用插件的自定义页面"""
+        pages = []
+        for plugin in self.get_enabled():
+            try:
+                for p in plugin.register_pages():
+                    pages.append({
+                        "plugin_name": plugin.meta.name,
+                        "plugin_display": plugin.meta.display_name,
+                        "page_id": p.page_id,
+                        "title": p.title,
+                        "icon": p.icon,
+                        "category": p.category,
+                        "js_handler": p.js_handler,
+                        "has_html": bool(p.html_content),
+                    })
+            except Exception as e:
+                logger.warning(f"Plugin '{plugin.meta.name}' register_pages error: {e}")
+        return pages
+
+    def get_page_content(self, plugin_name: str, page_id: str) -> Optional[str]:
+        """获取插件自定义页面的 HTML 内容"""
+        plugin = self.get_plugin(plugin_name)
+        if not plugin or not plugin.meta.enabled:
+            return None
+        for p in plugin.register_pages():
+            if p.page_id == page_id:
+                return p.html_content
+        return None
+
+    def get_all_api_routes(self) -> List[Dict[str, Any]]:
+        """收集所有已启用插件的自定义 API 路由"""
+        routes = []
+        for plugin in self.get_enabled():
+            try:
+                for r in plugin.register_api_routes():
+                    routes.append({
+                        "plugin_name": plugin.meta.name,
+                        "method": r.method.upper(),
+                        "path": r.path,
+                        "auth_required": r.auth_required,
+                        "admin_only": r.admin_only,
+                        "handler": r.handler,
+                    })
+            except Exception as e:
+                logger.warning(f"Plugin '{plugin.meta.name}' register_api_routes error: {e}")
+        return routes
 
     def execute_tool(self, tool_name: str, arguments: Dict[str, Any], ctx: Dict[str, Any]) -> Dict[str, Any]:
         """查找并执行工具"""

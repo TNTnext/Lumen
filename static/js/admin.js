@@ -49,6 +49,8 @@ const i18n = {
     settings_danger: '危险操作', settings_reset_desc: '重置将清空所有对话数据、系统配置和非管理员用户。',
     settings_reset: '重置系统', settings_reset_confirm: '确认重置系统？此操作不可撤销！',
     settings_reset_done: '系统已重置', settings_reset_failed: '重置失败',
+    settings_theme: '界面主题', settings_theme_light: '浅色', settings_theme_dark: '深色', settings_theme_system: '跟随系统',
+    settings_reset_done: '系统已重置', settings_reset_failed: '重置失败',
     onboarding_welcome: '欢迎使用 Lumen', onboarding_subtitle: '首次使用，请完成以下初始配置',
     onboarding_skip: '跳过初始化',
     onboarding_step1: '管理员账户', onboarding_new_pw: '新密码', onboarding_pw_hint: '留空则不修改',
@@ -144,6 +146,7 @@ const i18n = {
     settings_danger: 'Danger Zone', settings_reset_desc: 'Reset will clear all conversations, configs, and non-admin users.',
     settings_reset: 'Reset System', settings_reset_confirm: 'Confirm system reset? This cannot be undone!',
     settings_reset_done: 'System reset', settings_reset_failed: 'Reset failed',
+    settings_theme: 'Theme', settings_theme_light: 'Light', settings_theme_dark: 'Dark', settings_theme_system: 'System',
     onboarding_welcome: 'Welcome to Lumen', onboarding_subtitle: 'Please complete the initial setup',
     onboarding_skip: 'Skip Setup',
     onboarding_step1: 'Admin Account', onboarding_new_pw: 'New Password', onboarding_pw_hint: 'Leave empty to keep current',
@@ -289,6 +292,21 @@ async function api(path, opts = {}) {
 }
 
 // ─── Toast ────────────────────────────────────────────────
+function getTheme() { return localStorage.getItem('lumen_theme') || 'light'; }
+function changeTheme(theme) {
+  localStorage.setItem('lumen_theme', theme);
+  applyTheme();
+}
+function applyTheme() {
+  const theme = getTheme();
+  if (theme === 'system') {
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+
 function toast(msg, type = 'info') {
   const el = document.getElementById('toast');
   const colors = { info: 'bg-text text-white', success: 'bg-success text-white', error: 'bg-danger text-white' };
@@ -355,10 +373,60 @@ function renderNav() {
   const logoutBtn = document.querySelector('#sidebar button[onclick="doLogout()"] span');
   if (logoutBtn) logoutBtn.textContent = t('logout');
   lucide.createIcons();
+  // Inject plugin custom pages into nav
+  loadPluginPages();
+}
+
+async function loadPluginPages() {
+  try {
+    const res = await api('/api/admin/plugins/pages');
+    if (!res || !res.pages) return;
+    const nav = document.getElementById('sidebar-nav');
+    res.pages.forEach(p => {
+      const id = 'plugin-page-' + p.plugin_name + '-' + p.page_id;
+      const btn = document.createElement('button');
+      btn.onclick = () => navigatePluginPage(p.plugin_name, p.page_id, p.js_handler);
+      btn.setAttribute('data-nav', id);
+      btn.className = 'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] nav-item ' + (state.page === id ? 'active' : 'text-text-secondary');
+      btn.innerHTML = '<i data-lucide="' + esc(p.icon) + '" class="w-4 h-4"></i><span>' + esc(p.title) + '</span>';
+      nav.appendChild(btn);
+    });
+    lucide.createIcons();
+  } catch (e) { /* plugin pages optional */ }
+}
+
+async function navigatePluginPage(pluginName, pageId, jsHandler) {
+  const id = 'plugin-page-' + pluginName + '-' + pageId;
+  state.page = id;
+  renderNav();
+  const container = document.getElementById('page-container');
+  container.style.opacity = '0';
+  container.innerHTML = '<div class="text-center py-12 text-text-tertiary text-sm"><div class="animate-spin w-5 h-5 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>' + t('loading') + '</div>';
+  requestAnimationFrame(async () => {
+    try {
+      const res = await api('/api/admin/plugins/page/' + encodeURIComponent(pluginName) + '/' + encodeURIComponent(pageId));
+      container.innerHTML = typeof res === 'string' ? res : (res.html || res.content || '<p class="text-text-tertiary">Empty page</p>');
+      enhanceContainer(container);
+      if (jsHandler && typeof window[jsHandler] === 'function') {
+        setTimeout(() => window[jsHandler](container, pluginName, pageId), 100);
+      }
+    } catch (e) {
+      container.innerHTML = '<div class="text-center py-12 text-danger text-sm">Failed to load plugin page</div>';
+    }
+    container.style.opacity = '1';
+  });
 }
 
 async function navigate(page) {
   if (page === 'api-keys') page = 'vendors';
+  // Handle plugin custom pages
+  if (page.startsWith('plugin-page-')) {
+    const parts = page.replace('plugin-page-', '').split('-');
+    const pluginName = parts[0];
+    const pageId = parts.slice(1).join('-');
+    await navigatePluginPage(pluginName, pageId, null);
+    return;
+  }
   state.page = page;
   renderNav();
   const container = document.getElementById('page-container');
@@ -1272,6 +1340,15 @@ async function renderSettings() {
   document.getElementById('page-container').innerHTML = `
     <h1 class="text-xl font-semibold tracking-tight mb-6">${t('settings_title')}</h1>
     <div class="bg-surface rounded-xl border border-border p-6 space-y-4">
+      <div class="flex items-center justify-between py-2">
+        <span class="text-sm font-medium">${t('settings_theme')}</span>
+        <select id="set-theme" onchange="changeTheme(this.value)" class="px-3 py-1.5 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all">
+          <option value="light" ${getTheme() === 'light' ? 'selected' : ''}>${t('settings_theme_light')}</option>
+          <option value="dark" ${getTheme() === 'dark' ? 'selected' : ''}>${t('settings_theme_dark')}</option>
+          <option value="system" ${getTheme() === 'system' ? 'selected' : ''}>${t('settings_theme_system')}</option>
+        </select>
+      </div>
+      <hr class="border-border" />
       <label class="flex items-center justify-between py-2">
         <span class="text-sm">${t('settings_reg')}</span>
         <button id="set-reg" onclick="toggleSetting('open_registration', this)" class="relative w-9 h-5 rounded-full transition-colors ${configs.open_registration === 'true' ? 'bg-accent' : 'bg-border'}">
@@ -1980,4 +2057,8 @@ async function saveDatabaseConfig() {
 }
 
 // ─── Init ─────────────────────────────────────────────────
+applyTheme();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (getTheme() === 'system') applyTheme();
+});
 checkAuth();
