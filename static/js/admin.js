@@ -78,6 +78,26 @@ const i18n = {
     vendor_test_success: '连接成功', vendor_test_failed: '连接失败',
     vendor_no_models: '暂未配置模型优先级',
     vendor_drag_hint: '拖拽调整模型优先级',
+    // Theme
+    nav_themes: '主题', theme_create: '新建主题',
+    theme_name: '主题名称', theme_name_placeholder: '输入主题名称...',
+    theme_colors: '配色方案', theme_fonts: '字体设置',
+    theme_radius: '圆角大小', theme_preview: '预览',
+    theme_activate: '激活', theme_delete: '删除',
+    theme_no_themes: '还没有自定义主题',
+    theme_create_first: '创建你的第一个主题',
+    theme_confirm_delete: '确定要删除此主题吗？',
+    theme_cannot_delete_active: '不能删除当前激活的主题',
+    theme_activated: '主题已激活',
+    theme_saved: '主题已保存', theme_deleted: '主题已删除',
+    theme_bg: '页面背景', theme_surface: '卡片背景',
+    theme_surface_hover: '卡片悬停', theme_border: '边框',
+    theme_text: '主文字', theme_text_secondary: '次要文字',
+    theme_text_tertiary: '辅助文字', theme_accent: '强调色',
+    theme_accent_hover: '强调悬停', theme_danger: '危险色',
+    theme_success: '成功色', theme_font_heading: '标题字体',
+    theme_font_body: '正文字体', theme_font_mono: '等宽字体',
+    theme_default: '默认主题',
     nav_plugins: '插件管理',
     plugin_title: '插件管理', plugin_enable: '启用', plugin_disable: '禁用',
     plugin_enabled: '已启用', plugin_disabled: '已禁用', plugin_desc: '热插拔插件系统，支持优先级和工具扩展',
@@ -173,6 +193,26 @@ const i18n = {
     vendor_test_success: 'Connection successful', vendor_test_failed: 'Connection failed',
     vendor_no_models: 'No models configured',
     vendor_drag_hint: 'Drag to reorder model priority',
+    // Theme
+    nav_themes: 'Themes', theme_create: 'New Theme',
+    theme_name: 'Theme Name', theme_name_placeholder: 'Enter theme name...',
+    theme_colors: 'Color Scheme', theme_fonts: 'Font Settings',
+    theme_radius: 'Border Radius', theme_preview: 'Preview',
+    theme_activate: 'Activate', theme_delete: 'Delete',
+    theme_no_themes: 'No custom themes yet',
+    theme_create_first: 'Create your first theme',
+    theme_confirm_delete: 'Are you sure you want to delete this theme?',
+    theme_cannot_delete_active: 'Cannot delete the active theme',
+    theme_activated: 'Theme activated', theme_saved: 'Theme saved',
+    theme_deleted: 'Theme deleted',
+    theme_bg: 'Page Background', theme_surface: 'Card Background',
+    theme_surface_hover: 'Card Hover', theme_border: 'Border',
+    theme_text: 'Primary Text', theme_text_secondary: 'Secondary Text',
+    theme_text_tertiary: 'Tertiary Text', theme_accent: 'Accent',
+    theme_accent_hover: 'Accent Hover', theme_danger: 'Danger',
+    theme_success: 'Success', theme_font_heading: 'Heading Font',
+    theme_font_body: 'Body Font', theme_font_mono: 'Mono Font',
+    theme_default: 'Default Theme',
     nav_plugins: 'Plugins', plugin_title: 'Plugin Management', plugin_enable: 'Enable',
     plugin_disable: 'Disable', plugin_enabled: 'Enabled', plugin_disabled: 'Disabled',
     plugin_desc: 'Hot-pluggable plugin system with priority and tool extensions',
@@ -356,6 +396,7 @@ const navItems = [
   { id: 'model-priority', labelKey: 'nav_model_priority', icon: 'layers' },
   { id: 'plugins', labelKey: 'nav_plugins', icon: 'puzzle' },
   { id: 'endpoints', labelKey: 'nav_endpoints', icon: 'toggle-right' },
+  { id: 'themes', labelKey: 'nav_themes', icon: 'palette' },
   { id: 'database', labelKey: 'nav_database', icon: 'database' },
   { id: 'settings', labelKey: 'nav_settings', icon: 'settings' },
 ];
@@ -2056,8 +2097,273 @@ async function saveDatabaseConfig() {
   }
 }
 
+
+// ─── Theme Management ─────────────────────────────────────
+
+async function renderThemes() {
+  const res = await api("/api/admin/themes");
+  const themes = (res && res.themes) || [];
+  const active = themes.find(t => t.is_active);
+
+  setPageHeader(t("nav_themes"), t("theme_create"), () => showThemeEditor(null));
+
+  document.getElementById("main-content").innerHTML = `
+    ${active ? `<div class="mb-5 p-4 rounded-xl border border-border bg-surface flex items-center gap-3">
+      <div class="flex gap-1.5 flex-1">
+        ${["bg","surface","surfaceHover","border","text","textSecondary","textTertiary","accent","danger","success"].map(k =>
+          `<span class="w-5 h-5 rounded" style="background:${(active.colors||{})[k]||"#ccc"}" title="${t("theme_"+k)}"></span>`
+        ).join("")}
+      </div>
+      <span class="text-sm text-text-secondary">${t("theme_activated")}: ${esc(active.name)}</span>
+    </div>` : `<div class="mb-5 p-4 rounded-xl bg-surface-container/50 border border-border text-center text-sm text-text-secondary">
+      <i data-lucide="palette" class="w-5 h-5 inline mr-2"></i>${t("theme_no_themes")}
+    </div>`}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="theme-grid"></div>
+  `;
+  lucide.createIcons();
+
+  const grid = document.getElementById("theme-grid");
+  if (!themes.length) {
+    grid.innerHTML = `<div class="col-span-full text-center py-12 text-text-tertiary text-sm">${t("theme_create_first")}</div>`;
+    return;
+  }
+
+  themes.forEach(t => {
+    const c = t.colors || {};
+    const card = document.createElement("div");
+    card.className = "p-4 rounded-xl border border-border bg-surface hover:bg-surface-hover transition-colors cursor-pointer group";
+    card.innerHTML = `
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-semibold text-text">${esc(t.name)}${t.is_active ? " <span class=\"text-accent text-xs ml-1\">●</span>" : ""}</span>
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="event.stopPropagation();showThemeEditor(${t.id})" class="p-1.5 rounded-md hover:bg-surface-container text-text-secondary" title="${t("edit")}"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+          ${!t.is_active ? `<button onclick="event.stopPropagation();deleteTheme(${t.id},"${esc(t.name)}")" class="p-1.5 rounded-md hover:bg-surface-container text-text-secondary hover:text-danger" title="${t("theme_delete")}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ""}
+        </div>
+      </div>
+      <div class="flex gap-1 mb-2">${["bg","surface","text","accent"].map(k =>
+        `<span class="w-6 h-6 rounded border border-border" style="background:${c[k]||"#ccc"}"></span>`
+      ).join("")}</div>
+      <div class="text-xs text-text-tertiary">${t.radius || "0.75rem"} | ${Object.keys(c).length} colors</div>
+      ${!t.is_active ? `<button onclick="event.stopPropagation();activateTheme(${t.id})" class="mt-2 w-full py-1.5 text-xs rounded-lg border border-border text-text-secondary hover:text-accent hover:border-accent/30 transition-colors">${t("theme_activate")}</button>` : ""}
+    `;
+    card.onclick = () => showThemeEditor(t.id);
+    grid.appendChild(card);
+  });
+  lucide.createIcons();
+}
+
+function showThemeEditor(id) {
+  const modal = document.getElementById("modal");
+  modal.innerHTML = `
+    <div class="bg-surface rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-float">
+      <div class="sticky top-0 bg-surface border-b border-border px-5 py-3.5 flex items-center justify-between z-10">
+        <h3 class="text-base font-semibold text-text">${id ? t("edit") : t("theme_create")}</h3>
+        <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="p-5 space-y-5" id="theme-editor-body">
+        <div class="flex items-center gap-2 text-sm text-text-secondary"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>${t("loading")}...</div>
+      </div>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+  lucide.createIcons();
+  loadThemeEditor(id);
+}
+
+async function loadThemeEditor(id) {
+  let theme = { name: "", colors: {}, fonts: {}, radius: "0.75rem" };
+  if (id) {
+    const res = await api("/api/admin/themes");
+    const found = (res && res.themes || []).find(t => t.id === id);
+    if (found) theme = found;
+  }
+
+  const colorFields = [
+    ["bg", "theme_bg", "#f5f5f7"],
+    ["surface", "theme_surface", "#ffffff"],
+    ["surfaceHover", "theme_surface_hover", "#f0f0f2"],
+    ["border", "theme_border", "#e8e8ed"],
+    ["text", "theme_text", "#1d1d1f"],
+    ["textSecondary", "theme_text_secondary", "#86868b"],
+    ["textTertiary", "theme_text_tertiary", "#aeaeb2"],
+    ["accent", "theme_accent", "#0071e3"],
+    ["accentHover", "theme_accent_hover", "#0066cc"],
+    ["danger", "theme_danger", "#ff3b30"],
+    ["success", "theme_success", "#34c759"],
+  ];
+
+  const fontFields = [
+    ["heading", "theme_font_heading", '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'],
+    ["body", "theme_font_body", '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif'],
+    ["mono", "theme_font_mono", '"SF Mono", "Fira Code", monospace'],
+  ];
+
+  const body = document.getElementById("theme-editor-body");
+  body.innerHTML = `
+    <div>
+      <label class="text-xs font-medium text-text-secondary mb-1.5 block">${t("theme_name")}</label>
+      <input id="theme-name" value="${esc(theme.name)}" placeholder="${t("theme_name_placeholder")}" class="w-full px-3 py-2 rounded-lg border border-border bg-surface-container text-sm text-text focus:outline-none focus:border-accent/30 focus:ring-2 focus:ring-accent/10" />
+    </div>
+    <div>
+      <h4 class="text-sm font-semibold text-text mb-3">${t("theme_colors")}</h4>
+      <div class="grid grid-cols-2 gap-2.5">
+        ${colorFields.map(([key, label, def]) => `
+          <div class="flex items-center gap-2.5">
+            <input type="color" id="color-${key}" value="${theme.colors[key] || def}" class="w-8 h-8 rounded-md border border-border cursor-pointer p-0" />
+            <label class="text-xs text-text-secondary flex-1 truncate">${t(label)}</label>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+    <div>
+      <h4 class="text-sm font-semibold text-text mb-3">${t("theme_fonts")}</h4>
+      ${fontFields.map(([key, label, def]) => `
+        <div class="mb-2">
+          <label class="text-xs text-text-secondary mb-1 block">${t(label)}</label>
+          <input id="font-${key}" value="${theme.fonts[key] || def}" class="w-full px-3 py-2 rounded-lg border border-border bg-surface-container text-xs text-text font-mono focus:outline-none focus:border-accent/30" />
+        </div>
+      `).join("")}
+    </div>
+    <div>
+      <label class="text-xs font-medium text-text-secondary mb-1.5 block">${t("theme_radius")} (<span id="radius-val">${theme.radius}</span>)</label>
+      <input type="range" id="theme-radius" min="0" max="2" step="0.125" value="${parseFloat(theme.radius) || 0.75}" class="w-full accent-accent"
+        oninput="document.getElementById('radius-val').textContent = this.value + 'rem'" />
+    </div>
+    <div>
+      <h4 class="text-sm font-semibold text-text mb-3">${t("theme_preview")}</h4>
+      <div class="p-4 rounded-xl border border-border space-y-2" id="theme-preview" style="background:${theme.colors.bg || "#f5f5f7"};font-family:${theme.fonts.body || "system-ui"};border-radius:${theme.radius}">
+        <div class="p-3 rounded-lg" style="background:${theme.colors.surface || "#fff"};border:1px solid ${theme.colors.border || "#e8e8ed"}">
+          <h5 style="color:${theme.colors.text || "#1d1d1f"};font-family:${theme.fonts.heading || "system-ui"};font-weight:600;font-size:14px">${t("theme_preview")}</h5>
+          <p style="color:${theme.colors.textSecondary || "#86868b"};font-size:12px;margin-top:4px">${t("theme_text_secondary")}</p>
+          <div class="flex gap-1.5 mt-2">
+            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.accent || "#0071e3"};color:#fff">${t("theme_accent")}</span>
+            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.danger || "#ff3b30"};color:#fff">${t("theme_danger")}</span>
+            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.success || "#34c759"};color:#fff">${t("theme_success")}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border text-sm text-text-secondary hover:bg-surface-container transition-colors">${t("cancel")}</button>
+      <button onclick="saveTheme(${id || 0})" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors">${t("save")}</button>
+    </div>
+  `;
+  lucide.createIcons();
+
+  document.querySelectorAll('[id^="color-"]').forEach(input => {
+    input.addEventListener("input", () => updateThemePreview());
+  });
+  document.getElementById("theme-radius")?.addEventListener("input", () => updateThemePreview());
+  document.querySelectorAll('[id^="font-"]').forEach(input => {
+    input.addEventListener("input", () => updateThemePreview());
+  });
+}
+
+function updateThemePreview() {
+  const getColor = (key) => document.getElementById("color-" + key)?.value || "";
+  const getFont = (key) => document.getElementById("font-" + key)?.value || "system-ui";
+  const radius = (document.getElementById("theme-radius")?.value || "0.75") + "rem";
+  const preview = document.getElementById("theme-preview");
+  if (!preview) return;
+  preview.style.background = getColor("bg");
+  preview.style.borderRadius = radius;
+  const inner = preview.querySelector("div");
+  if (inner) { inner.style.background = getColor("surface"); inner.style.borderColor = getColor("border"); }
+  const h5 = preview.querySelector("h5");
+  if (h5) { h5.style.color = getColor("text"); h5.style.fontFamily = getFont("heading"); }
+  const p = preview.querySelector("p");
+  if (p) p.style.color = getColor("textSecondary");
+  const spans = preview.querySelectorAll("span");
+  if (spans[0]) spans[0].style.background = getColor("accent");
+  if (spans[1]) spans[1].style.background = getColor("danger");
+  if (spans[2]) spans[2].style.background = getColor("success");
+  const rv = document.getElementById("radius-val");
+  if (rv) rv.textContent = radius;
+}
+
+function collectThemeData() {
+  const colorFields = ["bg","surface","surfaceHover","border","text","textSecondary","textTertiary","accent","accentHover","danger","success"];
+  const fontFields = ["heading","body","mono"];
+  const colors = {}, fonts = {};
+  colorFields.forEach(k => { const v = document.getElementById("color-"+k)?.value; if (v) colors[k] = v; });
+  fontFields.forEach(k => { const v = document.getElementById("font-"+k)?.value; if (v) fonts[k] = v; });
+  return {
+    name: document.getElementById("theme-name")?.value || "",
+    colors, fonts,
+    radius: (document.getElementById("theme-radius")?.value || "0.75") + "rem",
+  };
+}
+
+async function saveTheme(id) {
+  const data = collectThemeData();
+  if (!data.name.trim()) { showToast(t("theme_name_placeholder"), "error"); return; }
+  const url = id ? "/api/admin/themes/" + id : "/api/admin/themes";
+  const method = id ? "PUT" : "POST";
+  const res = await api(url, { method, body: data });
+  if (res && res.success) {
+    closeModal();
+    showToast(t("theme_saved"), "success");
+    renderThemes();
+  } else {
+    showToast((res && res.message) || "Save failed", "error");
+  }
+}
+
+async function activateTheme(id) {
+  const res = await api("/api/admin/themes/" + id + "/activate", { method: "PUT" });
+  if (res && res.success) {
+    showToast(t("theme_activated"), "success");
+    applyCustomTheme(res.theme);
+    renderThemes();
+  } else {
+    showToast((res && res.message) || "Activation failed", "error");
+  }
+}
+
+async function deleteTheme(id, name) {
+  if (!confirm(t("theme_confirm_delete") + " (" + name + ")")) return;
+  const res = await api("/api/admin/themes/" + id, { method: "DELETE" });
+  if (res && res.success) {
+    showToast(t("theme_deleted"), "success");
+    renderThemes();
+  } else {
+    showToast((res && res.message) || t("theme_cannot_delete_active"), "error");
+  }
+}
+
+function applyCustomTheme(theme) {
+  if (!theme || !theme.colors) return;
+  const c = theme.colors;
+  const root = document.documentElement;
+  const map = {
+    bg: "--color-bg", surface: "--color-surface", surfaceHover: "--color-surface-hover",
+    border: "--color-border", text: "--color-text", textSecondary: "--color-text-secondary",
+    textTertiary: "--color-text-tertiary", accent: "--color-accent", accentHover: "--color-accent-hover",
+    danger: "--color-danger", success: "--color-success",
+  };
+  Object.entries(map).forEach(([k, v]) => { if (c[k]) root.style.setProperty(v, c[k]); });
+  if (theme.fonts) {
+    const f = theme.fonts;
+    if (f.heading) root.style.setProperty("--font-heading", f.heading);
+    if (f.body) root.style.setProperty("--font-body", f.body);
+    if (f.mono) root.style.setProperty("--font-mono", f.mono);
+  }
+  if (theme.radius) root.style.setProperty("--radius", theme.radius);
+}
+
+async function loadActiveTheme() {
+  try {
+    const res = await api("/api/admin/themes/active");
+    if (res && res.success && res.theme) {
+      applyCustomTheme(res.theme);
+    }
+  } catch (e) { /* no active theme */ }
+}
+
+
 // ─── Init ─────────────────────────────────────────────────
 applyTheme();
+loadActiveTheme();
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (getTheme() === 'system') applyTheme();
 });

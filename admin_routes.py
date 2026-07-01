@@ -2,7 +2,7 @@
 from datetime import datetime, timezone, date, timedelta
 from flask import Blueprint, request, jsonify, g
 from sqlalchemy import func
-from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig, VendorConfig
+from models import db, User, Conversation, Message, GlobalPermission, UserPermission, SystemConfig, VendorConfig, ThemeConfig
 from auth_utils import require_admin, get_effective_permission, _invalidate_perm_cache
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
@@ -615,6 +615,100 @@ def get_open_registration():
     cfg = SystemConfig.query.filter_by(key='open_registration').first()
     is_open = cfg.value == 'true' if cfg else Config.OPEN_REGISTRATION
     return jsonify({'success': True, 'open_registration': is_open})
+
+
+# ─── Theme Management ─────────────────────────────────────
+
+@admin_bp.route('/api/admin/themes', methods=['GET'])
+@require_admin
+def list_themes():
+    themes = ThemeConfig.query.order_by(ThemeConfig.updated_at.desc()).all()
+    return jsonify({'success': True, 'themes': [t.to_dict() for t in themes]})
+
+
+@admin_bp.route('/api/admin/themes', methods=['POST'])
+@require_admin
+def create_theme():
+    data = request.get_json(silent=True)
+    if not data or not data.get('name'):
+        return jsonify({'error': '请输入主题名称'}), 400
+
+    if ThemeConfig.query.filter_by(name=data['name']).first():
+        return jsonify({'error': '主题名称已存在'}), 409
+
+    theme = ThemeConfig(name=data['name'])
+    if data.get('colors'):
+        theme.set_colors(data['colors'])
+    if data.get('fonts'):
+        theme.set_fonts(data['fonts'])
+    if data.get('radius'):
+        theme.radius = data['radius']
+
+    db.session.add(theme)
+    db.session.commit()
+    return jsonify({'success': True, 'theme': theme.to_dict()}), 201
+
+
+@admin_bp.route('/api/admin/themes/<int:theme_id>', methods=['PUT'])
+@require_admin
+def update_theme(theme_id):
+    theme = ThemeConfig.query.get(theme_id)
+    if not theme:
+        return jsonify({'error': '主题不存在'}), 404
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': '请提供更新数据'}), 400
+
+    if 'name' in data and data['name'] != theme.name:
+        if ThemeConfig.query.filter_by(name=data['name']).first():
+            return jsonify({'error': '主题名称已存在'}), 409
+        theme.name = data['name']
+    if 'colors' in data:
+        theme.set_colors(data['colors'])
+    if 'fonts' in data:
+        theme.set_fonts(data['fonts'])
+    if 'radius' in data:
+        theme.radius = data['radius']
+
+    db.session.commit()
+    return jsonify({'success': True, 'theme': theme.to_dict()})
+
+
+@admin_bp.route('/api/admin/themes/<int:theme_id>', methods=['DELETE'])
+@require_admin
+def delete_theme(theme_id):
+    theme = ThemeConfig.query.get(theme_id)
+    if not theme:
+        return jsonify({'error': '主题不存在'}), 404
+    if theme.is_active:
+        return jsonify({'error': '不能删除当前激活的主题，请先切换到其他主题'}), 400
+
+    db.session.delete(theme)
+    db.session.commit()
+    return jsonify({'success': True, 'message': '主题已删除'})
+
+
+@admin_bp.route('/api/admin/themes/<int:theme_id>/activate', methods=['PUT'])
+@require_admin
+def activate_theme(theme_id):
+    theme = ThemeConfig.query.get(theme_id)
+    if not theme:
+        return jsonify({'error': '主题不存在'}), 404
+
+    ThemeConfig.query.update({'is_active': False})
+    theme.is_active = True
+    db.session.commit()
+    return jsonify({'success': True, 'theme': theme.to_dict()})
+
+
+@admin_bp.route('/api/admin/themes/active', methods=['GET'])
+def get_active_theme():
+    """Public endpoint — returns active theme CSS for injection."""
+    theme = ThemeConfig.query.filter_by(is_active=True).first()
+    if not theme:
+        return jsonify({'success': True, 'theme': None, 'css': ''})
+    return jsonify({'success': True, 'theme': theme.to_dict(), 'css': theme.to_css()})
 
 
 # ==================== Database Config ====================

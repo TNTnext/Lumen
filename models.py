@@ -279,6 +279,84 @@ class VendorConfig(db.Model):
         return d
 
 
+class ThemeConfig(db.Model):
+    """自定义主题配置表"""
+    __tablename__ = 'theme_configs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    is_active = db.Column(db.Boolean, default=False)
+    colors_json = db.Column(db.Text, default='{}')   # {bg, surface, surfaceHover, border, text, textSecondary, textTertiary, accent, accentHover, danger, success}
+    fonts_json = db.Column(db.Text, default='{}')     # {heading, body, mono}
+    radius = db.Column(db.String(20), default='0.75rem')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def get_colors(self) -> dict:
+        try:
+            return json.loads(self.colors_json)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    def set_colors(self, colors: dict):
+        self.colors_json = json.dumps(colors, ensure_ascii=False)
+
+    def get_fonts(self) -> dict:
+        try:
+            return json.loads(self.fonts_json)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    def set_fonts(self, fonts: dict):
+        self.fonts_json = json.dumps(fonts, ensure_ascii=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'is_active': self.is_active,
+            'colors': self.get_colors(),
+            'fonts': self.get_fonts(),
+            'radius': self.radius,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def to_css(self) -> str:
+        """Generate CSS custom properties for the theme."""
+        colors = self.get_colors()
+        fonts = self.get_fonts()
+        lines = [':root {']
+        color_map = {
+            'bg': '--color-bg',
+            'surface': '--color-surface',
+            'surfaceHover': '--color-surface-hover',
+            'border': '--color-border',
+            'text': '--color-text',
+            'textSecondary': '--color-text-secondary',
+            'textTertiary': '--color-text-tertiary',
+            'accent': '--color-accent',
+            'accentHover': '--color-accent-hover',
+            'danger': '--color-danger',
+            'success': '--color-success',
+        }
+        for key, var in color_map.items():
+            if key in colors:
+                lines.append(f'  {var}: {colors[key]};')
+        font_map = {
+            'heading': '--font-heading',
+            'body': '--font-body',
+            'mono': '--font-mono',
+        }
+        for key, var in font_map.items():
+            if key in fonts:
+                lines.append(f'  {var}: {fonts[key]};')
+        if self.radius:
+            lines.append(f'  --radius: {self.radius};')
+        lines.append('}')
+        return '\n'.join(lines)
+
+
 class PluginConfig(db.Model):
     """插件配置表 — 持久化 enabled / priority / config"""
     __tablename__ = 'plugin_configs'
