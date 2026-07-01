@@ -617,6 +617,89 @@ def get_open_registration():
     return jsonify({'success': True, 'open_registration': is_open})
 
 
+# ==================== Database Config ====================
+
+@admin_bp.route('/api/admin/config/database', methods=['GET'])
+@require_admin
+def get_database_config():
+    """Get current database configuration (password masked)."""
+    keys = ['db_type', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password']
+    config = {}
+    for key in keys:
+        cfg = SystemConfig.query.filter_by(key=key).first()
+        if key == 'db_password':
+            config[key] = '••••••••' if (cfg and cfg.value) else ''
+        else:
+            config[key] = cfg.value if cfg else ''
+    config['db_type'] = config['db_type'] or 'sqlite'
+    return jsonify({'success': True, 'config': config})
+
+
+@admin_bp.route('/api/admin/config/database', methods=['PUT'])
+@require_admin
+def update_database_config():
+    """Update database configuration. Requires restart to take effect."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': '请求数据无效'}), 400
+    
+    keys = ['db_type', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password']
+    for key in keys:
+        if key in data:
+            cfg = SystemConfig.query.filter_by(key=key).first()
+            if not cfg:
+                cfg = SystemConfig(key=key)
+                db.session.add(cfg)
+            cfg.value = str(data[key]) if data[key] is not None else ''
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': '数据库配置已保存，请重启服务生效'})
+
+
+@admin_bp.route('/api/admin/config/database/test', methods=['POST'])
+@require_admin
+def test_database_connection():
+    """Test database connection with provided config."""
+    data = request.get_json() or {}
+    db_type = data.get('db_type', 'sqlite')
+    db_host = data.get('db_host', '')
+    db_port = data.get('db_port', '')
+    db_name = data.get('db_name', '')
+    db_user = data.get('db_user', '')
+    db_password = data.get('db_password', '')
+    
+    try:
+        if db_type == 'sqlite':
+            import sqlite3
+            conn = sqlite3.connect(db_name or 'app.db')
+            conn.execute('SELECT 1')
+            conn.close()
+        elif db_type == 'postgresql':
+            import psycopg2
+            conn = psycopg2.connect(
+                host=db_host, port=int(db_port or 5432),
+                dbname=db_name, user=db_user, password=db_password,
+                connect_timeout=5
+            )
+            conn.close()
+        elif db_type == 'mysql':
+            import pymysql
+            conn = pymysql.connect(
+                host=db_host, port=int(db_port or 3306),
+                database=db_name, user=db_user, password=db_password,
+                connect_timeout=5
+            )
+            conn.close()
+        else:
+            return jsonify({'success': False, 'message': f'不支持的数据库类型: {db_type}'}), 400
+        
+        return jsonify({'success': True, 'message': '数据库连接成功'})
+    except ImportError as e:
+        return jsonify({'success': False, 'message': f'缺少数据库驱动: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'连接失败: {str(e)}'}), 500
+
+
 # ─── Endpoint Toggles ───────────────────────────────────
 
 @admin_bp.route('/api/admin/endpoints', methods=['GET'])
@@ -833,6 +916,18 @@ def complete_onboarding():
     endpoint_toggles = data.get('endpoint_toggles', {})
     for group, enabled in endpoint_toggles.items():
         EndpointToggle.query.filter_by(group=group).update({'enabled': bool(enabled)})
+
+    # Database configuration
+    db_config = data.get('database', {})
+    if db_config:
+        db_keys = ['db_type', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password']
+        for key in db_keys:
+            if key in db_config and db_config[key]:
+                cfg = SystemConfig.query.filter_by(key=key).first()
+                if not cfg:
+                    cfg = SystemConfig(key=key)
+                    db.session.add(cfg)
+                cfg.value = str(db_config[key])
 
     # Mark onboarding complete
     _upsert_config('onboarding_completed', 'true')

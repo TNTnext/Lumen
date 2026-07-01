@@ -57,6 +57,9 @@ const i18n = {
     onboarding_step5: '接口开关', onboarding_reg_open: '开放注册',
     onboarding_admin_view: '管理员可查看对话内容', onboarding_retention: '对话保留天数',
     onboarding_ep_auth: '认证接口', onboarding_ep_chat: '对话接口',
+    onboarding_step6: '数据库配置', onboarding_db_type: '数据库类型', onboarding_db_host: '主机',
+    onboarding_db_port: '端口', onboarding_db_name: '库名', onboarding_db_user: '用户名',
+    onboarding_db_pass: '密码', onboarding_db_note: 'SQLite 无需额外配置，PostgreSQL/MySQL 需填写连接信息',
     onboarding_submit: '完成配置，进入管理后台',
     onboarding_done: '配置完成', onboarding_failed: '配置失败',
     need_admin: '需要管理员权限',
@@ -75,7 +78,17 @@ const i18n = {
     vendor_drag_hint: '拖拽调整模型优先级',
     nav_plugins: '插件管理',
     plugin_title: '插件管理', plugin_enable: '启用', plugin_disable: '禁用',
+    plugin_enabled: '已启用', plugin_disabled: '已禁用', plugin_desc: '热插拔插件系统，支持优先级和工具扩展',
     plugin_reload: '热重载', plugin_no_plugins: '暂无插件',
+    plugin_config: '插件配置', plugin_save_config: '保存配置', plugin_none: '暂无安装插件',
+    loading: '加载中...',
+    nav_database: '数据库', db_title: '数据库配置', db_type: '数据库类型',
+    db_host: '主机', db_port: '端口', db_name: '数据库名',
+    db_user: '用户名', db_password: '密码', db_test: '测试连接',
+    db_testing: '测试中...', db_connected: '连接成功', db_failed: '连接失败',
+    db_save: '保存配置', db_saved: '配置已保存', db_restart_note: '修改数据库配置后需要重启服务生效',
+    db_type_sqlite: 'SQLite', db_type_postgres: 'PostgreSQL', db_type_mysql: 'MySQL',
+    db_current: '当前数据库',
     plugin_priority_hint: '拖拽调整插件优先级',
     plugin_type_builtin: '内置', plugin_type_custom: '自定义',
     plugin_desc_calculator: '数学计算器，支持表达式求值与单位换算',
@@ -139,6 +152,9 @@ const i18n = {
     onboarding_step5: 'Endpoint Toggles', onboarding_reg_open: 'Open Registration',
     onboarding_admin_view: 'Admin Can View Content', onboarding_retention: 'Retention Days',
     onboarding_ep_auth: 'Auth Endpoints', onboarding_ep_chat: 'Chat Endpoints',
+    onboarding_step6: 'Database', onboarding_db_type: 'Database Type', onboarding_db_host: 'Host',
+    onboarding_db_port: 'Port', onboarding_db_name: 'Name', onboarding_db_user: 'Username',
+    onboarding_db_pass: 'Password', onboarding_db_note: 'SQLite needs no config; PostgreSQL/MySQL require connection info',
     onboarding_submit: 'Complete Setup & Enter Admin',
     onboarding_done: 'Setup complete', onboarding_failed: 'Setup failed',
     need_admin: 'Admin privileges required',
@@ -155,12 +171,21 @@ const i18n = {
     vendor_no_models: 'No models configured',
     vendor_drag_hint: 'Drag to reorder model priority',
     nav_plugins: 'Plugins', plugin_title: 'Plugin Management', plugin_enable: 'Enable',
-    plugin_disable: 'Disable', plugin_reload: 'Hot Reload', plugin_no_plugins: 'No plugins installed',
+    plugin_disable: 'Disable', plugin_enabled: 'Enabled', plugin_disabled: 'Disabled',
+    plugin_desc: 'Hot-pluggable plugin system with priority and tool extensions',
+    plugin_reload: 'Hot Reload', plugin_no_plugins: 'No plugins installed',
+    plugin_config: 'Plugin Config', plugin_save_config: 'Save Config', plugin_none: 'No plugins installed',
+    loading: 'Loading...',
     plugin_priority_hint: 'Drag to reorder plugin priority',
     plugin_type_builtin: 'Built-in', plugin_type_custom: 'Custom',
     plugin_desc_calculator: 'Math calculator with expression evaluation and unit conversion',
     plugin_desc_websearch: 'Web search for real-time information',
     plugin_desc_translator: 'Multi-language translation supporting Chinese, English, Japanese, Korean, French',
+    nav_database: 'Database', db_title: 'Database Configuration', db_type: 'Database Type',
+    db_host: 'Host', db_port: 'Port', db_name: 'Database Name',
+    db_user: 'Username', db_password: 'Password', db_test: 'Test Connection',
+    db_testing: 'Testing...', db_connected: 'Connected', db_failed: 'Failed',
+    db_save: 'Save Configuration', db_saved: 'Configuration Saved', db_restart_note: 'Restart required after changing database settings',
   }
 };
 
@@ -313,6 +338,7 @@ const navItems = [
   { id: 'model-priority', labelKey: 'nav_model_priority', icon: 'layers' },
   { id: 'plugins', labelKey: 'nav_plugins', icon: 'puzzle' },
   { id: 'endpoints', labelKey: 'nav_endpoints', icon: 'toggle-right' },
+  { id: 'database', labelKey: 'nav_database', icon: 'database' },
   { id: 'settings', labelKey: 'nav_settings', icon: 'settings' },
 ];
 
@@ -452,6 +478,42 @@ async function renderOnboarding() {
           </div>
         </div>
 
+        <!-- Step 6: Database Config -->
+        <div class="bg-surface rounded-2xl border border-border/50 p-6 card-lift stagger-6">
+          <h2 class="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest mb-3">${t('onboarding_step6')}</h2>
+          <p class="text-xs text-text-tertiary mb-4">${t('onboarding_db_note')}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[10px] font-medium text-text-secondary mb-1">${t('onboarding_db_type')}</label>
+              <select id="onb-db-type" class="w-full px-3 py-2 rounded-lg border border-border/60 bg-bg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20">
+                <option value="sqlite">SQLite</option>
+                <option value="postgresql">PostgreSQL</option>
+                <option value="mysql">MySQL</option>
+              </select>
+            </div>
+            <div id="onb-db-host-div" style="display:none">
+              <label class="block text-[10px] font-medium text-text-secondary mb-1">${t('onboarding_db_host')}</label>
+              <input id="onb-db-host" class="w-full px-3 py-2 rounded-lg border border-border/60 bg-bg text-sm" placeholder="localhost">
+            </div>
+            <div id="onb-db-port-div" style="display:none">
+              <label class="block text-[10px] font-medium text-text-secondary mb-1">${t('onboarding_db_port')}</label>
+              <input id="onb-db-port" class="w-full px-3 py-2 rounded-lg border border-border/60 bg-bg text-sm" placeholder="5432">
+            </div>
+            <div>
+              <label class="block text-[10px] font-medium text-text-secondary mb-1">${t('onboarding_db_name')}</label>
+              <input id="onb-db-name" class="w-full px-3 py-2 rounded-lg border border-border/60 bg-bg text-sm" placeholder="lumen">
+            </div>
+            <div id="onb-db-user-div" style="display:none">
+              <label class="block text-[10px] font-medium text-text-secondary mb-1">${t('onboarding_db_user')}</label>
+              <input id="onb-db-user" class="w-full px-3 py-2 rounded-lg border border-border/60 bg-bg text-sm" placeholder="lumen">
+            </div>
+            <div id="onb-db-pass-div" style="display:none">
+              <label class="block text-[10px] font-medium text-text-secondary mb-1">${t('onboarding_db_pass')}</label>
+              <input id="onb-db-password" type="password" class="w-full px-3 py-2 rounded-lg border border-border/60 bg-bg text-sm" placeholder="">
+            </div>
+          </div>
+        </div>
+
         <button onclick="submitOnboarding()" class="w-full py-3 rounded-2xl bg-text text-white text-sm font-semibold transition-all duration-300 hover:opacity-90 active:scale-[0.98]">
           ${t('onboarding_submit')}
         </button>
@@ -461,6 +523,20 @@ async function renderOnboarding() {
 
   window._onbVendors = vendors;
   addOnboardingVendor('deepseek', '', '', 'deepseek-chat');
+  // Database type toggle
+  const onbDbType = document.getElementById('onb-db-type');
+  if (onbDbType) {
+    onbDbType.addEventListener('change', function() {
+      const isSQLite = this.value === 'sqlite';
+      ['onb-db-host-div', 'onb-db-port-div', 'onb-db-user-div', 'onb-db-pass-div'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isSQLite ? 'none' : '';
+      });
+      const portEl = document.getElementById('onb-db-port');
+      if (this.value === 'postgresql') portEl.value = '5432';
+      if (this.value === 'mysql') portEl.value = '3306';
+    });
+  }
   // Auto-enhance: card animations
   requestAnimationFrame(() => {
     container.querySelectorAll('.bg-surface.rounded-2xl, .bg-surface.rounded-xl').forEach((el, i) => {
@@ -506,6 +582,14 @@ async function submitOnboarding() {
     endpoint_toggles: {
       auth: document.getElementById('onb-ep-auth').checked,
       chat: document.getElementById('onb-ep-chat').checked,
+    },
+    database: {
+      db_type: document.getElementById('onb-db-type')?.value || 'sqlite',
+      db_host: document.getElementById('onb-db-host')?.value || '',
+      db_port: document.getElementById('onb-db-port')?.value || '',
+      db_name: document.getElementById('onb-db-name')?.value || '',
+      db_user: document.getElementById('onb-db-user')?.value || '',
+      db_password: document.getElementById('onb-db-password')?.value || '',
     },
   };
   const res = await api('/api/admin/onboarding/complete', { method: 'POST', body });
@@ -1715,7 +1799,7 @@ async function renderPlugins() {
     </div>
   `;
   enhanceContainer(container);
-  const res = await api('/api/admin/plugins');
+  const res = await api('/api/admin/plugins/');
   const list = document.getElementById('plugin-list');
   if (!res || !res.plugins || res.plugins.length === 0) {
     list.innerHTML = '<div class="text-center py-12 text-text-tertiary text-sm">' + t('plugin_none') + '</div>';
@@ -1737,7 +1821,7 @@ async function renderPlugins() {
         '</div>' +
         '<div class="flex items-center gap-3">' +
           '<span class="text-xs text-text-tertiary font-mono">#' + priority + '</span>' +
-          '<button onclick="togglePlugin(\'' + esc(p.name) + '\',' + enabled + ')" class="btn-press px-2 py-0.5 rounded text-xs ' + (enabled ? 'bg-success/10 text-success' : 'bg-border/50 text-text-tertiary') + ' hover:opacity-80 transition-all duration-200">' + (enabled ? t('plugin_enabled') : t('plugin_disabled')) + '</button>' +
+          '<button onclick="togglePlugin(\'' + esc(p.name) + '\',' + enabled + ')" class="btn-press px-2 py-0.5 rounded text-xs ' + (enabled ? 'bg-success/10 text-success' : 'bg-border/50 text-text-tertiary') + ' hover:opacity-80 transition-all duration-200">' + (enabled ? t('plugin_enable') : t('plugin_disable')) + '</button>' +
         '</div>' +
       '</div>' +
       (p.config_schema ? '<div class="mt-3 pt-3 border-t border-border">' +
@@ -1757,7 +1841,7 @@ async function renderPlugins() {
 }
 
 function togglePlugin(name, enabled) {
-  api('/api/admin/plugins/' + encodeURIComponent(name), { method: 'PUT', body: { enabled: !enabled } }).then(() => renderPlugins());
+  api('/api/admin/plugins/' + encodeURIComponent(name) + '/toggle', { method: 'PUT', body: { enabled: !enabled } }).then(() => renderPlugins());
 }
 
 function savePluginConfig(name) {
@@ -1766,5 +1850,134 @@ function savePluginConfig(name) {
   inputs.forEach(inp => { if (inp.value.trim()) config[inp.dataset.key] = inp.value.trim(); });
   api('/api/admin/plugins/' + encodeURIComponent(name), { method: 'PUT', body: { config } }).then(() => renderPlugins());
 }
+async function renderDatabase() {
+  const container = document.getElementById('page-container');
+  container.innerHTML = `
+    <div class="mb-6">
+      <h2 class="text-lg font-semibold">${t('db_title')}</h2>
+      <p class="text-sm text-text-secondary mt-1">${t('db_restart_note')}</p>
+    </div>
+    <div id="db-form-container">
+      <div class="text-center py-12 text-text-tertiary text-sm"><div class="animate-spin w-5 h-5 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>${t('loading')}</div>
+    </div>
+  `;
+  enhanceContainer(container);
+
+  const res = await api('/api/admin/config/database');
+  const cfg = (res && res.config) ? res.config : {};
+  const form = document.getElementById('db-form-container');
+  form.innerHTML = `
+    <div class="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">${t('db_type')}</label>
+          <select id="db-type" class="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all">
+            <option value="sqlite" ${cfg.db_type === 'sqlite' ? 'selected' : ''}>SQLite</option>
+            <option value="postgresql" ${cfg.db_type === 'postgresql' ? 'selected' : ''}>PostgreSQL</option>
+            <option value="mysql" ${cfg.db_type === 'mysql' ? 'selected' : ''}>MySQL</option>
+          </select>
+        </div>
+        <div id="db-host-group" ${cfg.db_type === 'sqlite' ? 'style="display:none"' : ''}>
+          <label class="block text-xs font-medium text-text-secondary mb-1">${t('db_host')}</label>
+          <input id="db-host" value="${esc(cfg.db_host || 'localhost')}" class="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all" />
+        </div>
+        <div id="db-port-group" ${cfg.db_type === 'sqlite' ? 'style="display:none"' : ''}>
+          <label class="block text-xs font-medium text-text-secondary mb-1">${t('db_port')}</label>
+          <input id="db-port" value="${esc(cfg.db_port || (cfg.db_type === 'postgresql' ? '5432' : '3306'))}" class="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">${t('db_name')}</label>
+          <input id="db-name" value="${esc(cfg.db_name || (cfg.db_type === 'sqlite' ? 'app.db' : 'lumen'))}" class="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all" />
+        </div>
+        <div id="db-user-group" ${cfg.db_type === 'sqlite' ? 'style="display:none"' : ''}>
+          <label class="block text-xs font-medium text-text-secondary mb-1">${t('db_user')}</label>
+          <input id="db-user" value="${esc(cfg.db_user || '')}" class="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all" />
+        </div>
+        <div id="db-pass-group" ${cfg.db_type === 'sqlite' ? 'style="display:none"' : ''}>
+          <label class="block text-xs font-medium text-text-secondary mb-1">${t('db_password')}</label>
+          <input id="db-password" type="password" value="${esc(cfg.db_password || '')}" class="w-full px-3 py-2 rounded-lg bg-muted border border-border text-sm input-apple focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all" />
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-2">
+        <button id="btn-test-db" onclick="testDatabaseConnection()" class="btn-press px-4 py-2 rounded-lg text-sm border border-border hover:bg-muted transition-all duration-200 active:scale-95">
+          <i data-lucide="zap" class="w-4 h-4 inline mr-1.5"></i>${t('db_test')}
+        </button>
+        <button onclick="saveDatabaseConfig()" class="btn-press px-4 py-2 rounded-lg text-sm bg-accent text-white hover:bg-accent/90 transition-all duration-200 active:scale-95">
+          <i data-lucide="save" class="w-4 h-4 inline mr-1.5"></i>${t('db_save')}
+        </button>
+        <span id="db-test-result" class="text-sm"></span>
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+
+  // Toggle fields based on db type
+  document.getElementById('db-type').addEventListener('change', function() {
+    const isSQLite = this.value === 'sqlite';
+    ['db-host-group', 'db-port-group', 'db-user-group', 'db-pass-group'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = isSQLite ? 'none' : '';
+    });
+    const portEl = document.getElementById('db-port');
+    if (this.value === 'postgresql') portEl.value = portEl.value || '5432';
+    if (this.value === 'mysql') portEl.value = portEl.value || '3306';
+  });
+}
+
+function getDbFormData() {
+  const dbType = document.getElementById('db-type').value;
+  const data = {
+    db_type: dbType,
+    db_host: document.getElementById('db-host').value,
+    db_port: document.getElementById('db-port').value,
+    db_name: document.getElementById('db-name').value,
+    db_user: document.getElementById('db-user').value,
+  };
+  const pwd = document.getElementById('db-password').value;
+  if (pwd && pwd !== '••••••••') data.db_password = pwd;
+  return data;
+}
+
+async function testDatabaseConnection() {
+  const btn = document.getElementById('btn-test-db');
+  const result = document.getElementById('db-test-result');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="animate-spin w-4 h-4 border-2 border-accent border-t-transparent rounded-full inline mr-1.5"></div>' + t('db_testing');
+  result.innerHTML = '';
+
+  const data = getDbFormData();
+  if (data.db_type !== 'sqlite') {
+    const pwdEl = document.getElementById('db-password');
+    if (pwdEl.value === '••••••••') {
+      try {
+        const res = await api('/api/admin/config/database');
+        if (res && res.config && res.config.db_password && res.config.db_password !== '••••••••') {
+          data.db_password = res.config.db_password;
+        }
+      } catch (e) {}
+    }
+  }
+
+  const res = await api('/api/admin/config/database/test', { method: 'POST', body: data });
+  btn.disabled = false;
+  btn.innerHTML = '<i data-lucide="zap" class="w-4 h-4 inline mr-1.5"></i>' + t('db_test');
+  if (res && res.success) {
+    result.innerHTML = '<span class="text-success"><i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>' + t('db_connected') + '</span>';
+  } else {
+    result.innerHTML = '<span class="text-error"><i data-lucide="x-circle" class="w-4 h-4 inline mr-1"></i>' + t('db_failed') + ': ' + esc((res && res.message) || 'Unknown error') + '</span>';
+  }
+  lucide.createIcons();
+}
+
+async function saveDatabaseConfig() {
+  const data = getDbFormData();
+  const res = await api('/api/admin/config/database', { method: 'PUT', body: data });
+  if (res && res.success) {
+    showToast(t('db_saved'), 'success');
+  } else {
+    showToast((res && res.message) || 'Save failed', 'error');
+  }
+}
+
 // ─── Init ─────────────────────────────────────────────────
 checkAuth();

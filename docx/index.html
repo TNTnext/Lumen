@@ -114,6 +114,12 @@
     <a href="#models" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
       <i data-lucide="cpu" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>模型与厂商</span><span data-lang-en>Models & Vendors</span>
     </a>
+    <a href="#plugins" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
+      <i data-lucide="puzzle" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>插件系统</span><span data-lang-en>Plugins</span>
+    </a>
+    <a href="#database" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
+      <i data-lucide="database" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>数据库</span><span data-lang-en>Database</span>
+    </a>
     <a href="#config" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors">
       <i data-lucide="sliders" class="w-4 h-4 shrink-0"></i> <span data-lang-zh>系统配置</span><span data-lang-en>System Config</span>
     </a>
@@ -570,6 +576,79 @@ python app.py</pre>
           <tr><td class="py-2 font-medium">Minimax</td><td class="py-2 text-on-surface-variant">3</td><td class="py-2 text-xs text-on-surface-variant">M2.7, M2.5, ABAB 6.5s</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- ==================== Plugins ==================== -->
+  <section id="plugins" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>插件系统</span><span data-lang-en>Plugin System</span></h2>
+    <div class="space-y-4">
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+          Lumen 支持热插拔插件系统，无需重启即可启用/禁用插件。内置 3 个插件，共 8 个工具，自动注入到对话模型的函数调用中。
+        </p>
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+          Lumen features a hot-pluggable plugin system. Enable/disable plugins without restart. 3 built-in plugins with 8 tools, auto-injected into chat model function calling.
+        </p>
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>插件</span><span data-lang-en>Plugin</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>工具</span><span data-lang-en>Tools</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-medium">Calculator</td><td class="py-2 text-xs text-on-surface-variant">calculate, convert_units</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数学计算与单位换算</span><span data-lang-en>Math & unit conversion</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-medium">Web Search</td><td class="py-2 text-xs text-on-surface-variant">web_search, fetch_url</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>网页搜索与内容获取</span><span data-lang-en>Web search & fetch</span></td></tr>
+            <tr><td class="py-2 font-medium">Translator</td><td class="py-2 text-xs text-on-surface-variant">translate, summarize, extract_keywords, count_text</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>翻译、摘要、关键词</span><span data-lang-en>Translation & summarization</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <h3 class="text-base font-semibold mb-3"><span data-lang-zh>插件管理 API</span><span data-lang-en>Plugin Management API</span></h3>
+        <div class="space-y-4">
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/plugins</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取所有插件列表及状态</span><span data-lang-en>List all plugins and status</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/plugins/:name</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>切换插件启用状态或更新配置</span><span data-lang-en>Toggle plugin or update config</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">POST</span> <code class="text-sm font-mono">/api/admin/plugins/reload</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>热重载所有插件</span><span data-lang-en>Hot reload all plugins</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/plugins/reorder</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>调整插件优先级排序</span><span data-lang-en>Reorder plugin priorities</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/plugins/tools</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取所有已启用插件的工具列表</span><span data-lang-en>Get all enabled plugin tools</span></p></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== Database ==================== -->
+  <section id="database" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>数据库配置</span><span data-lang-en>Database Configuration</span></h2>
+    <div class="space-y-4">
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+          Lumen 支持三种数据库后端：SQLite（默认，零配置）、PostgreSQL、MySQL。配置方式包括管理后台、新手引导或环境变量。修改数据库类型后需重启服务生效。
+        </p>
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+          Lumen supports three database backends: SQLite (default, zero-config), PostgreSQL, and MySQL. Configure via admin panel, onboarding wizard, or environment variables. Server restart required after changing database type.
+        </p>
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>环境变量</span><span data-lang-en>Env Variable</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>默认值</span><span data-lang-en>Default</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">DB_TYPE</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库类型</span><span data-lang-en>Database type</span></td><td class="py-2 text-xs text-on-surface-variant">sqlite</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">DB_HOST</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库主机</span><span data-lang-en>Database host</span></td><td class="py-2 text-xs text-on-surface-variant">localhost</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">DB_PORT</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库端口</span><span data-lang-en>Database port</span></td><td class="py-2 text-xs text-on-surface-variant">5432 / 3306</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">DB_NAME</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库名</span><span data-lang-en>Database name</span></td><td class="py-2 text-xs text-on-surface-variant">app.db / lumen</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 font-mono text-xs">DB_USER</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库用户</span><span data-lang-en>Database user</span></td><td class="py-2 text-xs text-on-surface-variant">—</td></tr>
+            <tr><td class="py-2 font-mono text-xs">DB_PASSWORD</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>数据库密码</span><span data-lang-en>Database password</span></td><td class="py-2 text-xs text-on-surface-variant">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <h3 class="text-base font-semibold mb-3"><span data-lang-zh>数据库配置 API</span><span data-lang-en>Database Config API</span></h3>
+        <div class="space-y-4">
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/config/database</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取当前数据库配置（密码已隐藏）</span><span data-lang-en>Get current database config (password masked)</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/config/database</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>更新数据库配置（需重启）</span><span data-lang-en>Update database config (restart required)</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">POST</span> <code class="text-sm font-mono">/api/admin/config/database/test</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>测试数据库连接</span><span data-lang-en>Test database connection</span></p></div>
+        </div>
+      </div>
+
     </div>
   </section>
 
