@@ -277,3 +277,29 @@ class VendorConfig(db.Model):
         d = self.to_dict()
         d['api_key'] = self.api_key or ''
         return d
+
+
+class PluginConfig(db.Model):
+    """插件配置表 — 持久化 enabled / priority / config"""
+    __tablename__ = 'plugin_configs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    display_name = db.Column(db.String(200), nullable=False, default='')
+    enabled = db.Column(db.Boolean, default=True)
+    priority = db.Column(db.Integer, default=50)
+    config_json = db.Column(db.Text, default='{}')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'display_name': self.display_name,
+            'enabled': self.enabled,
+            'priority': self.priority,
+            'config': json.loads(self.config_json) if self.config_json else {},
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

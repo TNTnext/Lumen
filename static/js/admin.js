@@ -61,7 +61,8 @@ const i18n = {
     onboarding_done: '配置完成', onboarding_failed: '配置失败',
     need_admin: '需要管理员权限',
     // Vendor management
-    nav_vendors: '厂商与密钥', nav_model_priority: '模型优先级', vendor_title: '厂商与密钥',
+    nav_vendors: '厂商与密钥', nav_model_priority: '模型优先级', nav_plugins: '插件管理',
+    vendor_title: '厂商与密钥',
     vendor_enable: '启用', vendor_disable: '禁用',
     vendor_add: '添加厂商', vendor_save: '保存', vendor_cancel: '取消',
     vendor_delete: '删除', vendor_delete_confirm: '确定要删除此厂商吗？',
@@ -72,6 +73,14 @@ const i18n = {
     vendor_test_success: '连接成功', vendor_test_failed: '连接失败',
     vendor_no_models: '暂未配置模型优先级',
     vendor_drag_hint: '拖拽调整模型优先级',
+    nav_plugins: '插件管理',
+    plugin_title: '插件管理', plugin_enable: '启用', plugin_disable: '禁用',
+    plugin_reload: '热重载', plugin_no_plugins: '暂无插件',
+    plugin_priority_hint: '拖拽调整插件优先级',
+    plugin_type_builtin: '内置', plugin_type_custom: '自定义',
+    plugin_desc_calculator: '数学计算器，支持表达式求值与单位换算',
+    plugin_desc_websearch: '联网搜索，实时获取最新信息',
+    plugin_desc_translator: '多语言翻译，支持中英日韩法等主流语言',
   },
   en: {
     nav_dashboard: 'Dashboard', nav_conversations: 'Conversations', nav_users: 'Users',
@@ -145,6 +154,13 @@ const i18n = {
     vendor_test_success: 'Connection successful', vendor_test_failed: 'Connection failed',
     vendor_no_models: 'No models configured',
     vendor_drag_hint: 'Drag to reorder model priority',
+    nav_plugins: 'Plugins', plugin_title: 'Plugin Management', plugin_enable: 'Enable',
+    plugin_disable: 'Disable', plugin_reload: 'Hot Reload', plugin_no_plugins: 'No plugins installed',
+    plugin_priority_hint: 'Drag to reorder plugin priority',
+    plugin_type_builtin: 'Built-in', plugin_type_custom: 'Custom',
+    plugin_desc_calculator: 'Math calculator with expression evaluation and unit conversion',
+    plugin_desc_websearch: 'Web search for real-time information',
+    plugin_desc_translator: 'Multi-language translation supporting Chinese, English, Japanese, Korean, French',
   }
 };
 
@@ -295,6 +311,7 @@ const navItems = [
   { id: 'permissions', labelKey: 'nav_permissions', icon: 'shield' },
   { id: 'vendors', labelKey: 'nav_vendors', icon: 'cpu' },
   { id: 'model-priority', labelKey: 'nav_model_priority', icon: 'layers' },
+  { id: 'plugins', labelKey: 'nav_plugins', icon: 'puzzle' },
   { id: 'endpoints', labelKey: 'nav_endpoints', icon: 'toggle-right' },
   { id: 'settings', labelKey: 'nav_settings', icon: 'settings' },
 ];
@@ -1681,6 +1698,73 @@ function moveToAvailable(modelId) {
   updatePriorityNumbers();
   updateCounters();
   lucide.createIcons();
+}
+
+// ─── Plugins ──────────────────────────────────────────────
+async function renderPlugins() {
+  const container = document.getElementById('page-container');
+  container.innerHTML = `
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold">${t('plugin_title')}</h2>
+        <p class="text-sm text-text-secondary mt-1">${t('plugin_desc')}</p>
+      </div>
+    </div>
+    <div id="plugin-list" class="space-y-3">
+      <div class="text-center py-12 text-text-tertiary text-sm"><div class="animate-spin w-5 h-5 border-2 border-accent border-t-transparent rounded-full mx-auto mb-3"></div>${t('loading')}</div>
+    </div>
+  `;
+  enhanceContainer(container);
+  const res = await api('/api/admin/plugins');
+  const list = document.getElementById('plugin-list');
+  if (!res || !res.plugins || res.plugins.length === 0) {
+    list.innerHTML = '<div class="text-center py-12 text-text-tertiary text-sm">' + t('plugin_none') + '</div>';
+    return;
+  }
+  list.innerHTML = res.plugins.map((p, i) => {
+    const name = p.display_name || p.name;
+    const desc = p.description || '';
+    const enabled = p.enabled;
+    const priority = p.priority || 0;
+    return '<div class="bg-card rounded-xl border border-border p-4 transition-all card-lift" id="plugin-card-' + esc(p.name) + '">' +
+      '<div class="flex items-center justify-between">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-2 h-2 rounded-full ' + (enabled ? 'bg-success' : 'bg-border') + '"></div>' +
+          '<div>' +
+            '<h3 class="text-sm font-semibold">' + esc(name) + '</h3>' +
+            '<p class="text-xs text-text-secondary">' + esc(desc) + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-3">' +
+          '<span class="text-xs text-text-tertiary font-mono">#' + priority + '</span>' +
+          '<button onclick="togglePlugin(\'' + esc(p.name) + '\',' + enabled + ')" class="btn-press px-2 py-0.5 rounded text-xs ' + (enabled ? 'bg-success/10 text-success' : 'bg-border/50 text-text-tertiary') + ' hover:opacity-80 transition-all duration-200">' + (enabled ? t('plugin_enabled') : t('plugin_disabled')) + '</button>' +
+        '</div>' +
+      '</div>' +
+      (p.config_schema ? '<div class="mt-3 pt-3 border-t border-border">' +
+        '<p class="text-xs text-text-secondary mb-2">' + t('plugin_config') + '</p>' +
+        Object.entries(p.config_schema).map(([k, v]) => {
+          const val = (p.config && p.config[k]) ? esc(p.config[k]) : '';
+          return '<div class="flex items-center gap-2 mb-1.5">' +
+            '<label class="text-xs text-text-tertiary w-24 flex-shrink-0">' + esc(k) + '</label>' +
+            '<input value="' + val + '" data-plugin="' + esc(p.name) + '" data-key="' + esc(k) + '" class="flex-1 px-2 py-1 text-xs rounded-md bg-muted border border-border input-apple plugin-config-input" placeholder="' + esc(v.description || '') + '" />' +
+          '</div>';
+        }).join('') +
+        '<button onclick="savePluginConfig(\'' + esc(p.name) + '\')" class="btn-press mt-2 px-3 py-1 rounded-md text-xs bg-accent text-white hover:bg-accent/90 transition-all duration-200 active:scale-95">' + t('plugin_save_config') + '</button>' +
+      '</div>' : '') +
+    '</div>';
+  }).join('');
+  lucide.createIcons();
+}
+
+function togglePlugin(name, enabled) {
+  api('/api/admin/plugins/' + encodeURIComponent(name), { method: 'PUT', body: { enabled: !enabled } }).then(() => renderPlugins());
+}
+
+function savePluginConfig(name) {
+  const inputs = document.querySelectorAll('.plugin-config-input[data-plugin="' + name + '"]');
+  const config = {};
+  inputs.forEach(inp => { if (inp.value.trim()) config[inp.dataset.key] = inp.value.trim(); });
+  api('/api/admin/plugins/' + encodeURIComponent(name), { method: 'PUT', body: { config } }).then(() => renderPlugins());
 }
 // ─── Init ─────────────────────────────────────────────────
 checkAuth();

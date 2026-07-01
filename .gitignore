@@ -93,9 +93,6 @@ logs/
 *.xlsx
 *.csv
 
-# Assets (tools, scripts, etc.)
-assets/
-
 # Preview files
 .preview
 

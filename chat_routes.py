@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, User, Conversation, Message, VendorConfig
 from auth_utils import get_effective_permission
 from ai_service import chat_completion, stream_chat_completion
+from plugins import get_registry
 from model_registry import get_vendor_list, get_all_models_flat
 
 chat_bp = Blueprint('chat', __name__)
@@ -276,6 +277,21 @@ def send_message():
     if web_search is not None:
         extra_kwargs['web_search'] = web_search
 
+    # ── Plugin hooks ──
+    registry = get_registry()
+    if registry:
+        # Pre-process message
+        processed = registry.run_pre_hooks(content)
+        if processed is not None and processed != content:
+            content = processed
+            messages[-1]['content'] = content
+        
+        # Merge plugin tools
+        plugin_tools = registry.get_all_tools()
+        if plugin_tools:
+            existing_tools = extra_kwargs.get('tools', []) or []
+            extra_kwargs['tools'] = existing_tools + plugin_tools
+
     if stream:
         return _handle_stream(conv, user_msg, messages, fallback_chain, extra_kwargs)
 
@@ -286,6 +302,13 @@ def send_message():
         if result and result.get('success'):
             assistant_content = result.get('content', '')
             tokens_used = result.get('tokens', 0)
+
+            # ── Plugin post-hooks ──
+            registry = get_registry()
+            if registry:
+                processed = registry.run_post_hooks(assistant_content)
+                if processed is not None and processed != assistant_content:
+                    assistant_content = processed
 
             # Save assistant message
             assistant_msg = Message(
@@ -368,6 +391,13 @@ def _handle_stream(conv, user_msg, messages, fallback_chain, extra_kwargs):
                 yield f"data: {json.dumps({'error': assistant_content})}\n\n"
                 yield "data: [DONE]\n\n"
                 return
+
+            # ── Plugin post-hooks ──
+            registry = get_registry()
+            if registry:
+                processed = registry.run_post_hooks(assistant_content)
+                if processed is not None and processed != assistant_content:
+                    assistant_content = processed
 
             # Save assistant message
             with db.session.begin():

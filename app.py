@@ -71,10 +71,20 @@ def create_app():
     app.register_blueprint(chat_bp)
     app.register_blueprint(admin_bp)
 
+    # ── Plugin system ──
+    from plugin_routes import plugin_bp
+    app.register_blueprint(plugin_bp)
+    
     # Create tables and initialize data
     with app.app_context():
         db.create_all()
         _init_default_data()
+        
+        # Initialize plugin registry (after tables exist)
+        from plugins import init_plugins
+        import os
+        plugin_dir = os.path.join(os.path.dirname(__file__), 'plugins')
+        init_plugins(plugin_dir)
 
     # ── Frontend routes ──
     @app.route('/')
