@@ -1762,6 +1762,44 @@ async function testVendorConnection(id) {
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { if (!d) return '-'; return new Date(d).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
+function setPageHeader(title, actionLabel, actionFn) {
+  const header = document.querySelector('.page-header-placeholder');
+  if (header) {
+    header.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-semibold">${title}</h2>
+        ${actionLabel ? `<button onclick="(${actionFn.toString()})()" class="btn-press px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-all active:scale-95">${actionLabel}</button>` : ''}
+      </div>`;
+  }
+}
+
+function closeModal() {
+  const modal = document.getElementById('modal');
+  if (modal) { modal.classList.add('hidden'); modal.innerHTML = ''; }
+}
+
+function showToast(message, type) {
+  const toast = document.getElementById('toast') || (() => { const e = document.createElement('div'); e.id = 'toast'; e.className = 'fixed bottom-6 right-6 z-50 pointer-events-none'; document.body.appendChild(e); return e; })();
+  const colors = { success: 'bg-success/90', error: 'bg-danger/90', warning: 'bg-warning/90', info: 'bg-accent/90' };
+  const el = document.createElement('div');
+  el.className = (colors[type] || 'bg-accent/90') + ' text-white px-4 py-2.5 rounded-xl text-sm shadow-lg mb-2 pointer-events-auto animate-fade-in-up';
+  el.textContent = message;
+  toast.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+function enhanceContainer(container) {
+  if (!container) container = document.getElementById('page-container');
+  if (!container) return;
+  container.querySelectorAll('.bg-surface.rounded-2xl, .bg-surface.rounded-xl, .bg-card.rounded-xl').forEach((el, i) => {
+    el.classList.add('card-lift');
+    el.style.setProperty('--i', i);
+    el.style.animation = 'fadeInUp 0.4s var(--ease-out) both';
+    el.style.animationDelay = (i * 50) + 'ms';
+  });
+  container.querySelectorAll('tbody tr').forEach(el => el.classList.add('table-row'));
+}
+
 // ─── 跨厂商模型优先级 ──────────────────────────────────────
 async function renderModelPriority(container) {
   container = container || document.getElementById('page-container');
@@ -2121,7 +2159,18 @@ async function renderThemes() {
 
   setPageHeader(t("nav_themes"), t("theme_create"), () => showThemeEditor(null));
 
-  document.getElementById("main-content").innerHTML = `
+  // Ensure header placeholder exists before setPageHeader queries it
+  const container = document.getElementById("page-container");
+  container.innerHTML = '<div class="page-header-placeholder"></div>';
+
+  // Now setPageHeader can find .page-header-placeholder
+  setPageHeader(t("nav_themes"), t("theme_create"), () => showThemeEditor(null));
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-lg font-semibold">${t("nav_themes")}</h2>
+      <button onclick="showThemeEditor(null)" class="btn-press px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-all active:scale-95">${t("theme_create")}</button>
+    </div>
     ${active ? `<div class="mb-5 p-4 rounded-xl border border-border bg-surface flex items-center gap-3">
       <div class="flex gap-1.5 flex-1">
         ${["bg","surface","surfaceHover","border","text","textSecondary","textTertiary","accent","danger","success"].map(k =>
@@ -2247,7 +2296,7 @@ async function loadThemeEditor(id) {
 
     <details><summary class="text-sm font-semibold text-text cursor-pointer py-1 hover:text-accent transition-colors">${t("theme_shadows")}</summary>
       <div class="grid grid-cols-2 gap-1.5 mt-2">
-        ${["sm","md","lg","xl"].map(s => `<div><label class="text-[10px] text-text-secondary mb-0.5 block">shadow-${s}</label><input id="shadow-${s}" value="${(theme.shadows||{})[s]||""}" placeholder="0 1px 2px rgba(0,0,0,0.1)" class="w-full px-2 py-1.5 rounded-lg border border-border bg-surface-container text-[11px] text-text font-mono focus:outline-none focus:border-accent/30" /></div>`).join("")}
+        ${["sm","md","lg","xl","float"].map(s => `<div><label class="text-[10px] text-text-secondary mb-0.5 block">shadow-${s}</label><input id="shadow-${s}" value="${(theme.shadows||{})[s]||""}" placeholder="0 1px 2px rgba(0,0,0,0.1)" class="w-full px-2 py-1.5 rounded-lg border border-border bg-surface-container text-[11px] text-text font-mono focus:outline-none focus:border-accent/30" /></div>`).join("")}
       </div>
     </details>
 
@@ -2327,7 +2376,7 @@ function updateThemePreview() {
 function collectThemeData() {
   const colorFields = ["bg","surface","surfaceHover","card","muted","surfaceContainer","border","text","textSecondary","textTertiary","accent","accentHover","danger","error","success","warning","sidebar","sidebarHover","sidebarActive"];
   const fontFields = ["heading","body","mono"];
-  const shadowFields = ["sm","md","lg","xl"];
+  const shadowFields = ["sm","md","lg","xl","float"];
   const colors = {}, darkColors = {}, fonts = {}, shadows = {};
   colorFields.forEach(k => { const v = document.getElementById("color-"+k)?.value; if (v) colors[k] = v; });
   colorFields.forEach(k => { const v = document.getElementById("dark-"+k)?.value; if (v) darkColors[k] = v; });
@@ -2416,6 +2465,7 @@ function applyCustomTheme(theme) {
     if (s.md) css += "  --shadow-md: " + s.md + ";\n";
     if (s.lg) css += "  --shadow-lg: " + s.lg + ";\n";
     if (s.xl) css += "  --shadow-xl: " + s.xl + ";\n";
+    if (s.float) css += "  --shadow-float: " + s.float + ";\n";
   }
   css += "}\n";
 

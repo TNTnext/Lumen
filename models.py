@@ -359,7 +359,7 @@ class ThemeConfig(db.Model):
             lines.append(f'  --radius-lg: calc({self.radius} + 6px);')
             lines.append(f'  --radius-xl: calc({self.radius} + 10px);')
             lines.append(f'  --radius-2xl: calc({self.radius} + 14px);')
-        shadow_map = {'sm': '--shadow-sm', 'md': '--shadow-md', 'lg': '--shadow-lg', 'xl': '--shadow-xl'}
+        shadow_map = {'sm': '--shadow-sm', 'md': '--shadow-md', 'lg': '--shadow-lg', 'xl': '--shadow-xl', 'float': '--shadow-float'}
         for key, var in shadow_map.items():
             if key in shadows: lines.append(f'  {var}: {shadows[key]};')
         lines.append('}')
