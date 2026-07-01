@@ -110,8 +110,9 @@ def create_app():
         _init_default_data()
         
         # Initialize plugin registry (after tables exist)
-        from plugins import init_plugins, get_registry
         import os
+        _ensure_default_files()
+        from plugins import init_plugins, get_registry
         plugin_dir = os.path.join(os.path.dirname(__file__), 'plugins')
         init_plugins(plugin_dir)
 
@@ -157,6 +158,131 @@ def create_app():
 
     return app
 
+
+def _ensure_default_files():
+    """Auto-create default files in themes/ and plugins/ if missing."""
+    import os
+    base = os.path.dirname(os.path.abspath(__file__))
+
+    # Ensure themes/__init__.py exists
+    themes_dir = os.path.join(base, 'themes')
+    os.makedirs(themes_dir, exist_ok=True)
+    themes_init = os.path.join(themes_dir, '__init__.py')
+    if not os.path.exists(themes_init):
+        with open(themes_init, 'w', encoding='utf-8') as f:
+            f.write('# Lumen Themes - Custom theme files go here\n')
+            f.write('# Each .py file should define get_theme() -> dict\n')
+
+    # Ensure default theme exists
+    default_theme = os.path.join(themes_dir, 'lumen_light.py')
+    if not os.path.exists(default_theme):
+        with open(default_theme, 'w', encoding='utf-8') as f:
+            f.write('''# Default Lumen Light Theme
+def get_theme():
+    return {
+        "name": "Lumen Light",
+        "is_active": False,
+        "colors": {
+            "bg": "#f5f5f7", "surface": "#ffffff", "surfaceHover": "#f0f0f2",
+            "border": "#e8e8ed", "text": "#1d1d1f", "textSecondary": "#86868b",
+            "textTertiary": "#aeaeb2", "accent": "#0071e3", "accentHover": "#0066cc",
+            "danger": "#ff3b30", "success": "#34c759", "warning": "#ff9500",
+            "sidebar": "#f5f5f7", "sidebarHover": "#ebebf0", "sidebarActive": "#e0e0e5",
+            "card": "#ffffff", "muted": "#f0f0f2", "surfaceContainer": "#f5f5f7",
+            "error": "#ff3b30"
+        },
+        "darkColors": {
+            "bg": "#1c1c1e", "surface": "#2c2c2e", "surfaceHover": "#3a3a3c",
+            "border": "#38383a", "text": "#f5f5f7", "textSecondary": "#98989d",
+            "textTertiary": "#636366", "accent": "#0a84ff", "accentHover": "#409cff",
+            "danger": "#ff453a", "success": "#30d158", "warning": "#ff9f0a",
+            "sidebar": "#1c1c1e", "sidebarHover": "#2c2c2e", "sidebarActive": "#3a3a3c",
+            "card": "#2c2c2e", "muted": "#3a3a3c", "surfaceContainer": "#2c2c2e",
+            "error": "#ff453a"
+        },
+        "fonts": {"heading": "-apple-system, sans-serif", "body": "-apple-system, sans-serif", "mono": "SF Mono, monospace"},
+        "shadows": {"sm": "0 1px 2px rgba(0,0,0,0.05)", "md": "0 4px 6px rgba(0,0,0,0.07)", "lg": "0 10px 25px rgba(0,0,0,0.1)", "xl": "0 20px 50px rgba(0,0,0,0.15)", "float": "0 8px 30px rgba(0,0,0,0.12)"},
+        "radius": "0.75rem",
+        "customCSS": ""
+    }
+''')
+
+    # Ensure plugins/__init__.py exists
+    plugins_dir = os.path.join(base, 'plugins')
+    os.makedirs(plugins_dir, exist_ok=True)
+    plugins_init = os.path.join(plugins_dir, '__init__.py')
+    if not os.path.exists(plugins_init):
+        # This is critical - copy from template if missing
+        _template = '''# Lumen Plugin System
+import importlib
+import os
+import sys
+from typing import Any, Dict, List, Optional
+
+class PluginMeta:
+    def __init__(self, name, display_name, version, description='', author='', priority=50, category='tool'):
+        self.name = name
+        self.display_name = display_name
+        self.version = version
+        self.description = description
+        self.author = author
+        self.priority = priority
+        self.category = category
+
+class ToolDefinition:
+    def __init__(self, name, description, parameters):
+        self.name = name
+        self.description = description
+        self.parameters = parameters
+
+class PageDefinition:
+    def __init__(self, page_id, title, icon, html_content, js_handler=None):
+        self.page_id = page_id
+        self.title = title
+        self.icon = icon
+        self.html_content = html_content
+        self.js_handler = js_handler
+
+class ApiRouteDefinition:
+    def __init__(self, method, path, handler, description='', auth_required=True):
+        self.method = method
+        self.path = path
+        self.handler = handler
+        self.description = description
+        self.auth_required = auth_required
+
+class LumenPlugin:
+    def __init__(self, meta: PluginMeta):
+        self.meta = meta
+        self.config: Dict[str, Any] = {}
+    def get_tools(self) -> List[ToolDefinition]: return []
+    def execute_tool(self, tool_name: str, arguments: Dict, ctx: Dict) -> Dict: return {}
+    def pre_chat(self, ctx: Dict) -> Dict: return ctx
+    def post_chat(self, response: str, ctx: Dict) -> str: return response
+    def on_error(self, error: Exception, ctx: Dict) -> Optional[str]: return None
+    def on_enable(self): pass
+    def on_disable(self): pass
+    def register_pages(self) -> List[PageDefinition]: return []
+    def register_api_routes(self) -> List[ApiRouteDefinition]: return []
+    def register_db_tables(self) -> List: return []
+    def register_middleware(self) -> List[Dict]: return []
+    def register_events(self) -> Dict[str, callable]: return {}
+    def register_cron_jobs(self) -> List[Dict]: return []
+    def on_install(self) -> bool: return True
+    def on_uninstall(self) -> bool: return True
+    def on_upgrade(self, from_version: str, to_version: str) -> bool: return True
+    def on_configure(self, config: Dict) -> bool: return True
+
+_plugin_registry: Dict[str, LumenPlugin] = {}
+_plugin_order: List[str] = []
+
+def register_plugin(name: str, plugin: LumenPlugin): pass
+def get_plugin(name: str) -> Optional[LumenPlugin]: pass
+def get_all_plugins() -> List[LumenPlugin]: pass
+def get_enabled_plugins() -> List[LumenPlugin]: pass
+'''
+        with open(plugins_init, 'w', encoding='utf-8') as f:
+            f.write(_template)
 
 def _init_default_data():
     """Initialize default data: admin user, global permissions, system configs, endpoint toggles, vendor configs."""

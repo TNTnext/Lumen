@@ -103,3 +103,12 @@ logs/
 # CodeGraph index
 .codegraph
 .cozeproj/reduction
+
+# Custom plugins and themes (only built-in files are tracked)
+plugins/*
+!plugins/__init__.py
+!plugins/calculator.py
+!plugins/translator.py
+!plugins/web_search.py
+themes/*
+!themes/__init__.py
