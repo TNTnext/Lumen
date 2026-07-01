@@ -82,7 +82,8 @@ const i18n = {
     vendor_test_connection: '测试连接', vendor_testing: '测试中...',
     vendor_test_success: '连接成功', vendor_test_failed: '连接失败',
     vendor_no_models: '暂未配置模型优先级',
-    vendor_drag_hint: '拖拽调整模型优先级',
+    vendor_drag_hint: '拖拽调整模型优先级', vendor_add_model: '添加模型',
+    vendor_models_label: '自定义模型列表', vendor_models_placeholder: '输入模型ID，回车添加',
     // Theme
     nav_themes: '主题', theme_create: '新建主题',
     theme_name: '主题名称', theme_name_placeholder: '输入主题名称...',
@@ -209,7 +210,8 @@ const i18n = {
     vendor_test_connection: 'Test Connection', vendor_testing: 'Testing...',
     vendor_test_success: 'Connection successful', vendor_test_failed: 'Connection failed',
     vendor_no_models: 'No models configured',
-    vendor_drag_hint: 'Drag to reorder model priority',
+    vendor_drag_hint: 'Drag to reorder model priority', vendor_add_model: 'Add Model',
+    vendor_models_label: 'Custom Model List', vendor_models_placeholder: 'Enter model ID, press Enter to add',
     // Theme
     nav_themes: 'Themes', theme_create: 'New Theme',
     theme_name: 'Theme Name', theme_name_placeholder: 'Enter theme name...',
@@ -320,6 +322,13 @@ function onOnboardingVendorModelChange(idx, preselectedModel = '') {
   const vlist = window._onbVendors || [];
   const vendor = vlist.find(v => v.id === vendorId);
   sel.innerHTML = (vendor?.models || []).map(m => `<option value="${m.id}" ${m.id === preselectedModel ? 'selected' : ''}>${m.name}</option>`).join('');
+  // Auto-fill base_url from vendor defaults
+  if (vendor) {
+    const buEl = document.getElementById(`onb-baseurl-${idx}`);
+    if (buEl && !buEl.value.trim()) {
+      buEl.value = vendor.base_url || '';
+    }
+  }
 }
 
 function escapeAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -1658,6 +1667,13 @@ function showAddVendor() {
           <label class="text-xs font-medium text-text-secondary">${t('vendor_default_model')}</label>
           <input id="new-default-model" class="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="gpt-4o">
         </div>
+        <div>
+          <label class="text-xs font-medium text-text-secondary">${t('vendor_custom_models')} <span class="text-[10px] text-text-tertiary">${t('vendor_custom_models_hint')}</span></label>
+          <div id="new-custom-models" class="space-y-1 mt-1">
+            <div class="flex gap-1"><input class="custom-model-input flex-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="model-name"><button onclick="this.parentElement.remove()" class="px-2 py-1 rounded text-xs text-danger hover:bg-danger/10">✕</button></div>
+          </div>
+          <button onclick="addCustomModelInput()" class="mt-1 text-xs text-accent hover:underline">+ ${t('vendor_add_model')}</button>
+        </div>
       </div>
       <div class="flex justify-end gap-2 mt-5">
         <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-sidebar-hover transition-colors">${t('vendor_cancel')}</button>
@@ -1674,10 +1690,11 @@ async function saveNewVendor() {
   const apiKey = document.getElementById('new-api-key').value.trim();
   const baseUrl = document.getElementById('new-base-url').value.trim();
   const defaultModel = document.getElementById('new-default-model').value.trim();
+  const customModels = [...document.querySelectorAll('.custom-model-input')].map(i => i.value.trim()).filter(Boolean);
   if (!displayName || !vendorId) { toast(lang === 'zh' ? '请填写显示名称和 Vendor ID' : 'Display name and Vendor ID required', 'error'); return; }
   const res = await api('/api/admin/vendor-configs', {
     method: 'POST',
-    body: { vendor_id: vendorId, display_name: displayName, api_key: apiKey, base_url: baseUrl, default_model: defaultModel }
+    body: { vendor_id: vendorId, display_name: displayName, api_key: apiKey, base_url: baseUrl, default_model: defaultModel, model_priorities: customModels }
   });
   if (res && res.success) {
     document.querySelector('.fixed').remove();
@@ -1686,6 +1703,15 @@ async function saveNewVendor() {
   } else {
     toast(res?.error || t('save_failed'), 'error');
   }
+}
+
+function addCustomModelInput() {
+  const container = document.getElementById('new-custom-models');
+  const div = document.createElement('div');
+  div.className = 'flex gap-1';
+  div.innerHTML = '<input class="custom-model-input flex-1 px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition" placeholder="model-name"><button onclick="this.parentElement.remove()" class="px-2 py-1 rounded text-xs text-danger hover:bg-danger/10">✕</button>';
+  container.appendChild(div);
+  div.querySelector('input').focus();
 }
 
 async function editVendor(id) {
@@ -2084,7 +2110,7 @@ async function renderPlugins() {
     const desc = p.description || '';
     const enabled = p.enabled;
     const priority = p.priority || 0;
-    return '<div class="bg-card rounded-xl border border-border p-4 transition-all card-lift" id="plugin-card-' + esc(p.name) + '">' +
+    return '<div class="bg-card rounded-xl border border-border p-4 transition-all card-lift plugin-card-lift cursor-grab active:cursor-grabbing plugin-card" id="plugin-card-' + esc(p.name) + '" data-plugin-name="' + esc(p.name) + '" draggable="true">' +
       '<div class="flex items-center justify-between">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-2 h-2 rounded-full ' + (enabled ? 'bg-success' : 'bg-border') + '"></div>' +
@@ -2112,6 +2138,52 @@ async function renderPlugins() {
     '</div>';
   }).join('');
   lucide.createIcons();
+  setupPluginDragDrop();
+}
+
+function setupPluginDragDrop() {
+  const list = document.getElementById('plugin-list');
+  if (!list) return;
+  const items = list.querySelectorAll('.plugin-card');
+  items.forEach((item, idx) => {
+    item.setAttribute('draggable', 'true');
+    item.setAttribute('data-plugin-idx', idx);
+    item.style.cursor = 'grab';
+    item.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', idx.toString());
+      item.style.opacity = '0.5';
+      item.style.cursor = 'grabbing';
+    });
+    item.addEventListener('dragend', () => {
+      item.style.opacity = '1';
+      item.style.cursor = 'grab';
+    });
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx = parseInt(item.getAttribute('data-plugin-idx'));
+      if (fromIdx === toIdx) return;
+      // Reorder in DOM
+      const allItems = [...list.querySelectorAll('.plugin-card')];
+      const fromItem = allItems[fromIdx];
+      if (toIdx < fromIdx) {
+        list.insertBefore(fromItem, allItems[toIdx]);
+      } else {
+        list.insertBefore(fromItem, allItems[toIdx].nextSibling);
+      }
+      // Update indexes
+      list.querySelectorAll('.plugin-card').forEach((el, i) => el.setAttribute('data-plugin-idx', i));
+      // Collect new order
+      const names = [...list.querySelectorAll('.plugin-card')].map(el => el.getAttribute('data-plugin-name'));
+      api('/api/admin/plugins/reorder', { method: 'PUT', body: { names } }).then(() => {
+        showToast(t('plugin_reorder_saved'), 'success');
+      });
+    });
+  });
 }
 
 function togglePlugin(name, enabled) {
@@ -2124,6 +2196,54 @@ function savePluginConfig(name) {
   inputs.forEach(inp => { if (inp.value.trim()) config[inp.dataset.key] = inp.value.trim(); });
   api('/api/admin/plugins/' + encodeURIComponent(name), { method: 'PUT', body: { config } }).then(() => renderPlugins());
 }
+function setupPluginDragDrop() {
+  const list = document.getElementById('plugin-list');
+  if (!list) return;
+  let draggedItem = null;
+  list.querySelectorAll('.plugin-card-lift').forEach((item, i) => {
+    item.setAttribute('draggable', 'true');
+    item.dataset.index = i;
+    item.addEventListener('dragstart', (e) => {
+      draggedItem = item;
+      item.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', (e) => {
+      item.style.opacity = '1';
+      document.querySelectorAll('.plugin-card-lift').forEach(el => el.classList.remove('drag-over'));
+      draggedItem = null;
+    });
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (item !== draggedItem) item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over');
+    });
+    item.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if (!draggedItem || draggedItem === item) return;
+      const items = [...list.querySelectorAll('.plugin-card-lift')];
+      const fromIndex = items.indexOf(draggedItem);
+      const toIndex = items.indexOf(item);
+      if (fromIndex < toIndex) {
+        list.insertBefore(draggedItem, item.nextSibling);
+      } else {
+        list.insertBefore(draggedItem, item);
+      }
+      const newOrder = [...list.querySelectorAll('.plugin-card-lift')].map(el => el.id.replace('plugin-card-', ''));
+      try {
+        await api('/api/admin/plugins/reorder', { method: 'PUT', body: { order: newOrder } });
+        renderPlugins();
+      } catch (e) {
+        showToast(t('save_failed'), 'error');
+      }
+    });
+  });
+}
+
 async function renderDatabase() {
   const container = document.getElementById('page-container');
   container.innerHTML = `
@@ -2261,15 +2381,7 @@ async function renderThemes() {
   const themes = (res && res.themes) || [];
   const active = themes.find(t => t.is_active);
 
-  setPageHeader(t("nav_themes"), t("theme_create"), () => showThemeEditor(null));
-
-  // Ensure header placeholder exists before setPageHeader queries it
   const container = document.getElementById("page-container");
-  container.innerHTML = '<div class="page-header-placeholder"></div>';
-
-  // Now setPageHeader can find .page-header-placeholder
-  setPageHeader(t("nav_themes"), t("theme_create"), () => showThemeEditor(null));
-
   container.innerHTML = `
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-lg font-semibold">${t("nav_themes")}</h2>
@@ -2622,3 +2734,16 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
   if (getTheme() === 'system') applyTheme();
 });
 checkAuth();
+
+// ─── Global function exports for onclick handlers ───
+window.showThemeEditor = showThemeEditor;
+window.deleteTheme = deleteTheme;
+window.activateTheme = activateTheme;
+window.saveTheme = saveTheme;
+window.closeModal = closeModal;
+window.showToast = showToast;
+window.toggleSelectAll = toggleSelectAll;
+window.onBatchSelect = onBatchSelect;
+window.executeBatchAction = executeBatchAction;
+window.updateBatchUI = updateBatchUI;
+window.setPageHeader = setPageHeader;
