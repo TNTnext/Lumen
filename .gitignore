@@ -53,6 +53,10 @@ bin/
 Thumbs.db
 ehthumbs.db
 
+# Database files (contain sensitive data)
+*.db
+instance/
+
 # Logs
 output.log
 *.log
