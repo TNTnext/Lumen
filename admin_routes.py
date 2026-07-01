@@ -639,10 +639,16 @@ def create_theme():
     theme = ThemeConfig(name=data['name'])
     if data.get('colors'):
         theme.set_colors(data['colors'])
+    if data.get('darkColors'):
+        theme.set_dark_colors(data['darkColors'])
     if data.get('fonts'):
         theme.set_fonts(data['fonts'])
+    if data.get('shadows'):
+        theme.set_shadows(data['shadows'])
     if data.get('radius'):
         theme.radius = data['radius']
+    if data.get('customCSS'):
+        theme.custom_css = data['customCSS']
 
     db.session.add(theme)
     db.session.commit()
@@ -666,10 +672,16 @@ def update_theme(theme_id):
         theme.name = data['name']
     if 'colors' in data:
         theme.set_colors(data['colors'])
+    if 'darkColors' in data:
+        theme.set_dark_colors(data['darkColors'])
     if 'fonts' in data:
         theme.set_fonts(data['fonts'])
+    if 'shadows' in data:
+        theme.set_shadows(data['shadows'])
     if 'radius' in data:
         theme.radius = data['radius']
+    if 'customCSS' in data:
+        theme.custom_css = data['customCSS']
 
     db.session.commit()
     return jsonify({'success': True, 'theme': theme.to_dict()})

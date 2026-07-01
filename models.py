@@ -286,74 +286,89 @@ class ThemeConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False, index=True)
     is_active = db.Column(db.Boolean, default=False)
-    colors_json = db.Column(db.Text, default='{}')   # {bg, surface, surfaceHover, border, text, textSecondary, textTertiary, accent, accentHover, danger, success}
-    fonts_json = db.Column(db.Text, default='{}')     # {heading, body, mono}
+    colors_json = db.Column(db.Text, default='{}')      # 浅色颜色
+    dark_colors_json = db.Column(db.Text, default='{}') # 深色颜色
+    fonts_json = db.Column(db.Text, default='{}')       # {heading, body, mono}
+    shadows_json = db.Column(db.Text, default='{}')     # {sm, md, lg, xl}
     radius = db.Column(db.String(20), default='0.75rem')
+    custom_css = db.Column(db.Text, default='')         # 用户自定义 CSS
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def get_colors(self) -> dict:
-        try:
-            return json.loads(self.colors_json)
-        except (json.JSONDecodeError, TypeError):
-            return {}
+        try: return json.loads(self.colors_json)
+        except (json.JSONDecodeError, TypeError): return {}
 
     def set_colors(self, colors: dict):
         self.colors_json = json.dumps(colors, ensure_ascii=False)
 
+    def get_dark_colors(self) -> dict:
+        try: return json.loads(self.dark_colors_json)
+        except (json.JSONDecodeError, TypeError): return {}
+
+    def set_dark_colors(self, colors: dict):
+        self.dark_colors_json = json.dumps(colors, ensure_ascii=False)
+
     def get_fonts(self) -> dict:
-        try:
-            return json.loads(self.fonts_json)
-        except (json.JSONDecodeError, TypeError):
-            return {}
+        try: return json.loads(self.fonts_json)
+        except (json.JSONDecodeError, TypeError): return {}
 
     def set_fonts(self, fonts: dict):
         self.fonts_json = json.dumps(fonts, ensure_ascii=False)
 
+    def get_shadows(self) -> dict:
+        try: return json.loads(self.shadows_json)
+        except (json.JSONDecodeError, TypeError): return {}
+
+    def set_shadows(self, shadows: dict):
+        self.shadows_json = json.dumps(shadows, ensure_ascii=False)
+
     def to_dict(self):
         return {
-            'id': self.id,
-            'name': self.name,
-            'is_active': self.is_active,
-            'colors': self.get_colors(),
-            'fonts': self.get_fonts(),
-            'radius': self.radius,
+            'id': self.id, 'name': self.name, 'is_active': self.is_active,
+            'colors': self.get_colors(), 'darkColors': self.get_dark_colors(),
+            'fonts': self.get_fonts(), 'shadows': self.get_shadows(),
+            'radius': self.radius, 'customCSS': self.custom_css,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
     def to_css(self) -> str:
-        """Generate CSS custom properties for the theme."""
+        """Generate CSS custom properties for the theme (light + dark)."""
         colors = self.get_colors()
+        dark_colors = self.get_dark_colors()
         fonts = self.get_fonts()
+        shadows = self.get_shadows()
         lines = [':root {']
         color_map = {
-            'bg': '--color-bg',
-            'surface': '--color-surface',
-            'surfaceHover': '--color-surface-hover',
-            'border': '--color-border',
-            'text': '--color-text',
-            'textSecondary': '--color-text-secondary',
-            'textTertiary': '--color-text-tertiary',
-            'accent': '--color-accent',
-            'accentHover': '--color-accent-hover',
-            'danger': '--color-danger',
-            'success': '--color-success',
+            'bg': '--color-bg', 'surface': '--color-surface', 'surfaceHover': '--color-surface-hover',
+            'border': '--color-border', 'text': '--color-text', 'textSecondary': '--color-text-secondary',
+            'textTertiary': '--color-text-tertiary', 'accent': '--color-accent', 'accentHover': '--color-accent-hover',
+            'danger': '--color-danger', 'success': '--color-success', 'warning': '--color-warning',
+            'sidebar': '--color-sidebar', 'sidebarHover': '--color-sidebar-hover', 'sidebarActive': '--color-sidebar-active',
         }
         for key, var in color_map.items():
-            if key in colors:
-                lines.append(f'  {var}: {colors[key]};')
-        font_map = {
-            'heading': '--font-heading',
-            'body': '--font-body',
-            'mono': '--font-mono',
-        }
+            if key in colors: lines.append(f'  {var}: {colors[key]};')
+        font_map = {'heading': '--font-sans', 'body': '--font-body', 'mono': '--font-mono'}
         for key, var in font_map.items():
-            if key in fonts:
-                lines.append(f'  {var}: {fonts[key]};')
+            if key in fonts: lines.append(f'  {var}: {fonts[key]};')
         if self.radius:
-            lines.append(f'  --radius: {self.radius};')
+            lines.append(f'  --radius-sm: {self.radius};')
+            lines.append(f'  --radius-md: calc({self.radius} + 2px);')
+            lines.append(f'  --radius-lg: calc({self.radius} + 6px);')
+            lines.append(f'  --radius-xl: calc({self.radius} + 10px);')
+            lines.append(f'  --radius-2xl: calc({self.radius} + 14px);')
+        shadow_map = {'sm': '--shadow-sm', 'md': '--shadow-md', 'lg': '--shadow-lg', 'xl': '--shadow-xl'}
+        for key, var in shadow_map.items():
+            if key in shadows: lines.append(f'  {var}: {shadows[key]};')
         lines.append('}')
+        if dark_colors:
+            lines.append('\n[data-theme="dark"] {')
+            for key, var in color_map.items():
+                if key in dark_colors: lines.append(f'  {var}: {dark_colors[key]};')
+            lines.append('}')
+        if self.custom_css and self.custom_css.strip():
+            lines.append(f'\n/* Custom CSS */\n{self.custom_css}')
         return '\n'.join(lines)
 
 

@@ -97,7 +97,14 @@ const i18n = {
     theme_accent_hover: '强调悬停', theme_danger: '危险色',
     theme_success: '成功色', theme_font_heading: '标题字体',
     theme_font_body: '正文字体', theme_font_mono: '等宽字体',
-    theme_default: '默认主题',
+    theme_default: '默认主题', theme_light_colors: '浅色模式颜色',
+	    theme_dark_colors: '深色模式颜色', theme_shadows: '阴影',
+	    theme_custom_css: '自定义 CSS', theme_custom_css_hint: '输入自定义 CSS 覆盖样式',
+	    theme_set_active: '保存后立即激活', theme_light: '浅色', theme_dark: '深色',
+	    theme_warning: '警告色', theme_sidebar: '侧边栏背景', theme_sidebar_hover: '侧边栏悬停',
+	    theme_sidebar_active: '侧边栏激活', theme_confirm_delete: '确认删除主题',
+	    theme_create_first: '还没有主题，点击右上角创建第一个主题',
+	    theme_cannot_delete_active: '无法删除已激活的主题', theme_surface_hover: '表面悬停色',
     nav_plugins: '插件管理',
     plugin_title: '插件管理', plugin_enable: '启用', plugin_disable: '禁用',
     plugin_enabled: '已启用', plugin_disabled: '已禁用', plugin_desc: '热插拔插件系统，支持优先级和工具扩展',
@@ -212,7 +219,14 @@ const i18n = {
     theme_accent_hover: 'Accent Hover', theme_danger: 'Danger',
     theme_success: 'Success', theme_font_heading: 'Heading Font',
     theme_font_body: 'Body Font', theme_font_mono: 'Mono Font',
-    theme_default: 'Default Theme',
+    theme_default: 'Default Theme', theme_light_colors: 'Light Colors',
+	    theme_dark_colors: 'Dark Colors', theme_shadows: 'Shadows',
+	    theme_custom_css: 'Custom CSS', theme_custom_css_hint: 'Enter custom CSS to override styles',
+	    theme_set_active: 'Activate after save', theme_light: 'Light', theme_dark: 'Dark',
+	    theme_warning: 'Warning', theme_sidebar: 'Sidebar BG', theme_sidebar_hover: 'Sidebar Hover',
+	    theme_sidebar_active: 'Sidebar Active', theme_confirm_delete: 'Confirm delete theme',
+	    theme_create_first: 'No themes yet, click button above to create',
+	    theme_cannot_delete_active: 'Cannot delete active theme', theme_surface_hover: 'Surface Hover',
     nav_plugins: 'Plugins', plugin_title: 'Plugin Management', plugin_enable: 'Enable',
     plugin_disable: 'Disable', plugin_enabled: 'Enabled', plugin_disabled: 'Disabled',
     plugin_desc: 'Hot-pluggable plugin system with priority and tool extensions',
@@ -2171,7 +2185,7 @@ function showThemeEditor(id) {
 }
 
 async function loadThemeEditor(id) {
-  let theme = { name: "", colors: {}, fonts: {}, radius: "0.75rem" };
+  let theme = { name: "", colors: {}, darkColors: {}, fonts: {}, radius: "0.75rem", shadows: {}, customCSS: "" };
   if (id) {
     const res = await api("/api/admin/themes");
     const found = (res && res.themes || []).find(t => t.id === id);
@@ -2179,88 +2193,115 @@ async function loadThemeEditor(id) {
   }
 
   const colorFields = [
-    ["bg", "theme_bg", "#f5f5f7"],
-    ["surface", "theme_surface", "#ffffff"],
-    ["surfaceHover", "theme_surface_hover", "#f0f0f2"],
-    ["border", "theme_border", "#e8e8ed"],
-    ["text", "theme_text", "#1d1d1f"],
-    ["textSecondary", "theme_text_secondary", "#86868b"],
-    ["textTertiary", "theme_text_tertiary", "#aeaeb2"],
-    ["accent", "theme_accent", "#0071e3"],
-    ["accentHover", "theme_accent_hover", "#0066cc"],
-    ["danger", "theme_danger", "#ff3b30"],
-    ["success", "theme_success", "#34c759"],
+    ["bg","theme_bg","#f5f5f7"],["surface","theme_surface","#ffffff"],["surfaceHover","theme_surface_hover","#f0f0f2"],
+    ["border","theme_border","#e8e8ed"],["text","theme_text","#1d1d1f"],["textSecondary","theme_text_secondary","#86868b"],
+    ["textTertiary","theme_text_tertiary","#aeaeb2"],["accent","theme_accent","#0071e3"],["accentHover","theme_accent_hover","#0066cc"],
+    ["danger","theme_danger","#ff3b30"],["success","theme_success","#34c759"],["warning","theme_warning","#ff9500"],
+    ["sidebar","theme_sidebar","#f5f5f7"],["sidebarHover","theme_sidebar_hover","#ebebf0"],["sidebarActive","theme_sidebar_active","#e0e0e5"],
   ];
-
+  const darkColorFields = [
+    ["bg","theme_bg","#1c1c1e"],["surface","theme_surface","#2c2c2e"],["surfaceHover","theme_surface_hover","#3a3a3c"],
+    ["border","theme_border","#38383a"],["text","theme_text","#f5f5f7"],["textSecondary","theme_text_secondary","#98989d"],
+    ["textTertiary","theme_text_tertiary","#636366"],["accent","theme_accent","#0a84ff"],["accentHover","theme_accent_hover","#409cff"],
+    ["danger","theme_danger","#ff453a"],["success","theme_success","#30d158"],["warning","theme_warning","#ff9f0a"],
+    ["sidebar","theme_sidebar","#1c1c1e"],["sidebarHover","theme_sidebar_hover","#2c2c2e"],["sidebarActive","theme_sidebar_active","#3a3a3c"],
+  ];
   const fontFields = [
-    ["heading", "theme_font_heading", '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'],
-    ["body", "theme_font_body", '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif'],
-    ["mono", "theme_font_mono", '"SF Mono", "Fira Code", monospace'],
+    ["heading","theme_font_heading",'-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'],
+    ["body","theme_font_body",'-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif'],
+    ["mono","theme_font_mono",'"SF Mono", "Fira Code", monospace'],
   ];
 
   const body = document.getElementById("theme-editor-body");
   body.innerHTML = `
-    <div>
-      <label class="text-xs font-medium text-text-secondary mb-1.5 block">${t("theme_name")}</label>
-      <input id="theme-name" value="${esc(theme.name)}" placeholder="${t("theme_name_placeholder")}" class="w-full px-3 py-2 rounded-lg border border-border bg-surface-container text-sm text-text focus:outline-none focus:border-accent/30 focus:ring-2 focus:ring-accent/10" />
-    </div>
-    <div>
-      <h4 class="text-sm font-semibold text-text mb-3">${t("theme_colors")}</h4>
-      <div class="grid grid-cols-2 gap-2.5">
-        ${colorFields.map(([key, label, def]) => `
-          <div class="flex items-center gap-2.5">
-            <input type="color" id="color-${key}" value="${theme.colors[key] || def}" class="w-8 h-8 rounded-md border border-border cursor-pointer p-0" />
-            <label class="text-xs text-text-secondary flex-1 truncate">${t(label)}</label>
-          </div>
-        `).join("")}
+    <div class="flex gap-3">
+      <div class="flex-1">
+        <label class="text-xs font-medium text-text-secondary mb-1.5 block">${t("theme_name")}</label>
+        <input id="theme-name" value="${esc(theme.name)}" placeholder="${t("theme_name_placeholder")}" class="w-full px-3 py-2 rounded-lg border border-border bg-surface-container text-sm text-text focus:outline-none focus:border-accent/30 focus:ring-2 focus:ring-accent/10" />
+      </div>
+      <div class="w-24">
+        <label class="text-xs font-medium text-text-secondary mb-1.5 block">${t("theme_radius")} (<span id="radius-val">${theme.radius}</span>)</label>
+        <input type="range" id="theme-radius" min="0" max="2" step="0.125" value="${parseFloat(theme.radius) || 0.75}" class="w-full accent-accent" oninput="document.getElementById('radius-val').textContent = this.value + 'rem'" />
       </div>
     </div>
+
+    <details open><summary class="text-sm font-semibold text-text cursor-pointer py-1 hover:text-accent transition-colors">${t("theme_light_colors")}</summary>
+      <div class="grid grid-cols-3 gap-2 mt-2">
+        ${colorFields.map(([k,l,def]) => `<div class="flex items-center gap-1.5"><input type="color" id="color-${k}" value="${theme.colors[k]||def}" class="w-7 h-7 rounded border border-border cursor-pointer p-0" /><label class="text-[10px] text-text-secondary truncate">${t(l)}</label></div>`).join("")}
+      </div>
+    </details>
+
+    <details><summary class="text-sm font-semibold text-text cursor-pointer py-1 hover:text-accent transition-colors">${t("theme_dark_colors")}</summary>
+      <div class="grid grid-cols-3 gap-2 mt-2">
+        ${darkColorFields.map(([k,l,def]) => `<div class="flex items-center gap-1.5"><input type="color" id="dark-${k}" value="${(theme.darkColors||{})[k]||def}" class="w-7 h-7 rounded border border-border cursor-pointer p-0" /><label class="text-[10px] text-text-secondary truncate">${t(l)}</label></div>`).join("")}
+      </div>
+    </details>
+
+    <details><summary class="text-sm font-semibold text-text cursor-pointer py-1 hover:text-accent transition-colors">${t("theme_fonts")}</summary>
+      <div class="space-y-1.5 mt-2">
+        ${fontFields.map(([k,l,def]) => `<div><label class="text-[10px] text-text-secondary mb-0.5 block">${t(l)}</label><input id="font-${k}" value="${(theme.fonts||{})[k]||def}" class="w-full px-2 py-1.5 rounded-lg border border-border bg-surface-container text-[11px] text-text font-mono focus:outline-none focus:border-accent/30" /></div>`).join("")}
+      </div>
+    </details>
+
+    <details><summary class="text-sm font-semibold text-text cursor-pointer py-1 hover:text-accent transition-colors">${t("theme_shadows")}</summary>
+      <div class="grid grid-cols-2 gap-1.5 mt-2">
+        ${["sm","md","lg","xl"].map(s => `<div><label class="text-[10px] text-text-secondary mb-0.5 block">shadow-${s}</label><input id="shadow-${s}" value="${(theme.shadows||{})[s]||""}" placeholder="0 1px 2px rgba(0,0,0,0.1)" class="w-full px-2 py-1.5 rounded-lg border border-border bg-surface-container text-[11px] text-text font-mono focus:outline-none focus:border-accent/30" /></div>`).join("")}
+      </div>
+    </details>
+
+    <details><summary class="text-sm font-semibold text-text cursor-pointer py-1 hover:text-accent transition-colors">${t("theme_custom_css")}</summary>
+      <textarea id="custom-css" rows="8" placeholder="/* ${t("theme_custom_css_hint")} */\n.custom-class { color: var(--color-accent); }" class="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-surface-container text-xs text-text font-mono focus:outline-none focus:border-accent/30 focus:ring-2 focus:ring-accent/10 resize-y">${esc(theme.customCSS||"")}</textarea>
+    </details>
+
     <div>
-      <h4 class="text-sm font-semibold text-text mb-3">${t("theme_fonts")}</h4>
-      ${fontFields.map(([key, label, def]) => `
-        <div class="mb-2">
-          <label class="text-xs text-text-secondary mb-1 block">${t(label)}</label>
-          <input id="font-${key}" value="${theme.fonts[key] || def}" class="w-full px-3 py-2 rounded-lg border border-border bg-surface-container text-xs text-text font-mono focus:outline-none focus:border-accent/30" />
-        </div>
-      `).join("")}
-    </div>
-    <div>
-      <label class="text-xs font-medium text-text-secondary mb-1.5 block">${t("theme_radius")} (<span id="radius-val">${theme.radius}</span>)</label>
-      <input type="range" id="theme-radius" min="0" max="2" step="0.125" value="${parseFloat(theme.radius) || 0.75}" class="w-full accent-accent"
-        oninput="document.getElementById('radius-val').textContent = this.value + 'rem'" />
-    </div>
-    <div>
-      <h4 class="text-sm font-semibold text-text mb-3">${t("theme_preview")}</h4>
-      <div class="p-4 rounded-xl border border-border space-y-2" id="theme-preview" style="background:${theme.colors.bg || "#f5f5f7"};font-family:${theme.fonts.body || "system-ui"};border-radius:${theme.radius}">
-        <div class="p-3 rounded-lg" style="background:${theme.colors.surface || "#fff"};border:1px solid ${theme.colors.border || "#e8e8ed"}">
-          <h5 style="color:${theme.colors.text || "#1d1d1f"};font-family:${theme.fonts.heading || "system-ui"};font-weight:600;font-size:14px">${t("theme_preview")}</h5>
-          <p style="color:${theme.colors.textSecondary || "#86868b"};font-size:12px;margin-top:4px">${t("theme_text_secondary")}</p>
+      <h4 class="text-sm font-semibold text-text mb-2 flex items-center gap-2">
+        ${t("theme_preview")}
+        <button onclick="togglePreviewMode()" id="preview-mode-btn" class="text-[10px] px-2 py-0.5 rounded border border-border text-text-secondary hover:text-accent transition-colors">${t("theme_light")}</button>
+      </h4>
+      <div class="p-4 rounded-xl border border-border space-y-2 transition-colors duration-300" id="theme-preview" style="background:${theme.colors.bg||"#f5f5f7"};font-family:${(theme.fonts||{}).body||"system-ui"};border-radius:${theme.radius}">
+        <div class="p-3 rounded-lg" style="background:${theme.colors.surface||"#fff"};border:1px solid ${theme.colors.border||"#e8e8ed"}">
+          <h5 style="color:${theme.colors.text||"#1d1d1f"};font-family:${(theme.fonts||{}).heading||"system-ui"};font-weight:600;font-size:14px">${t("theme_preview")}</h5>
+          <p style="color:${theme.colors.textSecondary||"#86868b"};font-size:12px;margin-top:4px">${t("theme_text_secondary")}</p>
           <div class="flex gap-1.5 mt-2">
-            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.accent || "#0071e3"};color:#fff">${t("theme_accent")}</span>
-            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.danger || "#ff3b30"};color:#fff">${t("theme_danger")}</span>
-            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.success || "#34c759"};color:#fff">${t("theme_success")}</span>
+            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.accent||"#0071e3"};color:#fff">${t("theme_accent")}</span>
+            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.danger||"#ff3b30"};color:#fff">${t("theme_danger")}</span>
+            <span class="px-2 py-0.5 rounded text-xs" style="background:${theme.colors.success||"#34c759"};color:#fff">${t("theme_success")}</span>
           </div>
         </div>
       </div>
     </div>
-    <div class="flex justify-end gap-2 pt-2">
-      <button onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border text-sm text-text-secondary hover:bg-surface-container transition-colors">${t("cancel")}</button>
-      <button onclick="saveTheme(${id || 0})" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors">${t("save")}</button>
+    <div class="flex justify-between items-center pt-2">
+      <label class="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
+        <input type="checkbox" id="set-as-active" class="apple-switch" checked /> ${t("theme_set_active")}
+      </label>
+      <div class="flex gap-2">
+        <button onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border text-sm text-text-secondary hover:bg-surface-container transition-colors">${t("cancel")}</button>
+        <button onclick="saveTheme(${id||0})" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors">${t("save")}</button>
+      </div>
     </div>
   `;
   lucide.createIcons();
 
-  document.querySelectorAll('[id^="color-"]').forEach(input => {
-    input.addEventListener("input", () => updateThemePreview());
-  });
+  // Preview mode toggle
+  window._previewDark = false;
+  window.togglePreviewMode = () => {
+    window._previewDark = !window._previewDark;
+    const btn = document.getElementById("preview-mode-btn");
+    btn.textContent = window._previewDark ? t("theme_dark") : t("theme_light");
+    updateThemePreview();
+  };
+
+  // Bind input listeners
+  document.querySelectorAll('[id^="color-"], [id^="dark-"]').forEach(i => i.addEventListener("input", () => updateThemePreview()));
   document.getElementById("theme-radius")?.addEventListener("input", () => updateThemePreview());
-  document.querySelectorAll('[id^="font-"]').forEach(input => {
-    input.addEventListener("input", () => updateThemePreview());
-  });
+  document.querySelectorAll('[id^="font-"]').forEach(i => i.addEventListener("input", () => updateThemePreview()));
+  document.querySelectorAll('[id^="shadow-"]').forEach(i => i.addEventListener("input", () => updateThemePreview()));
 }
 
 function updateThemePreview() {
-  const getColor = (key) => document.getElementById("color-" + key)?.value || "";
+  const isDark = window._previewDark;
+  const prefix = isDark ? "dark-" : "color-";
+  const getColor = (key) => document.getElementById(prefix + key)?.value || "";
   const getFont = (key) => document.getElementById("font-" + key)?.value || "system-ui";
   const radius = (document.getElementById("theme-radius")?.value || "0.75") + "rem";
   const preview = document.getElementById("theme-preview");
@@ -2282,14 +2323,18 @@ function updateThemePreview() {
 }
 
 function collectThemeData() {
-  const colorFields = ["bg","surface","surfaceHover","border","text","textSecondary","textTertiary","accent","accentHover","danger","success"];
+  const colorFields = ["bg","surface","surfaceHover","border","text","textSecondary","textTertiary","accent","accentHover","danger","success","warning","sidebar","sidebarHover","sidebarActive"];
   const fontFields = ["heading","body","mono"];
-  const colors = {}, fonts = {};
+  const shadowFields = ["sm","md","lg","xl"];
+  const colors = {}, darkColors = {}, fonts = {}, shadows = {};
   colorFields.forEach(k => { const v = document.getElementById("color-"+k)?.value; if (v) colors[k] = v; });
+  colorFields.forEach(k => { const v = document.getElementById("dark-"+k)?.value; if (v) darkColors[k] = v; });
   fontFields.forEach(k => { const v = document.getElementById("font-"+k)?.value; if (v) fonts[k] = v; });
+  shadowFields.forEach(k => { const v = document.getElementById("shadow-"+k)?.value; if (v && v.trim()) shadows[k] = v; });
+  const customCSS = document.getElementById("custom-css")?.value || "";
   return {
     name: document.getElementById("theme-name")?.value || "",
-    colors, fonts,
+    colors, darkColors, fonts, shadows, customCSS,
     radius: (document.getElementById("theme-radius")?.value || "0.75") + "rem",
   };
 }
@@ -2301,6 +2346,12 @@ async function saveTheme(id) {
   const method = id ? "PUT" : "POST";
   const res = await api(url, { method, body: data });
   if (res && res.success) {
+    const shouldActivate = document.getElementById("set-as-active")?.checked;
+    if (shouldActivate && res.theme) {
+      const tid = res.theme.id || id;
+      await api("/api/admin/themes/" + tid + "/activate", { method: "PUT" });
+      reloadAllThemes();
+    }
     closeModal();
     showToast(t("theme_saved"), "success");
     renderThemes();
@@ -2313,7 +2364,7 @@ async function activateTheme(id) {
   const res = await api("/api/admin/themes/" + id + "/activate", { method: "PUT" });
   if (res && res.success) {
     showToast(t("theme_activated"), "success");
-    applyCustomTheme(res.theme);
+    reloadAllThemes();
     renderThemes();
   } else {
     showToast((res && res.message) || "Activation failed", "error");
@@ -2334,21 +2385,62 @@ async function deleteTheme(id, name) {
 function applyCustomTheme(theme) {
   if (!theme || !theme.colors) return;
   const c = theme.colors;
-  const root = document.documentElement;
+  const f = theme.fonts || {};
+  const r = theme.radius || "0.75rem";
+  const darkC = theme.darkColors || {};
+  const customCSS = theme.customCSS || "";
+
+  let css = ":root {\n";
   const map = {
     bg: "--color-bg", surface: "--color-surface", surfaceHover: "--color-surface-hover",
     border: "--color-border", text: "--color-text", textSecondary: "--color-text-secondary",
     textTertiary: "--color-text-tertiary", accent: "--color-accent", accentHover: "--color-accent-hover",
-    danger: "--color-danger", success: "--color-success",
+    danger: "--color-danger", success: "--color-success", warning: "--color-warning",
+    sidebar: "--color-sidebar", sidebarHover: "--color-sidebar-hover", sidebarActive: "--color-sidebar-active",
   };
-  Object.entries(map).forEach(([k, v]) => { if (c[k]) root.style.setProperty(v, c[k]); });
-  if (theme.fonts) {
-    const f = theme.fonts;
-    if (f.heading) root.style.setProperty("--font-heading", f.heading);
-    if (f.body) root.style.setProperty("--font-body", f.body);
-    if (f.mono) root.style.setProperty("--font-mono", f.mono);
+  Object.entries(map).forEach(([k, v]) => { if (c[k]) css += "  " + v + ": " + c[k] + ";\n"; });
+  if (f.heading) css += "  --font-sans: " + f.heading + ";\n";
+  if (f.body) css += "  --font-body: " + f.body + ";\n";
+  if (f.mono) css += "  --font-mono: " + f.mono + ";\n";
+  css += "  --radius-sm: " + r + ";\n";
+  css += "  --radius-md: calc(" + r + " + 2px);\n";
+  css += "  --radius-lg: calc(" + r + " + 6px);\n";
+  css += "  --radius-xl: calc(" + r + " + 10px);\n";
+  css += "  --radius-2xl: calc(" + r + " + 14px);\n";
+  if (theme.shadows) {
+    const s = theme.shadows;
+    if (s.sm) css += "  --shadow-sm: " + s.sm + ";\n";
+    if (s.md) css += "  --shadow-md: " + s.md + ";\n";
+    if (s.lg) css += "  --shadow-lg: " + s.lg + ";\n";
+    if (s.xl) css += "  --shadow-xl: " + s.xl + ";\n";
   }
-  if (theme.radius) root.style.setProperty("--radius", theme.radius);
+  css += "}\n";
+
+  // Dark mode: auto-generate if darkColors provided, else derive from light
+  if (Object.keys(darkC).length > 0) {
+    css += "\n[data-theme=\"dark\"] {\n";
+    Object.entries(map).forEach(([k, v]) => { if (darkC[k]) css += "  " + v + ": " + darkC[k] + ";\n"; });
+    css += "}\n";
+  }
+
+  // Custom CSS from user
+  if (customCSS.trim()) {
+    css += "\n/* Custom CSS */\n" + customCSS + "\n";
+  }
+
+  // Inject/update <style> element
+  let styleEl = document.getElementById("custom-theme-style");
+  if (!styleEl) {
+    styleEl = document.createElement("style");
+    styleEl.id = "custom-theme-style";
+    document.head.appendChild(styleEl);
+  }
+  styleEl.textContent = css;
+}
+
+function clearCustomTheme() {
+  const styleEl = document.getElementById("custom-theme-style");
+  if (styleEl) styleEl.remove();
 }
 
 async function loadActiveTheme() {
@@ -2358,6 +2450,11 @@ async function loadActiveTheme() {
       applyCustomTheme(res.theme);
     }
   } catch (e) { /* no active theme */ }
+}
+
+async function reloadAllThemes() {
+  clearCustomTheme();
+  await loadActiveTheme();
 }
 
 

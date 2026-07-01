@@ -166,6 +166,48 @@ class LumenPlugin(ABC):
         """返回插件自定义 API 路由列表（注册到 Flask）"""
         return []
 
+    # —— 数据库表 ——
+
+    def register_db_tables(self) -> List[Any]:
+        """注册自定义数据库表（SQLAlchemy Model），db.create_all() 时自动创建"""
+        return []
+
+    # —— 中间件 ——
+
+    def register_middleware(self) -> List[Dict[str, Any]]:
+        """注册请求/响应中间件，type: before_request|after_request, priority 越小越先"""
+        return []
+
+    # —— 事件系统 ——
+
+    def register_events(self) -> Dict[str, callable]:
+        """注册事件处理器 {event_name: handler}，内置事件见文档"""
+        return {}
+
+    # —— 定时任务 ——
+
+    def register_cron_jobs(self) -> List[Dict[str, Any]]:
+        """注册定时任务 {name, interval_seconds, handler, enabled}"""
+        return []
+
+    # —— 生命周期 ——
+
+    def on_install(self) -> bool:
+        """插件安装时调用"""
+        return True
+
+    def on_uninstall(self) -> bool:
+        """插件卸载时调用"""
+        return True
+
+    def on_upgrade(self, from_version: str, to_version: str) -> bool:
+        """插件升级时调用"""
+        return True
+
+    def on_configure(self, config: Dict[str, Any]) -> bool:
+        """插件配置更新时调用"""
+        return True
+
     # —— 辅助 ——
 
     def log(self, msg: str, level: str = "info"):

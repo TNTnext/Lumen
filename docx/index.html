@@ -605,116 +605,320 @@ python app.py</pre>
         <h3 class="text-base font-semibold mb-3"><span data-lang-zh>插件管理 API</span><span data-lang-en>Plugin Management API</span></h3>
         <div class="space-y-4">
           <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/plugins</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取所有插件列表及状态</span><span data-lang-en>List all plugins and status</span></p></div>
-          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/plugins/:name</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>切换插件启用状态或更新配置</span><span data-lang-en>Toggle plugin or update config</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/plugins/:name/toggle</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>切换插件启用状态</span><span data-lang-en>Toggle plugin enabled</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/plugins/:name</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>更新插件配置</span><span data-lang-en>Update plugin config</span></p></div>
           <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">POST</span> <code class="text-sm font-mono">/api/admin/plugins/reload</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>热重载所有插件</span><span data-lang-en>Hot reload all plugins</span></p></div>
           <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/plugins/reorder</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>调整插件优先级排序</span><span data-lang-en>Reorder plugin priorities</span></p></div>
           <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/plugins/tools</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取所有已启用插件的工具列表</span><span data-lang-en>Get all enabled plugin tools</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/plugins/pages</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取插件注册的自定义页面</span><span data-lang-en>Get plugin custom pages</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/plugins/routes</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取插件注册的自定义 API</span><span data-lang-en>Get plugin custom API routes</span></p></div>
         </div>
       </div>
 
-      <!-- Plugin Development Guide -->
+      <!-- Plugin Development Guide - Comprehensive -->
       <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6 mt-6">
-        <h3 class="text-base font-semibold mb-4"><span data-lang-zh>插件开发指南</span><span data-lang-en>Plugin Development Guide</span></h3>
-        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
-          Lumen 插件支持四大能力：AI 工具（Tool）、钩子管线（Hook）、自定义页面（Page）、自定义 API（Route）。每个插件是一个 <code class="text-xs font-mono">plugins/xxx.py</code> 文件。
-        </p>
-        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
-          Lumen plugins support four capabilities: AI Tools, Hook Pipeline, Custom Pages, and Custom API Routes. Each plugin is a single <code class="text-xs font-mono">plugins/xxx.py</code> file.
-        </p>
+        <h3 class="text-base font-semibold mb-4"><span data-lang-zh>插件开发完整指南</span><span data-lang-en>Complete Plugin Development Guide</span></h3>
 
-        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>最小插件模板</span><span data-lang-en>Minimal Plugin Template</span></h4>
-        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono overflow-x-auto"><code>from plugins import LumenPlugin, PluginMeta, ToolDefinition, PageDefinition, ApiRouteDefinition
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>插件文件结构</span><span data-lang-en>Plugin File Structure</span></h4>
+        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono overflow-x-auto"><code>plugins/
+├── __init__.py          # 插件框架（LumenPlugin 基类、注册表）
+├── calculator.py        # 内置：计算器
+├── web_search.py        # 内置：网页搜索
+├── translator.py        # 内置：翻译工具
+└── my_custom.py         # 你的自定义插件</code></pre>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>插件能力总览</span><span data-lang-en>Plugin Capabilities Overview</span></h4>
+        <table class="w-full text-sm mt-3">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>能力</span><span data-lang-en>Capability</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>方法</span><span data-lang-en>Method</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>AI 工具</span><span data-lang-en>AI Tools</span></td><td class="py-2 text-xs font-mono">get_tools()<br>execute_tool()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注册 OpenAI function-calling 工具，注入 AI 对话</span><span data-lang-en>Register OpenAI function-calling tools for AI chat</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>消息钩子</span><span data-lang-en>Chat Hooks</span></td><td class="py-2 text-xs font-mono">pre_chat()<br>post_chat()<br>on_error()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>消息发送前/响应后/错误时的拦截与修改</span><span data-lang-en>Intercept and modify messages before/after/error</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>自定义页面</span><span data-lang-en>Custom Pages</span></td><td class="py-2 text-xs font-mono">register_pages()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注入管理后台页面，自动出现在侧边导航</span><span data-lang-en>Inject admin panel pages, auto-appear in sidebar</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>自定义 API</span><span data-lang-en>Custom API</span></td><td class="py-2 text-xs font-mono">register_api_routes()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注册 Flask 路由 /api/plugins/:name/...</span><span data-lang-en>Register Flask routes at /api/plugins/:name/...</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>数据库表</span><span data-lang-en>DB Tables</span></td><td class="py-2 text-xs font-mono">register_db_tables()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注册自定义 SQLAlchemy Model，自动建表</span><span data-lang-en>Register custom SQLAlchemy models, auto-create tables</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>中间件</span><span data-lang-en>Middleware</span></td><td class="py-2 text-xs font-mono">register_middleware()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注册请求前/响应后拦截器，可修改请求/响应</span><span data-lang-en>Register before/after request interceptors</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>事件系统</span><span data-lang-en>Events</span></td><td class="py-2 text-xs font-mono">register_events()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注册事件处理器，监听系统事件</span><span data-lang-en>Register event handlers, listen to system events</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs"><span data-lang-zh>定时任务</span><span data-lang-en>Cron Jobs</span></td><td class="py-2 text-xs font-mono">register_cron_jobs()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>注册定时任务，按间隔自动执行</span><span data-lang-en>Register scheduled tasks, auto-run at intervals</span></td></tr>
+            <tr><td class="py-2 text-xs"><span data-lang-zh>生命周期</span><span data-lang-en>Lifecycle</span></td><td class="py-2 text-xs font-mono">on_install()<br>on_uninstall()<br>on_upgrade()<br>on_configure()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>安装/卸载/升级/配置变更回调</span><span data-lang-en>Install/uninstall/upgrade/config change callbacks</span></td></tr>
+          </tbody>
+        </table>
+
+        <h4 class="text-sm font-semibold mt-6 mb-2"><span data-lang-zh>完整插件模板</span><span data-lang-en>Complete Plugin Template</span></h4>
+        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono overflow-x-auto"><code># my_plugin.py
+from plugins import LumenPlugin, PluginMeta, ToolDefinition, PageDefinition, ApiRouteDefinition
+from flask import jsonify, request
+from models import db
+import sqlalchemy as sa
+from typing import Any, Dict, List
 
 PLUGIN_META = {
-    "name": "my_plugin",
-    "display_name": "My Plugin",
-    "version": "1.0.0",
-    "description": "A custom plugin",
+    "name": "my_plugin",           # 唯一标识（文件名）
+    "display_name": "My Plugin",   # 显示名称
+    "version": "1.0.0",            # 语义化版本
+    "description": "A comprehensive example plugin",
     "author": "Your Name",
-    "priority": 50,
-    "category": "tool",
+    "priority": 50,                # 0-100, 越大越先执行
+    "category": "tool",            # tool / utility / integration / content
 }
 
 def create_plugin(meta: PluginMeta) -> "MyPlugin":
     return MyPlugin(meta)
 
+# ── 可选：自定义数据库模型 ──
+class MyData(db.Model):
+    __tablename__ = "my_plugin_data"
+    id = sa.Column(sa.Integer, primary_key=True)
+    key = sa.Column(sa.String(255), unique=True)
+    value = sa.Column(sa.Text)
+
 class MyPlugin(LumenPlugin):
-    # ── 1. AI 工具 ──
+    # ══════ AI 工具 ══════
     def get_tools(self):
         return [
             ToolDefinition(
                 name="my_tool",
-                description="Do something useful",
+                description="Do something useful with input text",
                 parameters={
                     "type": "object",
                     "properties": {
-                        "input": {"type": "string", "description": "Input text"}
+                        "input": {"type": "string", "description": "Input text to process"},
+                        "mode": {"type": "string", "enum": ["fast", "deep"], "default": "fast"}
                     },
                     "required": ["input"]
                 }
-            )
+            ),
+            ToolDefinition(
+                name="my_data_lookup",
+                description="Look up data stored by this plugin",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "string", "description": "Data key to look up"}
+                    },
+                    "required": ["key"]
+                }
+            ),
         ]
 
     def execute_tool(self, tool_name, arguments, ctx):
         if tool_name == "my_tool":
-            return {"result": f"Processed: {arguments['input']}"}
-        return {"error": "Unknown tool"}
+            mode = arguments.get("mode", "fast")
+            result = f"[{mode}] Processed: {arguments['input']}"
+            # 保存到数据库
+            entry = MyData(key=f"tool_{arguments['input'][:20]}", value=result)
+            db.session.add(entry)
+            db.session.commit()
+            return {"result": result, "id": entry.id}
+        if tool_name == "my_data_lookup":
+            entry = MyData.query.filter_by(key=arguments["key"]).first()
+            return {"found": bool(entry), "value": entry.value if entry else None}
+        return {"error": f"Unknown tool: {tool_name}"}
 
-    # ── 2. 钩子 ──
+    # ══════ 消息钩子 ══════
     def pre_chat(self, ctx):
-        ctx["content"] = "[PLUGIN] " + ctx.get("content", "")
+        """消息发送前：可修改 content、system_prompt、tools、model"""
+        # 添加系统指令
+        if "system_extra" not in ctx:
+            ctx["system_extra"] = ""
+        ctx["system_extra"] += "\n[MyPlugin: active]"
+        # 动态注入额外工具
+        extra_tools = self.get_tools()
+        ctx.setdefault("tools", []).extend(extra_tools)
         return ctx
 
     def post_chat(self, response, ctx):
-        return response + "\n\n---\n*Processed by MyPlugin*"
+        """AI 响应后：可修改响应文本"""
+        if ctx.get("model") and "gpt" in ctx["model"]:
+            return response + "\n\n---\n*Enhanced by MyPlugin v" + self.meta.version + "*"
+        return response
 
-    # ── 3. 自定义页面 ──
+    def on_error(self, error, ctx):
+        """错误处理：返回降级响应或 None（继续抛出）"""
+        if "timeout" in str(error).lower():
+            return "Sorry, the request timed out. Please try again."
+        return None  # 让其他插件或系统处理
+
+    # ══════ 自定义页面 ══════
     def register_pages(self):
         return [
             PageDefinition(
-                page_id="stats",
-                title="My Stats",
-                icon="bar-chart-3",
-                html_content='''&lt;div class="p-6"&gt;
-  &lt;h2 class="text-xl font-bold mb-4"&gt;Plugin Stats&lt;/h2&gt;
-  &lt;div class="grid grid-cols-3 gap-4"&gt;
-    &lt;div class="bg-muted rounded-xl p-4 text-center"&gt;
-      &lt;div class="text-2xl font-bold text-accent" id="stat-count"&gt;0&lt;/div&gt;
-      &lt;div class="text-xs text-text-secondary mt-1"&gt;Total&lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-  &lt;script&gt;document.getElementById('stat-count').textContent = '42';&lt;/script&gt;
-&lt;/div&gt;''',
-                js_handler="initMyPluginPage"
+                page_id="my_dashboard",
+                title="My Dashboard",
+                icon="layout-dashboard",
+                html_content="""<div class="p-6">
+  <h2 class="text-xl font-bold mb-4">Plugin Dashboard</h2>
+  <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="bg-muted rounded-xl p-4 text-center">
+      <div class="text-2xl font-bold text-accent" id="my-count">-</div>
+      <div class="text-xs text-text-secondary mt-1">Records</div>
+    </div>
+  </div>
+  <div id="my-list" class="space-y-2"></div>
+  <script>
+    (async function() {
+      const res = await fetch('/api/plugins/my_plugin/data');
+      const data = await res.json();
+      document.getElementById('my-count').textContent = data.count;
+      const list = document.getElementById('my-list');
+      (data.items || []).forEach(item => {
+        list.innerHTML += '<div class="p-3 bg-surface rounded-lg border border-border">' +
+          '<span class="text-sm font-medium">' + item.key + '</span>' +
+          '<span class="text-xs text-text-secondary ml-3">' + item.value + '</span></div>';
+      });
+    })();
+  </script>
+</div>"""
             )
         ]
 
-    # ── 4. 自定义 API ──
+    # ══════ 自定义 API ══════
     def register_api_routes(self):
-        from flask import jsonify
-        def hello():
-            return jsonify({"message": "Hello from MyPlugin!"})
-        return [
-            ApiRouteDefinition(method="GET", path="/hello", handler=hello, auth_required=False)
-        ]</code></pre>
+        def get_data():
+            entries = MyData.query.order_by(MyData.id.desc()).limit(50).all()
+            return jsonify({
+                "count": len(entries),
+                "items": [{"id": e.id, "key": e.key, "value": e.value} for e in entries]
+            })
 
-        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>核心概念</span><span data-lang-en>Core Concepts</span></h4>
+        def save_data():
+            data = request.get_json() or {}
+            entry = MyData(key=data.get("key"), value=data.get("value", ""))
+            db.session.add(entry)
+            db.session.commit()
+            return jsonify({"success": True, "id": entry.id})
+
+        def delete_data(key):
+            MyData.query.filter_by(key=key).delete()
+            db.session.commit()
+            return jsonify({"success": True})
+
+        return [
+            ApiRouteDefinition(method="GET", path="/data", handler=get_data, auth_required=False),
+            ApiRouteDefinition(method="POST", path="/data", handler=save_data, auth_required=True),
+            ApiRouteDefinition(method="DELETE", path="/data/<key>", handler=delete_data, auth_required=True),
+        ]
+
+    # ══════ 数据库表 ══════
+    def register_db_tables(self):
+        return [MyData]
+
+    # ══════ 中间件 ══════
+    def register_middleware(self):
+        def log_request():
+            from flask import g
+            import time
+            g.request_start = time.time()
+
+        def log_response(response):
+            from flask import g
+            import time
+            elapsed = time.time() - getattr(g, 'request_start', time.time())
+            response.headers['X-Plugin-MyPlugin'] = f'{elapsed:.3f}s'
+            return response
+
+        return [
+            {"type": "before_request", "handler": log_request, "priority": 10},
+            {"type": "after_request", "handler": log_response, "priority": 10},
+        ]
+
+    # ══════ 事件系统 ══════
+    def register_events(self):
+        def on_message_sent(data):
+            """当用户发送消息时触发"""
+            user = data.get("user", "unknown")
+            model = data.get("model", "unknown")
+            # 可以记录统计、发送通知等
+            print(f"[MyPlugin] Message sent by {user} using {model}")
+
+        def on_system_startup(data):
+            """系统启动时触发"""
+            print("[MyPlugin] System started, initializing...")
+
+        return {
+            "message.sent": on_message_sent,
+            "system.startup": on_system_startup,
+        }
+
+    # ══════ 定时任务 ══════
+    def register_cron_jobs(self):
+        def cleanup_old_data():
+            """每小时清理超过 7 天的数据"""
+            from datetime import datetime, timedelta
+            cutoff = datetime.utcnow() - timedelta(days=7)
+            MyData.query.filter(MyData.created_at < cutoff).delete()
+            db.session.commit()
+
+        return [
+            {"name": "cleanup_old_data", "interval_seconds": 3600, "handler": cleanup_old_data, "enabled": True}
+        ]
+
+    # ══════ 生命周期 ══════
+    def on_install(self):
+        """首次安装时创建数据库表"""
+        db.create_all()
+        return True
+
+    def on_uninstall(self):
+        """卸载时清理数据"""
+        MyData.query.delete()
+        db.session.commit()
+        return True
+
+    def on_upgrade(self, from_version, to_version):
+        """升级时迁移数据"""
+        if from_version.startswith("0."):
+            # v0.x → v1.x 迁移逻辑
+            pass
+        return True
+
+    def on_configure(self, config):
+        """配置变更时调用"""
+        self.config = config
+        return True</code></pre>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>核心数据类型</span><span data-lang-en>Core Data Types</span></h4>
         <table class="w-full text-sm mt-3">
-          <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>概念</span><span data-lang-en>Concept</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>类型</span><span data-lang-en>Type</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>字段</span><span data-lang-en>Fields</span></th><th class="text-left py-2 text-xs font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
           <tbody>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">PLUGIN_META</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>插件元数据字典，必须定义</span><span data-lang-en>Required metadata dict</span></td></tr>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">create_plugin()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>工厂函数，返回插件实例</span><span data-lang-en>Factory function, returns plugin instance</span></td></tr>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">get_tools()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh">返回 ToolDefinition 列表，注入 AI 对话</span><span data-lang-en>Return ToolDefinition list, injected into AI chat</span></td></tr>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">register_pages()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>返回 PageDefinition 列表，显示在管理后台导航</span><span data-lang-en>Return PageDefinition list, shown in admin nav</span></td></tr>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">register_api_routes()</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>返回 ApiRouteDefinition 列表，注册到 Flask</span><span data-lang-en>Return ApiRouteDefinition list, registered to Flask</span></td></tr>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">pre_chat(ctx)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>消息发送前钩子，可修改内容/工具</span><span data-lang-en>Pre-chat hook, can modify content/tools</span></td></tr>
-            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">post_chat(resp, ctx)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>AI 响应后钩子，可修改响应文本</span><span data-lang-en>Post-chat hook, can modify response</span></td></tr>
-            <tr><td class="py-2 text-xs font-mono">on_error(err, ctx)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>错误钩子，返回降级响应或 None</span><span data-lang-en>Error hook, return fallback or None</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">PluginMeta</td><td class="py-2 text-xs">name, display_name, version, description, author, priority, category</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>插件元数据</span><span data-lang-en>Plugin metadata</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">ToolDefinition</td><td class="py-2 text-xs">name, description, parameters (OpenAI schema)</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>AI 工具定义</span><span data-lang-en>AI tool definition</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-2 text-xs font-mono">PageDefinition</td><td class="py-2 text-xs">page_id, title, icon (Lucide), html_content, js_handler</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>自定义页面定义</span><span data-lang-en>Custom page definition</span></td></tr>
+            <tr><td class="py-2 text-xs font-mono">ApiRouteDefinition</td><td class="py-2 text-xs">method, path, handler, description, auth_required</td><td class="py-2 text-xs text-on-surface-variant"><span data-lang-zh>自定义 API 路由定义</span><span data-lang-en>Custom API route definition</span></td></tr>
+          </tbody>
+        </table>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>上下文对象 (ctx)</span><span data-lang-en>Context Object (ctx)</span></h4>
+        <p class="text-xs text-on-surface-variant mb-2"><span data-lang-zh>pre_chat / post_chat / on_error 共享的上下文字典，包含以下字段：</span><span data-lang-en>Shared context dict for pre_chat / post_chat / on_error:</span></p>
+        <table class="w-full text-xs">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>字段</span><span data-lang-en>Field</span></th><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>类型</span><span data-lang-en>Type</span></th><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">content</td><td class="py-1 text-xs">str</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>用户消息内容</span><span data-lang-en>User message content</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">model</td><td class="py-1 text-xs">str</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>当前使用的模型</span><span data-lang-en>Current model</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">tools</td><td class="py-1 text-xs">list</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>注入的工具列表</span><span data-lang-en>Injected tools list</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">conversation_id</td><td class="py-1 text-xs">int</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>对话 ID</span><span data-lang-en>Conversation ID</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">user_id</td><td class="py-1 text-xs">int</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>用户 ID</span><span data-lang-en>User ID</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">system_prompt</td><td class="py-1 text-xs">str</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>系统提示词</span><span data-lang-en>System prompt</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">messages</td><td class="py-1 text-xs">list</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>历史消息列表</span><span data-lang-en>Message history</span></td></tr>
+            <tr><td class="py-1 text-xs font-mono">system_extra</td><td class="py-1 text-xs">str</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>插件附加系统指令</span><span data-lang-en>Plugin extra system instruction</span></td></tr>
+          </tbody>
+        </table>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>内置系统事件</span><span data-lang-en>Built-in System Events</span></h4>
+        <table class="w-full text-xs">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>事件名</span><span data-lang-en>Event</span></th><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>触发时机</span><span data-lang-en>Trigger</span></th><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>数据</span><span data-lang-en>Data</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">system.startup</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>系统启动</span><span data-lang-en>System startup</span></td><td class="py-1 text-xs text-on-surface-variant">{}</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">system.shutdown</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>系统关闭</span><span data-lang-en>System shutdown</span></td><td class="py-1 text-xs text-on-surface-variant">{}</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">user.created</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>用户注册</span><span data-lang-en>User registered</span></td><td class="py-1 text-xs text-on-surface-variant">{user_id, username}</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">user.deleted</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>用户删除</span><span data-lang-en>User deleted</span></td><td class="py-1 text-xs text-on-surface-variant">{user_id, username}</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">conversation.created</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>对话创建</span><span data-lang-en>Conversation created</span></td><td class="py-1 text-xs text-on-surface-variant">{conversation_id, user_id, title}</td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">message.sent</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>消息发送</span><span data-lang-en>Message sent</span></td><td class="py-1 text-xs text-on-surface-variant">{user, model, conversation_id, content_length}</td></tr>
+            <tr><td class="py-1 text-xs font-mono">vendor.configured</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>厂商配置更新</span><span data-lang-en>Vendor configured</span></td><td class="py-1 text-xs text-on-surface-variant">{vendor_id, enabled}</td></tr>
           </tbody>
         </table>
 
         <p class="text-xs text-on-surface-variant mt-4" data-lang-zh-block>
-          文件放入 <code class="text-xs font-mono">plugins/</code> 目录后，通过管理后台"插件管理"页面热重载即可生效。优先级 0-100 决定钩子执行顺序，数字越大越先执行。
+          文件放入 <code class="text-xs font-mono">plugins/</code> 目录后，通过管理后台「插件管理」页面热重载即可生效。优先级 0-100 决定钩子执行顺序，数字越大越先执行。
         </p>
         <p class="text-xs text-on-surface-variant mt-4" data-lang-en-block>
           Place the file in <code class="text-xs font-mono">plugins/</code> directory, then hot-reload via the admin "Plugins" page. Priority 0-100 determines hook execution order; higher runs first.
@@ -724,8 +928,152 @@ class MyPlugin(LumenPlugin):
     </div>
   </section>
 
+  <!-- ==================== Themes ==================== -->
+  <section id="themes" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
+    <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>自定义主题</span><span data-lang-en>Custom Themes</span></h2>
+    <div class="space-y-4">
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-zh-block>
+          Lumen 支持完整的自定义主题系统。你可以创建、编辑、激活、删除主题。每个主题包含浅色/深色两套配色、字体族、圆角、阴影和自定义 CSS。激活的主题通过 CSS 变量实时应用到整个管理后台，无需刷新页面。
+        </p>
+        <p class="text-sm text-on-surface-variant leading-relaxed mb-4" data-lang-en-block>
+          Lumen supports a complete custom theme system. Create, edit, activate, and delete themes. Each theme includes light/dark color schemes, font families, border radius, shadows, and custom CSS. Active themes apply instantly via CSS variables without page refresh.
+        </p>
+
+        <h4 class="text-sm font-semibold mt-5 mb-2"><span data-lang-zh>主题管理 API</span><span data-lang-en>Theme Management API</span></h4>
+        <div class="space-y-3">
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/themes</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取所有主题列表</span><span data-lang-en>List all themes</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">POST</span> <code class="text-sm font-mono">/api/admin/themes</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>创建新主题</span><span data-lang-en>Create new theme</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/themes/:id</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>更新主题</span><span data-lang-en>Update theme</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">DELETE</span> <code class="text-sm font-mono">/api/admin/themes/:id</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>删除主题（不能删除激活的主题）</span><span data-lang-en>Delete theme (cannot delete active)</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">PUT</span> <code class="text-sm font-mono">/api/admin/themes/:id/activate</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>激活主题（自动取消其他激活）</span><span data-lang-en>Activate theme (deactivates others)</span></p></div>
+          <div><span class="badge-required text-[10px] px-1.5 py-0.5 rounded font-medium">GET</span> <code class="text-sm font-mono">/api/admin/themes/active</code><p class="text-xs text-on-surface-variant mt-1"><span data-lang-zh>获取当前激活主题的 CSS（公开，无需认证）</span><span data-lang-en>Get active theme CSS (public, no auth)</span></p></div>
+        </div>
+      </div>
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <h3 class="text-base font-semibold mb-4"><span data-lang-zh>主题数据模型</span><span data-lang-en>Theme Data Model</span></h3>
+        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono overflow-x-auto"><code>{
+  "name": "My Theme",               // 主题名称
+  "is_active": true,                // 是否为当前激活主题
+  "colors": {                       // 浅色模式颜色（15 个色域）
+    "bg": "#f5f5f7",                // 页面背景
+    "surface": "#ffffff",           // 卡片/面板背景
+    "surfaceHover": "#f0f0f2",      // 卡片悬停
+    "border": "#e8e8ed",            // 边框
+    "text": "#1d1d1f",              // 主文字
+    "textSecondary": "#86868b",     // 次要文字
+    "textTertiary": "#aeaeb2",      // 三级文字
+    "accent": "#0071e3",            // 强调色（品牌色）
+    "accentHover": "#0066cc",       // 强调色悬停
+    "danger": "#ff3b30",            // 危险/错误色
+    "success": "#34c759",           // 成功色
+    "warning": "#ff9500",           // 警告色
+    "sidebar": "#f5f5f7",           // 侧边栏背景
+    "sidebarHover": "#ebebf0",      // 侧边栏悬停
+    "sidebarActive": "#e0e0e5"      // 侧边栏激活项
+  },
+  "darkColors": {                   // 深色模式颜色（同名 15 个色域）
+    "bg": "#1c1c1e",
+    "surface": "#2c2c2e",
+    "surfaceHover": "#3a3a3c",
+    "border": "#38383a",
+    "text": "#f5f5f7",
+    "textSecondary": "#98989d",
+    "textTertiary": "#636366",
+    "accent": "#0a84ff",
+    "accentHover": "#409cff",
+    "danger": "#ff453a",
+    "success": "#30d158",
+    "warning": "#ff9f0a",
+    "sidebar": "#1c1c1e",
+    "sidebarHover": "#2c2c2e",
+    "sidebarActive": "#3a3a3c"
+  },
+  "fonts": {                        // 字体族
+    "heading": "-apple-system, sans-serif",
+    "body": "-apple-system, sans-serif",
+    "mono": "SF Mono, monospace"
+  },
+  "shadows": {                      // 阴影（可选）
+    "sm": "0 1px 2px rgba(0,0,0,0.05)",
+    "md": "0 4px 6px rgba(0,0,0,0.07)",
+    "lg": "0 10px 25px rgba(0,0,0,0.1)",
+    "xl": "0 20px 50px rgba(0,0,0,0.15)"
+  },
+  "radius": "0.75rem",              // 圆角基数
+  "customCSS": ""                   // 自定义 CSS（可选，覆盖默认样式）
+}</code></pre>
+      </div>
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <h3 class="text-base font-semibold mb-4"><span data-lang-zh>主题 CSS 变量映射</span><span data-lang-en>Theme CSS Variable Mapping</span></h3>
+        <p class="text-sm text-on-surface-variant mb-3" data-lang-zh-block>
+          激活主题后，系统通过 <code class="text-xs font-mono">&lt;style id="custom-theme-style"&gt;</code> 注入以下 CSS 变量。你可以在自定义 CSS 中使用这些变量覆盖任意样式。
+        </p>
+        <p class="text-sm text-on-surface-variant mb-3" data-lang-en-block>
+          After activation, the system injects CSS variables via <code class="text-xs font-mono">&lt;style id="custom-theme-style"&gt;</code>. Use these in custom CSS to override any styles.
+        </p>
+        <table class="w-full text-xs">
+          <thead><tr class="border-b border-outline-variant"><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>CSS 变量</span><span data-lang-en>CSS Variable</span></th><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>来源字段</span><span data-lang-en>Source Field</span></th><th class="text-left py-1.5 text-[10px] font-medium text-on-surface-variant"><span data-lang-zh>说明</span><span data-lang-en>Description</span></th></tr></thead>
+          <tbody>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-bg</td><td class="py-1 text-xs">colors.bg</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>页面背景</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-surface</td><td class="py-1 text-xs">colors.surface</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>卡片背景</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-surface-hover</td><td class="py-1 text-xs">colors.surfaceHover</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>卡片悬停</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-border</td><td class="py-1 text-xs">colors.border</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>边框</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-text</td><td class="py-1 text-xs">colors.text</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>主文字</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-text-secondary</td><td class="py-1 text-xs">colors.textSecondary</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>次要文字</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-accent</td><td class="py-1 text-xs">colors.accent</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>强调色</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-danger</td><td class="py-1 text-xs">colors.danger</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>错误色</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-success</td><td class="py-1 text-xs">colors.success</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>成功色</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--color-sidebar</td><td class="py-1 text-xs">colors.sidebar</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>侧边栏</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--font-sans</td><td class="py-1 text-xs">fonts.heading</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>标题字体</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--font-body</td><td class="py-1 text-xs">fonts.body</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>正文字体</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--font-mono</td><td class="py-1 text-xs">fonts.mono</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh>等宽字体</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--radius-sm</td><td class="py-1 text-xs">radius</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh">小圆角</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--radius-md</td><td class="py-1 text-xs">radius + 2px</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh">中圆角</span></td></tr>
+            <tr class="border-b border-outline-variant"><td class="py-1 text-xs font-mono">--radius-lg</td><td class="py-1 text-xs">radius + 6px</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh">大圆角</span></td></tr>
+            <tr><td class="py-1 text-xs font-mono">--radius-xl</td><td class="py-1 text-xs">radius + 10px</td><td class="py-1 text-xs text-on-surface-variant"><span data-lang-zh">特大圆角</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bg-surface rounded-2xl border border-outline-variant/50 p-6">
+        <h3 class="text-base font-semibold mb-4"><span data-lang-zh>自定义 CSS 示例</span><span data-lang-en>Custom CSS Examples</span></h3>
+        <pre class="bg-surface-container rounded-lg p-4 text-xs font-mono overflow-x-auto"><code>/* 修改导航栏样式 */
+.nav-item { border-radius: var(--radius-lg); }
+
+/* 自定义按钮 */
+.btn-custom {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-success));
+  color: white;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* 修改表格行 */
+tr:hover { background: var(--color-surface-hover) !important; }
+
+/* 暗色模式下覆盖特定样式 */
+[data-theme="dark"] .card-header {
+  border-bottom-color: var(--color-border);
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-tertiary);
+  border-radius: 3px;
+}</code></pre>
+      </div>
+
+    </div>
+  </section>
+
   <!-- ==================== Database ==================== -->
-  <section id="database" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
+<section id="database" class="px-6 md:px-10 py-10 max-w-4xl border-t border-outline-variant">
     <h2 class="text-2xl font-bold tracking-tight mb-6"><span data-lang-zh>数据库配置</span><span data-lang-en>Database Configuration</span></h2>
     <div class="space-y-4">
 

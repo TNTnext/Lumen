@@ -30,9 +30,9 @@ Most AI chat frontends are either too simple (single-user, no permissions) or to
 | **User System** | Registration (toggleable) · JWT Auth · Role-based (admin/user) · Force password change |
 | **Permissions** | Two-tier: global defaults + per-user overrides. Daily limits, model allowlists, token caps, rate limits, export control |
 | **Multi-Vendor Fallback** | Configure multiple vendors · Custom model priorities · Auto-failover on error · Per-vendor API keys and base URLs · Cross-vendor model priority ordering |
-| **Plugin System** | Hot-pluggable architecture · 3 built-in plugins (Calculator, Web Search, Translator) · 8 tools · Priority-based execution · Custom plugin support |
+| **Plugin System** | Hot-pluggable architecture · 10+ capabilities: AI tools, chat hooks, custom pages, custom API routes, DB tables, middleware, events, cron jobs, lifecycle hooks · 3 built-in plugins (Calculator, Web Search, Translator) · 8 tools · Priority-based execution · Custom plugin support |
 | **Multi-Database** | SQLite (default, zero-config) · PostgreSQL · MySQL · Configurable via admin panel or onboarding |
-| **Admin Dashboard** | Real-time statistics · User CRUD · Conversation browser · Permission editor · Vendor management · Endpoint toggles · Plugin management · Database config · Bilingual (EN/ZH) · Responsive design · Auto language detection |
+| **Admin Dashboard** | Real-time statistics · User CRUD · Conversation browser · Permission editor · Vendor management · Endpoint toggles · Plugin management · Theme manager · Database config · Bilingual (EN/ZH) · Responsive design · Auto language detection |
 | **Onboarding Wizard** | First-login guided setup: password, **multiple providers**, API keys, permissions, registration policy, database config · Subtle skip button |
 | **Security** | bcrypt passwords · AES-encrypted API keys · SQL injection prevention · CORS · CSRF protection |
 | **Performance** | In-memory caching · Query batching · N+1 elimination · CDN preconnect |
@@ -150,7 +150,7 @@ Configure via:
 
 ## Plugin System
 
-Lumen features a hot-pluggable plugin architecture with four capabilities:
+Lumen features a hot-pluggable plugin architecture with **10+ capabilities**:
 
 | Plugin | Tools | Description |
 |--------|-------|-------------|
@@ -160,13 +160,82 @@ Lumen features a hot-pluggable plugin architecture with four capabilities:
 
 ### Plugin Capabilities
 
-- **AI Tools**: Register OpenAI function-calling tools via `get_tools()` / `execute_tool()`
-- **Hook Pipeline**: `pre_chat()` → modify messages before AI, `post_chat()` → modify responses, `on_error()` → graceful fallback
-- **Custom Pages**: `register_pages()` → inject custom admin pages with full HTML/CSS/JS
-- **Custom API Routes**: `register_api_routes()` → add custom Flask endpoints (`/api/plugins/<plugin>/...`)
-- **Hot-pluggable**: Enable/disable plugins without restart
-- **Priority-based**: 0-100 priority determines hook execution order
-- **Custom plugins**: Drop `.py` files into the `plugins/` directory with `PLUGIN_META` + `create_plugin()`
+| Capability | Method | Description |
+|------------|--------|-------------|
+| **AI Tools** | `get_tools()` / `execute_tool()` | Register OpenAI function-calling tools injected into AI chat |
+| **Chat Hooks** | `pre_chat()` / `post_chat()` / `on_error()` | Intercept and modify messages before/after AI response, or handle errors |
+| **Custom Pages** | `register_pages()` | Inject custom admin pages with full HTML/CSS/JS, auto-appear in sidebar navigation |
+| **Custom API Routes** | `register_api_routes()` | Register custom Flask endpoints at `/api/plugins/<name>/...` |
+| **Database Tables** | `register_db_tables()` | Register custom SQLAlchemy models, auto-create tables on install |
+| **Middleware** | `register_middleware()` | Register before/after request interceptors to modify requests/responses |
+| **Event System** | `register_events()` | Register event handlers for system events (startup, shutdown, user.created, message.sent, etc.) |
+| **Cron Jobs** | `register_cron_jobs()` | Register scheduled tasks with configurable intervals |
+| **Lifecycle** | `on_install()` / `on_uninstall()` / `on_upgrade()` / `on_configure()` | Install/uninstall/upgrade/config-change callbacks |
+
+### Creating a Plugin
+
+Create a `.py` file in the `plugins/` directory:
+
+```python
+# plugins/my_plugin.py
+from plugins import LumenPlugin, PluginMeta, ToolDefinition
+
+PLUGIN_META = {
+    "name": "my_plugin",
+    "display_name": "My Plugin",
+    "version": "1.0.0",
+    "description": "A custom plugin",
+    "author": "Your Name",
+    "priority": 50,
+    "category": "tool",
+}
+
+def create_plugin(meta: PluginMeta):
+    return MyPlugin(meta)
+
+class MyPlugin(LumenPlugin):
+    def get_tools(self):
+        return [ToolDefinition(
+            name="my_tool",
+            description="Do something useful",
+            parameters={"type": "object", "properties": {"input": {"type": "string"}}, "required": ["input"]}
+        )]
+
+    def execute_tool(self, tool_name, arguments, ctx):
+        return {"result": f"Processed: {arguments['input']}"}
+
+    def register_pages(self):
+        return [PageDefinition(page_id="my_page", title="My Page", icon="layout-dashboard", html_content="<div class='p-6'><h2>Hello!</h2></div>")]
+
+    def register_api_routes(self):
+        from flask import jsonify
+        return [ApiRouteDefinition(method="GET", path="/hello", handler=lambda: jsonify({"msg": "Hi!"}), auth_required=False)]
+
+    def register_db_tables(self):
+        import sqlalchemy as sa
+        from models import db
+        class MyData(db.Model):
+            __tablename__ = "my_data"
+            id = sa.Column(sa.Integer, primary_key=True)
+            key = sa.Column(sa.String(255))
+            value = sa.Column(sa.Text)
+        return [MyData]
+
+    def register_middleware(self):
+        def log_request():
+            from flask import g
+            import time
+            g.start = time.time()
+        return [{"type": "before_request", "handler": log_request, "priority": 10}]
+
+    def register_events(self):
+        return {"message.sent": lambda data: print(f"Message by {data['user']}")}
+
+    def register_cron_jobs(self):
+        return [{"name": "cleanup", "interval_seconds": 3600, "handler": lambda: print("Hourly cleanup"), "enabled": True}]
+```
+
+Hot-reload via **Admin Panel → Plugins → Reload** after placing the file.
 
 ### Plugin APIs
 
@@ -174,28 +243,108 @@ Lumen features a hot-pluggable plugin architecture with four capabilities:
 |--------|------|-------------|
 | GET | `/api/admin/plugins/` | List all plugins with status |
 | PUT | `/api/admin/plugins/<name>/toggle` | Toggle plugin enabled/disabled |
-| PUT | `/api/admin/plugins/<name>/priority` | Set plugin priority |
-| GET/PUT | `/api/admin/plugins/<name>/config` | Get/update plugin config |
-| POST | `/api/admin/plugins/<name>/reload` | Hot reload a plugin |
+| PUT | `/api/admin/plugins/<name>` | Update plugin config |
+| POST | `/api/admin/plugins/reload` | Hot reload all plugins |
 | PUT | `/api/admin/plugins/reorder` | Batch reorder plugin priorities |
 | GET | `/api/admin/plugins/tools` | List all enabled plugin tools |
 | GET | `/api/admin/plugins/pages` | List all plugin custom pages |
-| GET | `/api/admin/plugins/page/<name>/<id>` | Get plugin page HTML content |
 | GET | `/api/admin/plugins/routes` | List all plugin custom API routes |
 
 ---
 
 ## Theme System
 
-Lumen supports three theme modes, configurable from Settings:
+Lumen supports a **complete custom theme system**. Create, edit, activate, and delete themes with full visual customization.
+
+### Features
+
+- **Light & Dark Colors**: 15 color slots each (bg, surface, border, text, accent, danger, success, warning, sidebar, etc.)
+- **Custom Fonts**: Heading, body, and monospace font families
+- **Border Radius**: Configurable radius scale (sm/md/lg/xl)
+- **Shadows**: 4 shadow levels (sm/md/lg/xl)
+- **Custom CSS**: Free-form CSS that overrides any style
+- **Live Preview**: Toggle light/dark preview while editing
+- **Instant Apply**: Theme changes take effect immediately via CSS variables
+- **No Page Reload**: Active theme is injected via `<style>` element, no refresh needed
+
+### How It Works
+
+1. Each theme stores `colors` (light) and `darkColors` (dark) as JSON
+2. `to_css()` generates a complete CSS string with `:root` and `[data-theme="dark"]` blocks
+3. Active theme CSS is served at `GET /api/admin/themes/active` (public, no auth)
+4. Admin panel fetches and injects CSS via `<style id="custom-theme-style">`
+5. Dark mode toggle (`[data-theme="dark"]`) overrides light colors with dark ones
+
+### Theme APIs
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/admin/themes` | List all themes |
+| POST | `/api/admin/themes` | Create new theme |
+| PUT | `/api/admin/themes/<id>` | Update theme |
+| DELETE | `/api/admin/themes/<id>` | Delete theme (cannot delete active) |
+| PUT | `/api/admin/themes/<id>/activate` | Activate theme |
+| GET | `/api/admin/themes/active` | Get active theme CSS (public) |
+
+### Default Themes
 
 | Theme | Description |
 |-------|-------------|
-| **Light** | Clean, professional light interface (default) |
-| **Dark** | Eye-friendly dark mode for low-light environments |
-| **System** | Auto-follows OS preference, switches in real-time |
+| **Lumen Light** | Clean, professional light interface (default) |
+| **Lumen Dark** | Eye-friendly dark mode |
 
-Theme preference is persisted in `localStorage`. All CSS variables adapt automatically — no page reload needed.
+### CSS Variables
+
+Active theme injects these CSS variables:
+
+```css
+:root {
+  --color-bg: #f5f5f7;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0f0f2;
+  --color-border: #e8e8ed;
+  --color-text: #1d1d1f;
+  --color-text-secondary: #86868b;
+  --color-text-tertiary: #aeaeb2;
+  --color-accent: #0071e3;
+  --color-accent-hover: #0066cc;
+  --color-danger: #ff3b30;
+  --color-success: #34c759;
+  --color-warning: #ff9500;
+  --color-sidebar: #f5f5f7;
+  --color-sidebar-hover: #ebebf0;
+  --color-sidebar-active: #e0e0e5;
+  --font-sans: -apple-system, sans-serif;
+  --font-body: -apple-system, sans-serif;
+  --font-mono: SF Mono, monospace;
+  --radius-sm: 0.75rem;
+  --radius-md: calc(0.75rem + 2px);
+  --radius-lg: calc(0.75rem + 6px);
+  --radius-xl: calc(0.75rem + 10px);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 50px rgba(0,0,0,0.15);
+}
+
+[data-theme="dark"] {
+  --color-bg: #1c1c1e;
+  --color-surface: #2c2c2e;
+  /* ... dark overrides for all variables ... */
+}
+```
+
+Use these in `customCSS` to create fully custom themes:
+
+```css
+.btn-custom {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-success));
+  color: white;
+}
+[data-theme="dark"] .card-header {
+  border-bottom-color: var(--color-border);
+}
+```
 
 ---
 
